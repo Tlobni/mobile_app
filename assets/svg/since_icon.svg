@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20">
+  <defs>
+    <clipPath id="clip-path">
+      <rect id="back" width="20" height="20" transform="translate(35 125)" fill="#f5f5f5"/>
+    </clipPath>
+  </defs>
+  <g id="since_icon" transform="translate(-35 -125)">
+    <g id="Mask_Group_3773" data-name="Mask Group 3773" clip-path="url(#clip-path)">
+      <path id="calendar_10460023" d="M6,14.5v-1a.5.5,0,0,1,.5-.5h1a.5.5,0,0,1,.5.5v1a.5.5,0,0,1-.5.5h-1A.5.5,0,0,1,6,14.5ZM2,18V8A4,4,0,0,1,6,4H7V3A1,1,0,0,1,9,3V4h6V3a1,1,0,0,1,2,0V4h1a4,4,0,0,1,4,4V18a4,4,0,0,1-4,4H6A4,4,0,0,1,2,18Zm2,0a2,2,0,0,0,2,2H18a2,2,0,0,0,2-2V11H4Z" transform="translate(33 123)"/>
+    </g>
+  </g>
+</svg>

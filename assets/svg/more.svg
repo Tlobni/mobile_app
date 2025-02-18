@@ -1,0 +1,14 @@
+<svg id="more" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24" height="24" viewBox="0 0 24 24">
+  <defs>
+    <clipPath id="clip-path">
+      <path id="back" d="M0,0H24V24H0Z" transform="translate(318 52)"/>
+    </clipPath>
+  </defs>
+  <g id="Mask_Group_110" data-name="Mask Group 110" transform="translate(-318 -52)" clip-path="url(#clip-path)">
+    <g id="more-2" data-name="more" transform="translate(-13.869 -739.952)">
+      <circle id="Ellipse_316" data-name="Ellipse 316" cx="3" cy="3" r="3" transform="translate(340.869 791.952)"/>
+      <circle id="Ellipse_317" data-name="Ellipse 317" cx="3" cy="3" r="3" transform="translate(340.869 800.953)"/>
+      <circle id="Ellipse_318" data-name="Ellipse 318" cx="3" cy="3" r="3" transform="translate(340.869 809.952)"/>
+    </g>
+  </g>
+</svg>

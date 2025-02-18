@@ -1,0 +1,14 @@
+<svg id="grid_view" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <rect id="back" width="24" height="24" fill="none"/>
+  <g id="menu_1_" data-name="menu (1)" transform="translate(2.187 2.187)">
+    <rect id="Rectangle_2331" data-name="Rectangle 2331" width="4.906" height="4.906" rx="1.638" transform="translate(0.822 0.813) rotate(0.1)"/>
+    <rect id="Rectangle_2332" data-name="Rectangle 2332" width="4.906" height="4.906" rx="1.638" transform="translate(7.364 0.813) rotate(0.1)"/>
+    <rect id="Rectangle_2333" data-name="Rectangle 2333" width="4.906" height="4.906" rx="1.638" transform="translate(13.906 0.813) rotate(0.1)"/>
+    <rect id="Rectangle_2334" data-name="Rectangle 2334" width="4.906" height="4.906" rx="1.638" transform="translate(0.822 7.355) rotate(0.1)"/>
+    <rect id="Rectangle_2335" data-name="Rectangle 2335" width="4.906" height="4.906" rx="1.638" transform="translate(7.364 7.355) rotate(0.1)"/>
+    <path id="Path_24173" data-name="Path 24173" d="M15.541,7.36h1.63A1.638,1.638,0,0,1,18.809,9v1.63a1.638,1.638,0,0,1-1.638,1.638h-1.63A1.638,1.638,0,0,1,13.9,10.628V9A1.638,1.638,0,0,1,15.541,7.36Z"/>
+    <rect id="Rectangle_2336" data-name="Rectangle 2336" width="4.906" height="4.906" rx="1.638" transform="translate(0.822 13.898) rotate(0.1)"/>
+    <rect id="Rectangle_2337" data-name="Rectangle 2337" width="4.906" height="4.906" rx="1.638" transform="translate(7.364 13.898) rotate(0.1)"/>
+    <path id="Path_24174" data-name="Path 24174" d="M13.9,17.17V15.541A1.639,1.639,0,0,1,15.541,13.9H17.17a1.639,1.639,0,0,1,1.639,1.639V17.17a1.639,1.639,0,0,1-1.639,1.639H15.541A1.639,1.639,0,0,1,13.9,17.17Z"/>
+  </g>
+</svg>

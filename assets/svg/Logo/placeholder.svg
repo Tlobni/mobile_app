@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="250" height="147" viewBox="0 0 250 147">
+  <g id="placeholder" transform="translate(12595 5840)">
+    <rect id="image" width="250" height="147" transform="translate(-12595 -5840)" fill="none"/>
+    <g id="mainlogo" transform="translate(-12521 -5817)" opacity="0.33">
+      <rect id="logoback" width="102" height="102" fill="none"/>
+      <g id="logo" transform="translate(36.12 4.121)">
+        <rect id="back" width="102" height="102" transform="translate(-36.12 -4.121)" fill="none"/>
+        <path id="Path_16339" data-name="Path 16339" d="M5.423,243.619a5.422,5.422,0,0,1-4.229-8.813L10.832,222.8a5.424,5.424,0,0,1,8.464,6.784L9.659,241.589a5.415,5.415,0,0,1-4.235,2.03Z" transform="translate(-23.714 -148.548)" fill="#00b2ca"/>
+        <path id="Path_16340" data-name="Path 16340" d="M94.4,100.084a19.067,19.067,0,1,1,14.531-31.424,4.063,4.063,0,0,1-.312,5.6l-7.538,7.075a4.067,4.067,0,1,1-5.572-5.926l4.208-3.951a10.935,10.935,0,1,0,3.038,16.62,4.067,4.067,0,0,1,6.209,5.256,19.062,19.062,0,0,1-14.568,6.75Z" transform="translate(-73.491 -43.542)" fill="#fa6e53"/>
+        <path id="Path_16341" data-name="Path 16341" d="M52.543,79.723a39.862,39.862,0,1,1,30.381-65.7,5.425,5.425,0,0,1-8.264,7.031A29.021,29.021,0,1,0,74.71,58.6a5.424,5.424,0,0,1,8.281,7.007A39.849,39.849,0,0,1,52.539,79.72Z" transform="translate(-32.073 -2.583)" fill="#00b2ca"/>
+      </g>
+    </g>
+  </g>
+</svg>

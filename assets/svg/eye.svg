@@ -1,0 +1,15 @@
+<svg id="views" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="22" height="22" viewBox="0 0 22 22">
+  <defs>
+    <clipPath id="clip-path">
+      <rect id="back" width="22" height="22" transform="translate(30 635.998)"/>
+    </clipPath>
+  </defs>
+  <g id="Mask_Group_108" data-name="Mask Group 108" transform="translate(-30 -635.998)" clip-path="url(#clip-path)">
+    <g id="Bottom_navigation" data-name="Bottom navigation" transform="translate(30 639.468)">
+      <g id="view" transform="translate(0)">
+        <path id="Path_24181" data-name="Path 24181" d="M8.583,2.751A2.1,2.1,0,0,0,8.9,5.269a2.115,2.115,0,0,0,2.646.465,3.149,3.149,0,0,1-1.456,3.025A3.288,3.288,0,0,1,5.426,4.425,3.2,3.2,0,0,1,8.583,2.75Z" transform="translate(2.87 1.542)"/>
+        <path id="Path_24182" data-name="Path 24182" d="M11,15.062c-5.966,0-11-4.626-11-7.531,0-1.4,1.292-3.292,3.291-4.82A12.936,12.936,0,0,1,11,0a12.487,12.487,0,0,1,7.723,2.948C20.653,4.5,22,6.386,22,7.531c0,1.26-1.319,3.144-3.283,4.689A12.81,12.81,0,0,1,11,15.062ZM11,1.378A11.55,11.55,0,0,0,4.127,3.805c-1.805,1.38-2.75,2.919-2.75,3.726s.859,2.358,2.746,3.781A11.613,11.613,0,0,0,11,13.685a11.191,11.191,0,0,0,6.865-2.547c1.9-1.5,2.757-3.01,2.757-3.606,0-.434-.834-1.958-2.763-3.51A11.348,11.348,0,0,0,11,1.378Z" transform="translate(0)"/>
+      </g>
+    </g>
+  </g>
+</svg>

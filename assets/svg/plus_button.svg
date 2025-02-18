@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 55 60" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="Path_11299" x="0" y="0" width="83" height="88" filterUnits="userSpaceOnUse">
+      <feOffset dy="5" input="SourceAlpha"/>
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feFlood flood-color="#087c7c" flood-opacity="0.102"/>
+      <feComposite operator="in" in2="blur"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <g id="Buy_Sell_button" data-name="Buy Sell button" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 0.8843169683801975, 0.5622129361100967)">
+    <g transform="matrix(1, 0, 0, 1, -15, -10)" filter="url(#Path_11299)">
+      <path id="Path_11299-2" data-name="Path 11299" d="M48.912,11.729a7.933,7.933,0,0,1,3.992,6.84L53,39.595a7.931,7.931,0,0,1-4.023,6.929L30.62,56.954a8.025,8.025,0,0,1-7.952-.018L4.086,46.268A7.93,7.93,0,0,1,.1,39.428L0,18.406a7.931,7.931,0,0,1,4.023-6.929L22.381,1.047a8.022,8.022,0,0,1,7.953.015Z" transform="translate(15 10)" fill="#087c7c"/>
+    </g>
+    <g id="buy_sell" data-name="buy sell" transform="translate(17 19.001)">
+      <path id="Path_49" data-name="Path 49" d="M164.471,523.388a1.037,1.037,0,0,1-.759-.783,1.612,1.612,0,0,1-.022-.31q0-3.836,0-7.672v-.258h-.238c-2.518,0-5.037-.01-7.555.007a1.119,1.119,0,0,1-1.23-.788v-.391a1.033,1.033,0,0,1,.783-.758,1.584,1.584,0,0,1,.31-.022h7.93v-.238q0-3.875,0-7.751a.976.976,0,1,1,1.95-.058c.007.768,0,1.536,0,2.3q0,2.743,0,5.486v.257h.238q3.885,0,7.77,0a.97.97,0,0,1,.937,1.345.936.936,0,0,1-.917.606c-.709.006-1.419,0-2.128,0h-5.9v.237c0,2.518-.01,5.037.007,7.556a1.118,1.118,0,0,1-.788,1.229Z" transform="translate(-154.667 -503.389)" fill="#fff"/>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24" height="24" viewBox="0 0 24 24">
+  <defs>
+    <clipPath id="clip-path">
+      <rect id="Rectangle_17598" data-name="Rectangle 17598" width="24" height="24" transform="translate(38 351)" fill="#fff"/>
+    </clipPath>
+  </defs>
+  <g id="image" transform="translate(-38 -351)">
+    <g id="Mask_Group_9" data-name="Mask Group 9" clip-path="url(#clip-path)">
+      <g id="Line" transform="translate(36.909 349.909)">
+        <path id="Path_15505" data-name="Path 15505" d="M19.636,1.091H6.545A5.455,5.455,0,0,0,1.091,6.545V19.636a5.455,5.455,0,0,0,5.455,5.455H19.636a5.455,5.455,0,0,0,5.455-5.455V6.545a5.455,5.455,0,0,0-5.455-5.455ZM6.545,3.273H19.636a3.273,3.273,0,0,1,3.273,3.273v8.105L21.262,13a2.182,2.182,0,0,0-3.076,0L15.36,15.829l-5.007-5.007a2.182,2.182,0,0,0-3.076,0l-4,4V6.545A3.273,3.273,0,0,1,6.545,3.273ZM19.636,22.909H6.545a3.273,3.273,0,0,1-3.273-3.273V17.9L8.815,12.36l5.007,5.007a2.182,2.182,0,0,0,3.076,0l2.825-2.825,3.185,3.185v1.909A3.273,3.273,0,0,1,19.636,22.909Z" fill="#fff"/>
+        <circle id="Ellipse_154" data-name="Ellipse 154" cx="1.636" cy="1.636" r="1.636" transform="translate(16.909 6.545)" fill="#fff"/>
+      </g>
+    </g>
+  </g>
+</svg>
