@@ -127,7 +127,7 @@ class ChatTile extends StatelessWidget {
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
                                 color: context.color.textDefaultColor
-                                    .withValues(alpha: 0.05))),
+                                    .withOpacity(0.05))),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(24),
                           child: UiUtils.getImage(

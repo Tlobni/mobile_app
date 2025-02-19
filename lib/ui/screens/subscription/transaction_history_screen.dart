@@ -143,8 +143,7 @@ class _TransactionHistoryState extends State<TransactionHistory> {
                   Container(
                     decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(5),
-                        color: context.color.territoryColor
-                            .withValues(alpha: 0.1)),
+                        color: context.color.territoryColor.withOpacity(0.1)),
                     padding: EdgeInsets.symmetric(vertical: 3, horizontal: 7),
                     child: CustomText(
                       transaction.paymentGateway!,

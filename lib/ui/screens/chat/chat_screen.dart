@@ -252,8 +252,8 @@ class _ChatScreenState extends State<ChatScreen>
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(5),
                             borderSide: BorderSide(
-                              color: context.color.textLightColor
-                                  .withValues(alpha: 0.7),
+                              color:
+                                  context.color.textLightColor.withOpacity(0.7),
                             ),
                           ),
                         ),
@@ -465,7 +465,7 @@ class _ChatScreenState extends State<ChatScreen>
                                                         .translate(context),
                                                     color: context
                                                         .color.textColorDark
-                                                        .withValues(alpha: 0.7),
+                                                        .withOpacity(0.7),
                                                   ),
                                                   onTap: () async {
                                                     var unBlock = await UiUtils
@@ -1157,9 +1157,8 @@ class _ChatScreenState extends State<ChatScreen>
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
                   border: Border.all(
-                      color:
-                          context.color.territoryColor.withValues(alpha: 0.3)),
-                  color: context.color.territoryColor.withValues(alpha: 0.17),
+                      color: context.color.territoryColor.withOpacity(0.3)),
+                  color: context.color.territoryColor..withOpacity(0.17),
                   borderRadius: BorderRadius.only(
                       topRight: Radius.circular(0),
                       topLeft: Radius.circular(8),
@@ -1169,8 +1168,7 @@ class _ChatScreenState extends State<ChatScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   CustomText("yourOffer".translate(context),
-                      color: context.color.textDefaultColor
-                          .withValues(alpha: 0.5)),
+                      color: context.color.textDefaultColor.withOpacity(0.3)),
                   CustomText(
                     (widget.itemOfferPrice ?? 0.0).currencyFormat,
                     color: context.color.textDefaultColor,
@@ -1190,9 +1188,8 @@ class _ChatScreenState extends State<ChatScreen>
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
                   border: Border.all(
-                      color:
-                          context.color.territoryColor.withValues(alpha: 0.3)),
-                  color: context.color.territoryColor.withValues(alpha: 0.17),
+                      color: context.color.territoryColor.withOpacity(0.3)),
+                  color: context.color.territoryColor..withOpacity(0.17),
                   borderRadius: BorderRadius.only(
                       topRight: Radius.circular(8),
                       topLeft: Radius.circular(0),
@@ -1202,8 +1199,7 @@ class _ChatScreenState extends State<ChatScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   CustomText("offerLbl".translate(context),
-                      color: context.color.textDefaultColor
-                          .withValues(alpha: 0.5)),
+                      color: context.color.textDefaultColor.withOpacity(0.3)),
                   CustomText(
                     Constant.currencySymbol + widget.itemOfferPrice.toString(),
                     color: context.color.textDefaultColor,

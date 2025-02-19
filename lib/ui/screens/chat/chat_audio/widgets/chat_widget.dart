@@ -224,8 +224,7 @@ class ChatMessageState extends State<ChatMessage>
                             ? context.color.territoryColor.darken(45)
                             : context.color.secondaryColor.darken(45))
                         : (widget.senderId.toString() == HiveUtils.getUserId()
-                            ? context.color.territoryColor
-                                .withValues(alpha: 0.3)
+                            ? context.color.territoryColor.withOpacity(0.3)
                             : context.color.secondaryColor),
                     borderRadius: BorderRadius.circular(8)),
                 child: Wrap(

@@ -147,7 +147,7 @@ class UiUtils {
       placeholderBuilder: (context) {
         return Container(
             width: width,
-            color: context.color.territoryColor.withValues(alpha: 0.1),
+            color: context.color.territoryColor.withOpacity(0.1),
             height: height,
             alignment: AlignmentDirectional.center,
             child: SizedBox(
@@ -178,7 +178,7 @@ class UiUtils {
       placeholder: (context, url) {
         return Container(
             width: width,
-            color: context.color.territoryColor.withValues(alpha: 0.1),
+            color: context.color.territoryColor.withOpacity(0.1),
             height: height,
             alignment: AlignmentDirectional.center,
             child: SizedBox(
@@ -193,7 +193,7 @@ class UiUtils {
       errorWidget: (context, url, error) {
         return Container(
           width: width,
-          color: context.color.territoryColor.withValues(alpha: 0.1),
+          color: context.color.territoryColor.withOpacity(0.1),
           height: height,
           alignment: AlignmentDirectional.center,
           child: SizedBox(
@@ -608,7 +608,7 @@ class UiUtils {
 
 // Counting the perceptive luminance - human eye favors green color...
     double luminance =
-        (0.299 * color.r + 0.587 * color.g + 0.114 * color.b) / 255;
+        (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue) / 255;
 
     if (luminance > 0.5) {
       d = 0;
@@ -616,7 +616,7 @@ class UiUtils {
       d = 255;
     } // dark colors - white font
 
-    return Color.fromARGB(color.a.toInt(), d, d, d);
+    return Color.fromARGB(color.alpha, d, d, d);
   }
 
   static String formatTimeWithDateTime(DateTime dateTime, {bool is24 = true}) {

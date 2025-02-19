@@ -69,7 +69,7 @@ class ChatMessageHandler {
           child: Container(
         decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(7),
-            color: context.color.territoryColor.withValues(alpha: 0.3)),
+            color: context.color.territoryColor.withOpacity(0.3)),
         child: Padding(
           padding: const EdgeInsets.all(5.0),
           child: CustomText(formattedDate),

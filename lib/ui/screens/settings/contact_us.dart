@@ -155,9 +155,8 @@ class ContactUsState extends State<ContactUs> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: context.color.territoryColor.withValues(
-                alpha: .10000000149011612,
-              ),
+              color:
+                  context.color.territoryColor.withOpacity(.10000000149011612),
               borderRadius: BorderRadius.circular(10),
             ),
             child: FittedBox(
@@ -182,7 +181,7 @@ class ContactUsState extends State<ContactUs> {
                 border:
                     Border.all(color: context.color.borderColor, width: 1.5),
                 color: context.color.secondaryColor
-                    .withValues(alpha: 0.10000000149011612),
+                    .withOpacity(0.10000000149011612),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: FittedBox(
@@ -231,7 +230,7 @@ class _EmailSendWidgetState extends State<EmailSendWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white.withValues(alpha: 0.0),
+      backgroundColor: Colors.white.withOpacity(0),
       body: Center(
         child: Container(
           clipBehavior: Clip.antiAlias,
@@ -270,8 +269,8 @@ class _EmailSendWidgetState extends State<EmailSendWidget> {
                         },
                         child: Container(
                             decoration: BoxDecoration(
-                              color: context.color.territoryColor
-                                  .withValues(alpha: 0.0),
+                              color:
+                                  context.color.territoryColor.withOpacity(0),
                               shape: BoxShape.circle,
                             ),
                             width: 40,

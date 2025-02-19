@@ -46,8 +46,7 @@ class HomeSearchField extends StatelessWidget {
                     fillColor: Theme.of(context).colorScheme.secondaryColor,
                     hintText: "searchHintLbl".translate(context),
                     hintStyle: TextStyle(
-                        color: context.color.textDefaultColor
-                            .withValues(alpha: 0.5)),
+                        color: context.color.textDefaultColor.withOpacity(0.3)),
                     prefixIcon: buildSearchIcon(),
                     prefixIconConstraints:
                         const BoxConstraints(minHeight: 5, minWidth: 5),

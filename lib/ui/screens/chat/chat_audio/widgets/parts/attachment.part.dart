@@ -125,7 +125,7 @@ class _AttachmentMessageState extends State<AttachmentMessage> {
             width: 50,
             alignment: AlignmentDirectional.center,
             decoration: BoxDecoration(
-                color: context.color.secondaryColor.withValues(alpha: 0.064),
+                color: context.color.secondaryColor.withOpacity(0.064),
                 borderRadius: BorderRadius.circular(10),
                 border:
                     Border.all(color: context.color.borderColor, width: 1.5)),

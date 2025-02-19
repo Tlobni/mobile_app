@@ -317,7 +317,7 @@ class _ItemCardState extends State<ItemCard> {
                                         ? context.font.small
                                         : context.font.smaller,
                                     color: context.color.textDefaultColor
-                                        .withValues(alpha: 0.5),
+                                        .withOpacity(0.3),
                                     maxLines: 1,
                                   ),
                                 ),

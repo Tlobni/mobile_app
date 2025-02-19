@@ -37,7 +37,7 @@ class CustomFieldText extends CustomField {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: context.color.territoryColor.withValues(alpha: 0.1),
+                  color: context.color.territoryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: SizedBox(

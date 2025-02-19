@@ -216,14 +216,14 @@ class ItemHorizontalCard extends StatelessWidget {
                                       Icons.location_on_outlined,
                                       size: 15,
                                       color: context.color.textDefaultColor
-                                          .withValues(alpha: 0.5),
+                                          .withOpacity(0.3),
                                     ),
                                     Expanded(
                                         child: CustomText(
                                       item.address?.trim() ?? "",
                                       fontSize: context.font.smaller,
                                       color: context.color.textDefaultColor
-                                          .withValues(alpha: 0.5),
+                                          .withOpacity(0.3),
                                       maxLines: 1,
                                     ))
                                   ],

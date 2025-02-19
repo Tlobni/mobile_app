@@ -59,8 +59,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        color:
-                            context.color.forthColor.withValues(alpha: 0.102),
+                        color: context.color.forthColor.withOpacity(0.102),
                         elevation: 0,
                         height: 28,
                         minWidth: 64,

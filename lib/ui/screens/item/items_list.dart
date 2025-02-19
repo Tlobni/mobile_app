@@ -230,7 +230,7 @@ class ItemsListState extends State<ItemsList> {
                               color: !isList
                                   ? context.color.textDefaultColor
                                   : context.color.textDefaultColor
-                                      .withValues(alpha: 0.2)),
+                                      .withOpacity(0.2)),
                         ),
                       ),
                     ),
@@ -258,7 +258,7 @@ class ItemsListState extends State<ItemsList> {
                               color: isList
                                   ? context.color.textDefaultColor
                                   : context.color.textDefaultColor
-                                      .withValues(alpha: 0.2)),
+                                      .withOpacity(0.2)),
                         ),
                       ),
                     ),

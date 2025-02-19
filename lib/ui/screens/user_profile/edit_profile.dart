@@ -349,7 +349,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
             ),
           ),
           CupertinoSwitch(
-            activeTrackColor: context.color.territoryColor,
+            activeColor: context.color.territoryColor,
             value: isNotificationsEnabled,
             onChanged: (value) {
               isNotificationsEnabled = value;
@@ -385,7 +385,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                 fontSize: context.font.large,
               )),
           CupertinoSwitch(
-            activeTrackColor: context.color.territoryColor,
+            activeColor: context.color.territoryColor,
             value: isPersonalDetailShow,
             onChanged: (value) {
               isPersonalDetailShow = value;
@@ -504,7 +504,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
           child: Container(
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              color: context.color.territoryColor.withValues(alpha: 0.2),
+              color: context.color.territoryColor.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
             width: 106,

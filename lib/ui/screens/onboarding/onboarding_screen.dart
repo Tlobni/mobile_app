@@ -153,8 +153,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          color:
-                              context.color.forthColor.withValues(alpha: 0.102),
+                          color: context.color.forthColor.withOpacity(0.102),
                           elevation: 0,
                           height: 28,
                           minWidth: 64,
@@ -390,7 +389,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   : [
                                       BoxShadow(
                                           color: context.color.forthColor
-                                              .withValues(alpha: 0.8),
+                                              .withOpacity(0.8),
                                           blurRadius: 10,
                                           offset: const Offset(0, 4),
                                           spreadRadius: 1)
@@ -415,8 +414,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ? null
                       : [
                           BoxShadow(
-                            color: context.color.territoryColor
-                                .withValues(alpha: 0.3),
+                            color:
+                                context.color.territoryColor.withOpacity(0.3),
                             blurRadius: 20,
                             offset: const Offset(0, 8), /*spreadRadius: 1*/
                           )
@@ -662,7 +661,7 @@ class BottomCurvePainter extends CustomPainter {
     path.cubicTo(0, 0, 0, 0, 0, 0);
     canvas.drawShadow(
       path,
-      Colors.grey.withValues(alpha: 0.1),
+      Colors.grey.withOpacity(0.1),
       6.0, // Shadow radius
       true, // Whether to include the shape itself in the shadow calculation
     );

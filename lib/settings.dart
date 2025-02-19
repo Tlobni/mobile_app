@@ -30,7 +30,7 @@ class AppSettings {
   static const String androidPackageName = 'com.eclassify.wrteam';
   static const String shareAppText = "Share this App";
 
-  static const String demoUrl = "https://eclassify.wrteam.me";
+  static const String demoUrl = "http://127.0.0.1:8000";
 
   ///API Setting
 

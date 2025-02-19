@@ -86,8 +86,7 @@ class CustomFileField extends CustomField {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color:
-                          context.color.territoryColor.withValues(alpha: 0.1),
+                      color: context.color.territoryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: SizedBox(
@@ -159,8 +158,7 @@ class CustomFileField extends CustomField {
                       ),
                       CustomText(
                         "addFile".translate(context),
-                        color: context.color.textDefaultColor
-                            .withValues(alpha: 0.5),
+                        color: context.color.textDefaultColor.withOpacity(0.3),
                         fontSize: context.font.large,
                       ),
                     ],

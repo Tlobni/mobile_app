@@ -10,8 +10,8 @@ const Color territoryColor_ = Color(0xFF00B2CA);
 const Color forthColor_ = Color(0xffFA6E53);
 const Color _backgroundColor = primaryColor_; //here you can change if you need
 const Color textDarkColor = Color(0xFF000000);
-Color lightTextColor = const Color(0xFF000000).withValues(alpha: 0.5);
-Color widgetsBorderColorLight = const Color(0xffEEEEEE).withValues(alpha: 0.6);
+Color lightTextColor = const Color(0xFF000000).withOpacity(0.3);
+Color widgetsBorderColorLight = const Color(0xffEEEEEE).withOpacity(0.6);
 Color senderChatColor = const Color.fromARGB(255, 233, 233, 233).darken(22);
 
 ///Dark Theme Colors
@@ -23,7 +23,7 @@ Color deactivateColorLight = const Color(0xff7F7F7F);
 const Color forthColorDark = Color(0xffFA6E53);
 Color backgroundColorDark = primaryColorDark; //here you can change if you need
 const Color textColorDarkTheme = Color(0xffFDFDFD);
-Color lightTextColorDarkTheme = const Color(0xffFDFDFD).withValues(alpha: 0.3);
+Color lightTextColorDarkTheme = const Color(0xffFDFDFD).withOpacity(0.3);
 Color widgetsBorderColorDark = const Color(0x1aFDFDFD);
 //Color popUpColor = const Color(0xff02AD11);
 Color darkSenderChatColor =
@@ -81,7 +81,7 @@ extension ColorPrefs on ColorScheme {
 
   Color get borderColor => _getColor(brightness,
       lightColor: widgetsBorderColorLight,
-      darkColor: secondaryColorDark.withValues(alpha: 0.2));
+      darkColor: secondaryColorDark.withOpacity(0.2));
 
   Color get chatSenderColor => _getColor(brightness,
       lightColor: senderChatColor, darkColor: darkSenderChatColor);
@@ -101,8 +101,8 @@ extension ColorPrefs on ColorScheme {
       : Colors.grey.shade300;
 
   Color get shimmerContentColor => brightness == Brightness.light
-      ? Colors.white.withValues(alpha: 0.85)
-      : Colors.white.withValues(alpha: 0.7);
+      ? Colors.white.withOpacity(0.85)
+      : Colors.white.withOpacity(0.7);
 }
 
 // 10pt: Smaller

@@ -53,7 +53,7 @@ class NoInternet extends StatelessWidget {
                   onPressed: onRetry,
                   style: ButtonStyle(
                       overlayColor: WidgetStateProperty.all(
-                          context.color.territoryColor.withValues(alpha: 0.2))),
+                          context.color.territoryColor.withOpacity(0.2))),
                   child: CustomText(
                     "retry".translate(context),
                     color: context.color.territoryColor,

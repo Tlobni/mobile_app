@@ -205,7 +205,7 @@ class StatesScreenState extends State<StatesScreen> {
       shadowColor:
           context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark
               ? null
-              : context.color.textDefaultColor.withValues(alpha: 0.2),
+              : context.color.textDefaultColor.withOpacity(0.2),
       backgroundColor: context.color.backgroundColor,
     );
   }

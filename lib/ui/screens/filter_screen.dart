@@ -431,7 +431,7 @@ class FilterScreenState extends State<FilterScreen> {
                               )
                             : CustomText("allCities".translate(context),
                                 color: context.color.textDefaultColor
-                                    .withValues(alpha: 0.5)),
+                                    .withOpacity(0.3)),
                   ),
                 ),
               ],
@@ -488,7 +488,7 @@ class FilterScreenState extends State<FilterScreen> {
                             overflow: TextOverflow.ellipsis)
                         : CustomText("allInClassified".translate(context),
                             color: context.color.textDefaultColor
-                                .withValues(alpha: 0.5)),
+                                .withOpacity(0.3)),
                   ),
                 ),
                 Padding(
@@ -595,8 +595,7 @@ class FilterScreenState extends State<FilterScreen> {
                     borderSide: BorderSide(
                         color: context.color.borderColor.darken(30))),
                 labelStyle: TextStyle(
-                    color:
-                        context.color.textDefaultColor.withValues(alpha: 0.5)),
+                    color: context.color.textDefaultColor.withOpacity(0.3)),
                 hintText: "00",
                 label: CustomText(
                   minMax,
@@ -653,8 +652,8 @@ class FilterScreenState extends State<FilterScreen> {
                 Padding(
                     padding: const EdgeInsetsDirectional.only(start: 15.0),
                     child: CustomText(Constant.postedSince[index].status,
-                        color: context.color.textDefaultColor
-                            .withValues(alpha: 0.5))),
+                        color:
+                            context.color.textDefaultColor.withOpacity(0.3))),
                 Spacer(),
                 Padding(
                   padding: EdgeInsetsDirectional.only(end: 14.0),

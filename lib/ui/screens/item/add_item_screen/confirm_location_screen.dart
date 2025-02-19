@@ -442,8 +442,8 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
                       textColor: context.color.textDefaultColor,
                       buttonColor: context.color.secondaryColor,
                       border: BorderSide(
-                          color: context.color.textDefaultColor
-                              .withValues(alpha: 0.3),
+                          color:
+                              context.color.textDefaultColor.withOpacity(0.3),
                           width: 1.5),
                       radius: 5),
                 ),
@@ -579,7 +579,7 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
                                       height: 25,
                                       decoration: BoxDecoration(
                                         color: context.color.territoryColor
-                                            .withValues(alpha: 0.1),
+                                            .withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(5),
                                         border: Border.all(
                                             width: Constant.borderWidth,
@@ -745,8 +745,7 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
                   textAlign: TextAlign.center,
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: context.color.textDefaultColor
-                          .withValues(alpha: 0.5)),
+                      color: context.color.textDefaultColor.withOpacity(0.3)),
                   controller: controller,
                   cursorColor: context.color.territoryColor,
                   validator: (val) {
@@ -765,8 +764,8 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
                       hintText: hintText,
                       hintStyle: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: context.color.textDefaultColor
-                              .withValues(alpha: 0.5)),
+                          color:
+                              context.color.textDefaultColor.withOpacity(0.3)),
                       focusColor: context.color.territoryColor,
                       enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),

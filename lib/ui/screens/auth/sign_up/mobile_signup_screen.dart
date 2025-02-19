@@ -267,7 +267,7 @@ class MobileSignUpScreenState extends State<MobileSignUpScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    color: context.color.forthColor.withValues(alpha: 0.102),
+                    color: context.color.forthColor.withOpacity(0.102),
                     elevation: 0,
                     height: 28,
                     minWidth: 64,
@@ -393,8 +393,7 @@ class MobileSignUpScreenState extends State<MobileSignUpScreen> {
               border: context.watch<AppThemeCubit>().state.appTheme !=
                       AppTheme.dark
                   ? BorderSide(
-                      color:
-                          context.color.textDefaultColor.withValues(alpha: 0.5))
+                      color: context.color.textDefaultColor.withOpacity(0.3))
                   : null,
               textColor: textDarkColor, onPressed: () {
             context.read<AuthenticationCubit>().setData(
@@ -419,8 +418,7 @@ class MobileSignUpScreenState extends State<MobileSignUpScreen> {
               border: context.watch<AppThemeCubit>().state.appTheme !=
                       AppTheme.dark
                   ? BorderSide(
-                      color:
-                          context.color.textDefaultColor.withValues(alpha: 0.5))
+                      color: context.color.textDefaultColor.withOpacity(0.3))
                   : null,
               textColor: textDarkColor, onPressed: () {
             context.read<AuthenticationCubit>().setData(
@@ -443,7 +441,7 @@ class MobileSignUpScreenState extends State<MobileSignUpScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           CustomText("bySigningUpLoggingIn".translate(context),
-              color: context.color.textLightColor.withValues(alpha: 0.8),
+              color: context.color.textLightColor.withOpacity(0.8),
               fontSize: context.font.small,
               textAlign: TextAlign.center),
           const SizedBox(
@@ -476,7 +474,7 @@ class MobileSignUpScreenState extends State<MobileSignUpScreen> {
             ),
             CustomText(
               "andTxt".translate(context),
-              color: context.color.textLightColor.withValues(alpha: 0.8),
+              color: context.color.textLightColor.withOpacity(0.8),
               fontSize: context.font.small,
             ),
             const SizedBox(
@@ -573,7 +571,7 @@ class MobileSignUpScreenState extends State<MobileSignUpScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  color: context.color.forthColor.withValues(alpha: 0.102),
+                  color: context.color.forthColor.withOpacity(0.102),
                   elevation: 0,
                   height: 28,
                   minWidth: 64,
@@ -636,7 +634,7 @@ class MobileSignUpScreenState extends State<MobileSignUpScreen> {
                 context.read<AuthenticationCubit>().verify();
               },
               child: CustomText("resendOTP".translate(context)),
-              color: context.color.textColorDark.withValues(alpha: 0.7),
+              color: context.color.textColorDark.withOpacity(0.7),
             ),
           ),
           const SizedBox(

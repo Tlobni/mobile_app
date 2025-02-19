@@ -242,8 +242,7 @@ class _FeaturedAdsSubscriptionPlansItemState
                                   ? context.color.textLightColor.brighten(300)
                                   : context.color.territoryColor,
                           textColor: widget.modelList[selectedIndex!].isActive!
-                              ? context.color.textDefaultColor
-                                  .withValues(alpha: 0.5)
+                              ? context.color.textDefaultColor.withOpacity(0.3)
                               : context.color.secondaryColor,
                           buttonTitle: widget
                                       .modelList[selectedIndex!].finalPrice! >
@@ -320,8 +319,7 @@ class _FeaturedAdsSubscriptionPlansItemState
                       color: widget.modelList[index].isActive! ||
                               index == selectedIndex
                           ? context.color.territoryColor
-                          : context.color.textDefaultColor
-                              .withValues(alpha: 0.1),
+                          : context.color.textDefaultColor.withOpacity(0.1),
                       width: 1.5)),
               child: !widget.modelList[index].isActive!
                   ? adsWidget(index)
@@ -357,8 +355,7 @@ class _FeaturedAdsSubscriptionPlansItemState
                     '${widget.modelList[index].limit == "unlimited" ? "unlimitedLbl".translate(context) : widget.modelList[index].limit.toString()}\t${"adsLbl".translate(context)}\t\t·\t\t',
                     overflow: TextOverflow.ellipsis,
                     softWrap: true,
-                    color:
-                        context.color.textDefaultColor.withValues(alpha: 0.5),
+                    color: context.color.textDefaultColor.withOpacity(0.3),
                   ),
                   Flexible(
                     child: CustomText(
@@ -414,8 +411,7 @@ class _FeaturedAdsSubscriptionPlansItemState
                           ? "${"unlimitedLbl".translate(context)}\t${"adsLbl".translate(context)}\t\t·\t\t"
                           : '',
                       style: TextStyle(
-                        color: context.color.textDefaultColor
-                            .withValues(alpha: 0.5),
+                        color: context.color.textDefaultColor.withOpacity(0.3),
                       ),
                       children: [
                         if (widget.modelList[index].limit != "unlimited")
@@ -442,8 +438,8 @@ class _FeaturedAdsSubscriptionPlansItemState
                             ? "${"unlimitedLbl".translate(context)}\t${"days".translate(context)}"
                             : '',
                         style: TextStyle(
-                          color: context.color.textDefaultColor
-                              .withValues(alpha: 0.5),
+                          color:
+                              context.color.textDefaultColor.withOpacity(0.3),
                         ),
                         children: [
                           if (widget.modelList[index].duration != "unlimited")
@@ -525,8 +521,8 @@ class _FeaturedAdsSubscriptionPlansItemState
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(3),
-                          color: context.color.textDefaultColor
-                              .withValues(alpha: 0.1),
+                          color:
+                              context.color.textDefaultColor.withOpacity(0.1),
                         ),
                         height: 6,
                         width: 60,
@@ -598,7 +594,7 @@ class PaymentMethodTile extends StatelessWidget {
       trailing: isSelected
           ? Icon(Icons.check_circle, color: context.color.territoryColor)
           : Icon(Icons.radio_button_unchecked,
-              color: context.color.textDefaultColor.withValues(alpha: 0.5)),
+              color: context.color.textDefaultColor.withOpacity(0.3)),
       onTap: () => onSelect(gateway.type),
     );
   }

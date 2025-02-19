@@ -60,7 +60,7 @@ class _GalleryViewWidgetState extends State<GalleryViewWidget> {
                 memCacheWidth: 500,*/
                 errorWidget: (context, url, error) {
                   return Container(
-                    color: context.color.territoryColor.withValues(alpha: 0.1),
+                    color: context.color.territoryColor.withOpacity(0.1),
                     alignment: AlignmentDirectional.center,
                     child: SizedBox(
                       child: UiUtils.getSvg(

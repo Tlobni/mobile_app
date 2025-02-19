@@ -41,9 +41,7 @@ class CustomFieldDropdown extends CustomField {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: context.color.territoryColor.withValues(
-                    alpha: .1,
-                  ),
+                  color: context.color.territoryColor..withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
                     10,
                   ),
@@ -112,8 +110,7 @@ class CustomFieldDropdown extends CustomField {
                       isDense: true,
                       borderRadius: BorderRadius.circular(10),
                       style: TextStyle(
-                        color: context.color.textDefaultColor
-                            .withValues(alpha: 0.5),
+                        color: context.color.textDefaultColor.withOpacity(0.3),
                         fontSize: context.font.large,
                       ),
                       items: (parameters['values'] as List<dynamic>)

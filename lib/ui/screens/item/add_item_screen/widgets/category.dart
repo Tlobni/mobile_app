@@ -43,7 +43,7 @@ class CategoryCard extends StatelessWidget {
                 child: Container(
                   height: MediaQuery.of(context).size.height * 0.11, //94,
                   width: double.infinity,
-                  color: context.color.territoryColor.withValues(alpha: 0.1),
+                  color: context.color.territoryColor.withOpacity(0.1),
                   child: UiUtils.imageType(url,
                       fit: BoxFit.fill, color: context.color.territoryColor),
                 ),
@@ -53,7 +53,7 @@ class CategoryCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(18),
                 child: Container(
                   height: MediaQuery.of(context).size.height * 0.11, //94,
-                  color: context.color.territoryColor.withValues(alpha: 0.1),
+                  color: context.color.territoryColor.withOpacity(0.1),
                   child: Center(
                     child: SizedBox(
                       // color: Colors.blue,

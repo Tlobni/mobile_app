@@ -295,7 +295,7 @@ class _ItemListingSubscriptionPlansItemState
                                   : context.color.territoryColor,
                               textColor: widget.model.isActive!
                                   ? context.color.textDefaultColor
-                                      .withValues(alpha: 0.5)
+                                      .withOpacity(0.3)
                                   : context.color.secondaryColor,
                               buttonTitle: widget.model.isActive ?? false
                                   ? "purchased".translate(context)
@@ -349,7 +349,7 @@ class _ItemListingSubscriptionPlansItemState
                 child: CustomText(
                   widget.model.description!,
                   textAlign: TextAlign.start,
-                  color: context.color.textDefaultColor.withValues(alpha: 0.7),
+                  color: context.color.textDefaultColor.withOpacity(0.7),
                 ),
               ),
             ),
@@ -390,8 +390,7 @@ class _ItemListingSubscriptionPlansItemState
                   alignment: Alignment.centerLeft,
                   child: CustomText(
                     widget.model.description!,
-                    color:
-                        context.color.textDefaultColor.withValues(alpha: 0.7),
+                    color: context.color.textDefaultColor.withOpacity(0.7),
                     textAlign: TextAlign.start,
                   )),
             ),
@@ -515,8 +514,8 @@ class _ItemListingSubscriptionPlansItemState
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(3),
-                          color: context.color.textDefaultColor
-                              .withValues(alpha: 0.1),
+                          color:
+                              context.color.textDefaultColor.withOpacity(0.1),
                         ),
                         height: 6,
                         width: 60,
@@ -589,7 +588,7 @@ class PaymentMethodTile extends StatelessWidget {
       trailing: isSelected
           ? Icon(Icons.check_circle, color: context.color.territoryColor)
           : Icon(Icons.radio_button_unchecked,
-              color: context.color.textDefaultColor.withValues(alpha: 0.5)),
+              color: context.color.textDefaultColor.withOpacity(0.3)),
       onTap: () => onSelect(gateway.type),
     );
   }

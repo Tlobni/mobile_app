@@ -55,8 +55,7 @@ class CustomCheckboxField extends CustomField {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color:
-                          context.color.territoryColor.withValues(alpha: 0.1),
+                      color: context.color.territoryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: SizedBox(
@@ -128,7 +127,7 @@ class CustomCheckboxField extends CustomField {
                               ),
                               color: isChecked
                                   ? context.color.territoryColor
-                                      .withValues(alpha: 0.1)
+                                      .withOpacity(0.1)
                                   : context.color.secondaryColor,
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -154,7 +153,7 @@ class CustomCheckboxField extends CustomField {
                                     color: isChecked
                                         ? context.color.territoryColor
                                         : context.color.textDefaultColor
-                                            .withValues(alpha: 0.5),
+                                            .withOpacity(0.3),
                                   )
                                 ],
                               ),

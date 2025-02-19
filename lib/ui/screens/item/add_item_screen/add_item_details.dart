@@ -341,8 +341,8 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         capitalization: TextCapitalization.sentences,
                         hintText: "adTitleHere".translate(context),
                         hintTextStyle: TextStyle(
-                            color: context.color.textDefaultColor
-                                .withValues(alpha: 0.5),
+                            color:
+                                context.color.textDefaultColor.withOpacity(0.3),
                             fontSize: context.font.large),
                       ),
                       SizedBox(
@@ -369,8 +369,8 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         action: TextInputAction.next,
                         hintText: "adSlugHere".translate(context),
                         hintTextStyle: TextStyle(
-                            color: context.color.textDefaultColor
-                                .withValues(alpha: 0.5),
+                            color:
+                                context.color.textDefaultColor.withOpacity(0.3),
                             fontSize: context.font.large),
                       ),
                       SizedBox(
@@ -392,8 +392,8 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         minLine: 6,
 
                         hintTextStyle: TextStyle(
-                            color: context.color.textDefaultColor
-                                .withValues(alpha: 0.5),
+                            color:
+                                context.color.textDefaultColor.withOpacity(0.3),
                             fontSize: context.font.large),
                       ),
                       SizedBox(
@@ -464,8 +464,8 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         validator: CustomTextFieldValidator.nullCheck,
                         hintText: "00",
                         hintTextStyle: TextStyle(
-                            color: context.color.textDefaultColor
-                                .withValues(alpha: 0.5),
+                            color:
+                                context.color.textDefaultColor.withOpacity(0.3),
                             fontSize: context.font.large),
                       ),
                       SizedBox(
@@ -486,8 +486,8 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         validator: CustomTextFieldValidator.phoneNumber,
                         hintText: "9876543210",
                         hintTextStyle: TextStyle(
-                            color: context.color.textDefaultColor
-                                .withValues(alpha: 0.5),
+                            color:
+                                context.color.textDefaultColor.withOpacity(0.3),
                             fontSize: context.font.large),
                       ),
                       SizedBox(
@@ -505,8 +505,8 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         // isReadOnly: widget.properyDetails != null,
                         hintText: "http://example.com/video.mp4",
                         hintTextStyle: TextStyle(
-                            color: context.color.textDefaultColor
-                                .withValues(alpha: 0.5),
+                            color:
+                                context.color.textDefaultColor.withOpacity(0.3),
                             fontSize: context.font.large),
                       ),
                       SizedBox(
@@ -788,7 +788,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         },
         child: Container(
           decoration: BoxDecoration(
-              color: context.color.primaryColor.withValues(alpha: 0.7),
+              color: context.color.primaryColor.withOpacity(0.7),
               borderRadius: BorderRadius.circular(10)),
           child: Padding(
             padding: EdgeInsets.all(4.0),
@@ -815,7 +815,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
         child: DottedBorder(
-            color: context.color.textColorDark.withValues(alpha: 0.5),
+            color: context.color.textColorDark.withOpacity(0.3),
             borderType: BorderType.RRect,
             radius: const Radius.circular(10),
             child: Container(

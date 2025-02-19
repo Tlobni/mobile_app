@@ -312,7 +312,7 @@ class LoginScreenState extends State<SignUpMainScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    color: context.color.forthColor.withValues(alpha: 0.102),
+                    color: context.color.forthColor.withOpacity(0.102),
                     elevation: 0,
                     height: 28,
                     minWidth: 64,
@@ -394,8 +394,8 @@ class LoginScreenState extends State<SignUpMainScreen> {
                   border: context.watch<AppThemeCubit>().state.appTheme !=
                           AppTheme.dark
                       ? BorderSide(
-                          color: context.color.textDefaultColor
-                              .withValues(alpha: 0.5))
+                          color:
+                              context.color.textDefaultColor.withOpacity(0.3))
                       : null,
                   textColor: textDarkColor, onPressed: () {
                 context.read<AuthenticationCubit>().setData(
@@ -421,8 +421,8 @@ class LoginScreenState extends State<SignUpMainScreen> {
                   border: context.watch<AppThemeCubit>().state.appTheme !=
                           AppTheme.dark
                       ? BorderSide(
-                          color: context.color.textDefaultColor
-                              .withValues(alpha: 0.5))
+                          color:
+                              context.color.textDefaultColor.withOpacity(0.3))
                       : null,
                   textColor: textDarkColor, onPressed: () {
                 context.read<AuthenticationCubit>().setData(
@@ -450,7 +450,7 @@ class LoginScreenState extends State<SignUpMainScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           CustomText("bySigningUpLoggingIn".translate(context),
-              color: context.color.textLightColor.withValues(alpha: 0.8),
+              color: context.color.textLightColor.withOpacity(0.8),
               fontSize: context.font.small,
               textAlign: TextAlign.center),
           const SizedBox(
@@ -474,7 +474,7 @@ class LoginScreenState extends State<SignUpMainScreen> {
             ),
             CustomText(
               "andTxt".translate(context),
-              color: context.color.textLightColor.withValues(alpha: 0.8),
+              color: context.color.textLightColor.withOpacity(0.8),
               fontSize: context.font.small,
             ),
             const SizedBox(

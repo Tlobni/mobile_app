@@ -6,19 +6,19 @@ import 'package:eClassify/utils/extensions/extensions.dart';
 import 'package:eClassify/utils/helper_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
+// import 'package:flutter_stripe/flutter_stripe.dart';
 
 class StripeService {
   // static BuildContext? currContext;
   static String paymentIntentSuccessResponse = "succeeded";
 
   static void initStripe(String? stripeId, String? stripeMode) async {
-    if (AppSettings.stripeStatus == 1) {
-      Stripe.publishableKey = stripeId ?? '';
-      Stripe.merchantIdentifier = 'merchant.flutter.stripe.test';
-      Stripe.urlScheme = 'flutterstripe';
-      await Stripe.instance.applySettings();
-    }
+    // if (AppSettings.stripeStatus == 1) {
+    //   Stripe.publishableKey = stripeId ?? '';
+    //   Stripe.merchantIdentifier = 'merchant.flutter.stripe.test';
+    //   Stripe.urlScheme = 'flutterstripe';
+    //   await Stripe.instance.applySettings();
+    // }
   }
 
   static dynamic payWithPaymentSheet({
@@ -32,21 +32,21 @@ class StripeService {
     try {
       // currContext = bcontext;
       //setting up Payment Sheet
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: clientSecret,
-          style: context.read<AppThemeCubit>().state.appTheme == AppTheme.dark
-              ? ThemeMode.dark
-              : ThemeMode.light,
-          billingDetailsCollectionConfiguration:
-              const BillingDetailsCollectionConfiguration(
-                  address: AddressCollectionMode.full,
-                  email: CollectionMode.always,
-                  name: CollectionMode.always,
-                  phone: CollectionMode.always),
-          merchantDisplayName: merchantDisplayName,
-        ),
-      );
+      // await Stripe.instance.initPaymentSheet(
+      //   paymentSheetParameters: SetupPaymentSheetParameters(
+      //     paymentIntentClientSecret: clientSecret,
+      //     style: context.read<AppThemeCubit>().state.appTheme == AppTheme.dark
+      //         ? ThemeMode.dark
+      //         : ThemeMode.light,
+      //     billingDetailsCollectionConfiguration:
+      //         const BillingDetailsCollectionConfiguration(
+      //             address: AddressCollectionMode.full,
+      //             email: CollectionMode.always,
+      //             name: CollectionMode.always,
+      //             phone: CollectionMode.always),
+      //     merchantDisplayName: merchantDisplayName,
+      //   ),
+      // );
 
       //open payment sheet
       displayPaymentSheet(context);
@@ -57,7 +57,7 @@ class StripeService {
 
   static void displayPaymentSheet(BuildContext context) async {
     try {
-      await Stripe.instance.presentPaymentSheet();
+      // await Stripe.instance.presentPaymentSheet();
 
       HelperUtils.showSnackBarMessage(
           Constant.navigatorKey.currentContext!,
@@ -67,13 +67,13 @@ class StripeService {
         Navigator.pop(Constant.navigatorKey.currentContext!);
       });
     } on Exception catch (e) {
-      if (e is StripeException) {
-        HelperUtils.showSnackBarMessage(Constant.navigatorKey.currentContext!,
-            'Error from Stripe: ${e.error.localizedMessage}');
-      } else {
-        HelperUtils.showSnackBarMessage(
-            Constant.navigatorKey.currentContext!, 'Unforeseen error: ${e}');
-      }
+      // if (e is StripeException) {
+      //   HelperUtils.showSnackBarMessage(Constant.navigatorKey.currentContext!,
+      //       'Error from Stripe: ${e.error.localizedMessage}');
+      // } else {
+      //   HelperUtils.showSnackBarMessage(
+      //       Constant.navigatorKey.currentContext!, 'Unforeseen error: ${e}');
+      // }
     }
   }
 

@@ -164,8 +164,7 @@ class _BlogsScreenState extends State<BlogsScreen> {
                         padding: const EdgeInsetsDirectional.fromSTEB(
                             12.0, 12, 12, 6),
                         child: CustomText(blog.title ?? "",
-                            color: context.color.textColorDark
-                                .withValues(alpha: 0.5),
+                            color: context.color.textColorDark.withOpacity(0.3),
                             fontSize: context.font.normal),
                       )
                     ]))));

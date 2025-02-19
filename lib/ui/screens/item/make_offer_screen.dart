@@ -64,7 +64,7 @@ class _MakeAnOfferItemScreenState extends State<MakeAnOfferItemScreen> {
                 text: TextSpan(
                   text: "sellerPrice".translate(context),
                   style: TextStyle(
-                      color: context.color.textDefaultColor.withValues(alpha: 0.5),
+                      color: context.color.textDefaultColor.withOpacity(0.3),
                       fontSize: 16),
                   children: <TextSpan>[
                     TextSpan(
@@ -90,7 +90,7 @@ class _MakeAnOfferItemScreenState extends State<MakeAnOfferItemScreen> {
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 22,
-                      color: context.color.textDefaultColor.withValues(alpha: 0.5)),
+                      color: context.color.textDefaultColor.withOpacity(0.3)),
                   controller: _makeAnOffermessageController,
                   cursorColor: context.color.territoryColor,
                   validator: (val) {
@@ -110,7 +110,7 @@ class _MakeAnOfferItemScreenState extends State<MakeAnOfferItemScreen> {
                           fontWeight: FontWeight.bold,
                           fontSize: 22,
                           color:
-                              context.color.textDefaultColor.withValues(alpha: 0.3)),
+                              context.color.textDefaultColor.withOpacity(0.3)),
                       focusColor: context.color.territoryColor,
                       enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),

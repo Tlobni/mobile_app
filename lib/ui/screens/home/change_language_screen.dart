@@ -75,7 +75,7 @@ class LanguagesListScreen extends StatelessWidget {
               Color color = (language as LanguageLoader).language['code'] ==
                       setting[index]['code']
                   ? context.color.territoryColor
-                  : context.color.textLightColor.withValues(alpha: 0.03);
+                  : context.color.textLightColor..withOpacity(0.03);
 
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -118,7 +118,7 @@ class LanguagesListScreen extends StatelessWidget {
                           setting[index]['name_in_english'],
                           color: (language).language['code'] ==
                                   setting[index]['code']
-                              ? context.color.buttonColor.withValues(alpha: 0.7)
+                              ? context.color.buttonColor.withOpacity(0.7)
                               : context.color.textColorDark,
                           fontSize: context.font.small,
                         )

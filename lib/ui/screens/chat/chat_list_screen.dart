@@ -104,7 +104,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                 labelColor: context.color.textDefaultColor,
                 // Selected tab text color
                 unselectedLabelColor:
-                    context.color.textDefaultColor.withValues(alpha: 0.5),
+                    context.color.textDefaultColor.withOpacity(0.3),
                 // Unselected tab text color
                 labelStyle:
                     TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -117,7 +117,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                 height: 0, // Set height to 0 to make it full width
                 thickness: 0.5, // Divider thickness
                 color: context.color.textDefaultColor
-                    .withValues(alpha: 0.2), // Divider color
+                    .withOpacity(0.2), // Divider color
               ),
             ],
           ),

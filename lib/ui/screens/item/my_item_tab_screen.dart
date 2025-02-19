@@ -182,19 +182,19 @@ class _MyItemTabState extends CloudState<MyItemTab> {
   Color _getStatusColor(String? status) {
     switch (status) {
       case "review":
-        return pendingButtonColor.withValues(alpha: 0.1);
+        return pendingButtonColor.withOpacity(0.1);
       case "active" || "approved":
-        return activateButtonColor.withValues(alpha: 0.1);
+        return activateButtonColor.withOpacity(0.1);
       case "inactive":
-        return deactivateButtonColor.withValues(alpha: 0.1);
+        return deactivateButtonColor.withOpacity(0.1);
       case "sold out":
-        return soldOutButtonColor.withValues(alpha: 0.1);
+        return soldOutButtonColor.withOpacity(0.1);
       case "rejected":
-        return deactivateButtonColor.withValues(alpha: 0.1);
+        return deactivateButtonColor.withOpacity(0.1);
       case "expired":
-        return deactivateButtonColor.withValues(alpha: 0.1);
+        return deactivateButtonColor.withOpacity(0.1);
       default:
-        return context.color.territoryColor.withValues(alpha: 0.1);
+        return context.color.territoryColor.withOpacity(0.1);
     }
   }
 
@@ -391,7 +391,7 @@ class _MyItemTabState extends CloudState<MyItemTab> {
                                                         context.font.small,
                                                     color: context
                                                         .color.textColorDark
-                                                        .withValues(alpha: 0.5),
+                                                        .withOpacity(0.3),
                                                   )
                                                 ],
                                               ),
@@ -421,7 +421,7 @@ class _MyItemTabState extends CloudState<MyItemTab> {
                                                         context.font.small,
                                                     color: context
                                                         .color.textColorDark
-                                                        .withValues(alpha: 0.5),
+                                                        .withOpacity(0.3),
                                                   )
                                                 ],
                                               ),

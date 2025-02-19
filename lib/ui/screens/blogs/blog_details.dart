@@ -63,7 +63,7 @@ class BlogDetails extends StatelessWidget {
               ),
               CustomText(
                 blog.createdAt.toString().formatDate(),
-                color: context.color.textColorDark.withValues(alpha: 0.5),
+                color: context.color.textColorDark.withOpacity(0.3),
                 fontSize: context.font.smaller,
               ),
               const SizedBox(
@@ -79,7 +79,7 @@ class BlogDetails extends StatelessWidget {
               ),
               HtmlWidget(blog.description ?? "")
               //Html(data: blog.description ?? "")
-              //CustomText(stripHtmlTags(blog.description ?? "").trim()).color(context.color.textColorDark.withValues(alpha: 0.5))
+              //CustomText(stripHtmlTags(blog.description ?? "").trim()).color(context.color.textColorDark.withOpacity(0.3))
               /* Html(
                 data: blog.description ?? "",
                 shrinkWrap: true,

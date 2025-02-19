@@ -21,7 +21,7 @@ final appThemeData = {
       thumbColor: const MaterialStatePropertyAll(territoryColor_),
       trackColor: MaterialStateProperty.resolveWith((states) {
         if (states.contains(MaterialState.selected)) {
-          return territoryColor_.withValues(alpha: 0.3);
+          return territoryColor_.withOpacity(0.3);
         }
         return primaryColorDark;
       }),
@@ -41,16 +41,16 @@ final appThemeData = {
       cursorColor: territoryColorDark,
     ),
     colorScheme: ColorScheme.fromSeed(
-        error: errorMessageColor.withValues(alpha: 0.7),
+        error: errorMessageColor.withOpacity(0.7),
         seedColor: territoryColorDark,
         brightness: Brightness.dark),
     switchTheme: SwitchThemeData(
         thumbColor: const MaterialStatePropertyAll(territoryColor_),
         trackColor: MaterialStateProperty.resolveWith((states) {
           if (states.contains(MaterialState.selected)) {
-            return territoryColor_.withValues(alpha: 0.3);
+            return territoryColor_.withOpacity(0.3);
           }
-          return primaryColor_.withValues(alpha: 0.2);
+          return primaryColor_.withOpacity(0.2);
         })),
   )
 };
