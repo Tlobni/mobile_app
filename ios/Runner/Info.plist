@@ -29,7 +29,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>app-1-6343732161-ios-5cc58a2dcfbbb66b2b5d40</string>
+				<string>app-1-484917210911-ios-c603d53f5349e5eedb4a2a</string>
 			</array>
 		</dict>
 		<dict>
@@ -41,13 +41,13 @@
 			</array>
 		</dict>
 		<dict>
-        			<key>CFBundleTypeRole</key>
-        			<string>Editor</string>
-        			<key>CFBundleURLSchemes</key>
-        			<array>
-        				<string>eclassify</string>
-        			</array>
-        		</dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>tlobni</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
@@ -55,6 +55,8 @@
 	<false/>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<key>GADNativeAdValidatorEnabled</key>
+	<false/>
 	<key>GIDClientID</key>
 	<string>6343732161-2d2p8ap7p3t8telagot152vrnotuptav.apps.googleusercontent.com</string>
 	<key>LSApplicationQueriesSchemes</key>
@@ -68,6 +70,13 @@
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<true/>
+	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>This app requires access to the camera for adding ads images and user's profile picture.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
@@ -76,6 +85,8 @@
 	<string>This app uses your location to display relevant local ads and listings items. For example, it shows the geographic distribution of ads in your area to help you find nearby ads or choose optimal locations for your own ads.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We are using microphone to send audio messages in chat functionality</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>We need access to add files to your photo library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app requires access to the photo library because we upload profile picture and ads images</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
@@ -104,16 +115,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>GADNativeAdValidatorEnabled</key>
-    <false/>
-    <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>We need access to add files to your photo library.</string>
-    <key>NSAppTransportSecurity</key>
-    	<dict>
-    		<key>NSAllowsArbitraryLoads</key>
-    		<true/>
-    		<key>NSAllowsArbitraryLoadsInWebContent</key>
-    		<true/>
-    	</dict>
 </dict>
 </plist>

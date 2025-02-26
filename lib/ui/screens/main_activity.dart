@@ -1,6 +1,7 @@
 // ignore_for_file: invalid_use_of_protected_member
 
 import 'dart:async';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:app_links/app_links.dart';
@@ -72,12 +73,24 @@ class MainActivity extends StatefulWidget {
   State<MainActivity> createState() => MainActivityState();
 
   static Route route(RouteSettings routeSettings) {
-    Map arguments = routeSettings.arguments as Map;
-    return BlurredRouter(
+    final arg = routeSettings.arguments;
+    // Safely handle the case when `arg` is null or not a Map
+    if (arg is Map) {
+      return BlurredRouter(
         builder: (_) => MainActivity(
-              from: arguments['from'] as String,
-              itemSlug: arguments['slug'] as String?,
-            ));
+          from: arg['from'] as String,
+          itemSlug: arg['slug'] as String?,
+        ),
+      );
+    } else {
+      // Provide defaults or handle it if no arguments were passed
+      return BlurredRouter(
+        builder: (_) => MainActivity(
+          from: '', // or some default
+          itemSlug: null, // or some default
+        ),
+      );
+    }
   }
 }
 
@@ -386,6 +399,9 @@ class MainActivityState extends State<MainActivity>
   }
 
   BottomAppBar bottomBar() {
+    final isProvider = HiveUtils.getUserType() == "Expert" ||
+        HiveUtils.getUserType() == "Business";
+    log('isProvider: $isProvider');
     return BottomAppBar(
       color: context.color.secondaryColor,
       shape: const CircularNotchedRectangle(),
@@ -400,41 +416,44 @@ class MainActivityState extends State<MainActivity>
               buildBottomNavigationbarItem(1, AppIcons.chatNav,
                   AppIcons.chatNavActive, "chat".translate(context)),
               BlocListener<FetchUserPackageLimitCubit,
-                      FetchUserPackageLimitState>(
-                  listener: (context, state) {
-                    if (state is FetchUserPackageLimitFailure) {
-                      UiUtils.noPackageAvailableDialog(context);
-                    }
-                    if (state is FetchUserPackageLimitInSuccess) {
-                      Navigator.pushNamed(context, Routes.selectCategoryScreen,
-                          arguments: <String, dynamic>{});
-                    }
-                  },
-                  child: Transform(
-                    transform: Matrix4.identity()..translate(0.toDouble(), -20),
-                    child: InkWell(
-                      onTap: () async {
-                        //TODO:TEMP
-                        UiUtils.checkUser(
-                            onNotGuest: () {
-                              context
-                                  .read<FetchUserPackageLimitCubit>()
-                                  .fetchUserPackageLimit(
-                                      packageType: "item_listing");
-                            },
-                            context: context);
-                      },
-                      child: SizedBox(
-                        width: 53,
-                        height: 58,
-                        child: svgLoaded == false
-                            ? Container()
-                            : SvgPicture.string(
-                                svgEdit.toSVGString() ?? "",
-                              ),
-                      ),
-                    ),
-                  )),
+                  FetchUserPackageLimitState>(
+                listener: (context, state) {
+                  if (state is FetchUserPackageLimitFailure) {
+                    UiUtils.noPackageAvailableDialog(context);
+                  }
+                  if (state is FetchUserPackageLimitInSuccess) {
+                    Navigator.pushNamed(context, Routes.selectCategoryScreen,
+                        arguments: <String, dynamic>{});
+                  }
+                },
+                child: Transform(
+                  transform: Matrix4.identity()..translate(0.toDouble(), -20),
+                  child: isProvider
+                      ? InkWell(
+                          onTap: () async {
+                            //TODO:TEMP
+                            UiUtils.checkUser(
+                                onNotGuest: () {
+                                  context
+                                      .read<FetchUserPackageLimitCubit>()
+                                      .fetchUserPackageLimit(
+                                          packageType: "item_listing");
+                                },
+                                context: context);
+                          },
+                          child: SizedBox(
+                            width: 53,
+                            height: 58,
+                            child: svgLoaded == false
+                                ? Container()
+                                : SvgPicture.string(
+                                    svgEdit.toSVGString() ?? "",
+                                  ),
+                          ),
+                        )
+                      : SizedBox(),
+                ),
+              ),
               buildBottomNavigationbarItem(2, AppIcons.myAdsNav,
                   AppIcons.myAdsNavActive, "myAdsTab".translate(context)),
               buildBottomNavigationbarItem(3, AppIcons.profileNav,
@@ -462,16 +481,23 @@ class MainActivityState extends State<MainActivity>
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               if (currentTab == index) ...{
-                UiUtils.getSvg(activeSvg),
+                UiUtils.getSvg(
+                  activeSvg,
+                  color: context.color.territoryColor,
+                ),
               } else ...{
-                UiUtils.getSvg(svgImage,
-                    color: context.color.textLightColor.darken(30)),
+                UiUtils.getSvg(
+                  svgImage,
+                  color: context.color.textLightColor.darken(30),
+                ),
               },
-              CustomText(title,
-                  textAlign: TextAlign.center,
-                  color: currentTab == index
-                      ? context.color.textDefaultColor
-                      : context.color.textLightColor.darken(30)),
+              CustomText(
+                title,
+                textAlign: TextAlign.center,
+                color: currentTab == index
+                    ? context.color.textDefaultColor
+                    : context.color.textLightColor.darken(30),
+              ),
             ],
           ),
         ),

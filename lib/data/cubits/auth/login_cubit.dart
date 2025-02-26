@@ -1,5 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:eClassify/data/cubits/auth/authentication_cubit.dart';
@@ -49,79 +50,60 @@ class LoginCubit extends Cubit<LoginState> {
     return token;
   }
 
-  void login({
-    String? phoneNumber,
-    required String firebaseUserId,
-    required String type,
-    required UserCredential credential,
-    String? countryCode,
+  // login_cubit.dart
+  void loginEmailAndPassword({
+    required String email,
+    required String password,
   }) async {
     try {
       emit(LoginInProgress());
+      // 1. Firebase Authentication
+      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: email.trim(), password: password.trim());
 
-      String? token = await () async {
-        try {
-          return await FirebaseMessaging.instance.getToken();
-        } catch (_) {
-          return '';
-        }
-      }();
+      // 2. Backend Sanctum Login
+      final response =
+          await _authRepository.login(email.trim(), password.trim());
 
-      FirebaseAuth firebaseAuth = FirebaseAuth.instance;
+      HiveUtils.setJWT(response['token']!);
+      log('response: ${response['user']['roles']}');
+      log('response: ${response['user']['roles'].first}');
 
-      User? updatedUser;
-      if (type == AuthenticationType.apple.name) {
-        updatedUser = firebaseAuth.currentUser;
-        if (updatedUser != null) {
-          print("Updated Display Name: ${updatedUser.displayName}");
-        }
-        await credential.user!.reload();
-      }
+      // Store token
+      HiveUtils.setUserData({
+        'id': response['user']['id'],
+        'name': response['user']['name'],
+        'email': response['user']['email'],
+        'mobile': response['mobile'],
+        'profile': response['profile'],
+        'type': response['user']['roles'][0]['name'],
+        'firebaseId': response['firebase_id'],
+        'fcmId': response['fcm_id'],
+        'notification': response['notification'],
+        'address': response['address'],
+        'businessName': response['business_name'],
+        'categories': response['categories'],
+        'phone': response['phone'],
+        'gender': response['gender'],
+        'location': response['location'],
+        'countryCode': response['country_code'],
+        'isProfileCompleted': response['isProfileCompleted'] ?? false,
+        'showPersonalDetails': response['show_personal_details'],
+        'autoApproveItem': true,
+        'isVerified': true,
+      });
 
-      Map<String, dynamic> result = await _authRepository.numberLoginWithApi(
-        phone: phoneNumber ?? credential.user!.providerData[0].phoneNumber,
-        type: type,
-        uid: firebaseUserId,
-        fcmId: token,
-        email: credential.user!.providerData[0].email,
-        name: type == AuthenticationType.apple.name
-            ? updatedUser?.displayName ??
-                credential.user!.displayName ??
-                credential.user!.providerData[0].displayName
-            : credential.user!.providerData[0].displayName,
-        profile: credential.user!.providerData[0].photoURL,
-        countryCode: countryCode,
-      );
+      HiveUtils.setUserIsAuthenticated(true);
 
-      // Storing data to local database {HIVE}
-      HiveUtils.setJWT(result['token']);
+      log('STORED TOKEN: ${HiveUtils.getJWT()}');
 
-      if ((result['data']['name'] == "" || result['data']['name'] == null) ||
-          (result['data']['email'] == "" || result['data']['email'] == null)) {
-        HiveUtils.setProfileNotCompleted();
-
-        var data = result['data'];
-        // data['countryCode'] = countryCode;
-        HiveUtils.setUserData(data);
-        emit(LoginSuccess(
-          apiResponse: Map<String, dynamic>.from(result['data']),
-          isProfileCompleted: false,
-          credential: credential,
-        ));
-      } else {
-        var data = result['data'];
-        // data['countryCode'] = countryCode;
-        HiveUtils.setUserData(data);
-        emit(LoginSuccess(
-          apiResponse: Map<String, dynamic>.from(result['data']),
-          isProfileCompleted: true,
-          credential: credential,
-        ));
-      }
+      emit(LoginSuccess(
+        isProfileCompleted: true,
+        credential: credential,
+        apiResponse: response,
+      ));
     } catch (e) {
-      if (e is ApiException) {}
-
-      emit(LoginFailure(e));
+      emit(LoginFailure(e.toString()));
     }
   }
 }

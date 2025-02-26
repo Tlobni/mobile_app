@@ -157,7 +157,6 @@ class MobileSignUpScreenState extends State<MobileSignUpScreen> {
   @override
   Widget build(BuildContext context) {
     size = MediaQuery.of(context).size;
-
     return AnnotatedRegion(
       value: UiUtils.getSystemUiOverlayStyle(
         context: context,

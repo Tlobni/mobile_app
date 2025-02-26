@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 ///This color format is different, isn't it? .You can use hex colors here also but you have to remove '#' symbol and add 0xff instead.
 const Color primaryColor_ = Color(0xFFF6F5FA);
 const Color secondaryColor_ = Color(0xFFFFFFFF);
-const Color territoryColor_ = Color(0xFF00B2CA);
+const Color territoryColor_ = Color(0xFF08213e);
 const Color forthColor_ = Color(0xffFA6E53);
 const Color _backgroundColor = primaryColor_; //here you can change if you need
 const Color textDarkColor = Color(0xFF000000);
@@ -17,7 +17,7 @@ Color senderChatColor = const Color.fromARGB(255, 233, 233, 233).darken(22);
 ///Dark Theme Colors
 Color primaryColorDark = const Color(0xff121212);
 Color secondaryColorDark = const Color(0xff1C1C1C).brighten(5);
-const Color territoryColorDark = Color(0xff00B2CA);
+const Color territoryColorDark = Color(0xFF08213e);
 Color deactivateColorLight = const Color(0xff7F7F7F);
 
 const Color forthColorDark = Color(0xffFA6E53);
@@ -32,7 +32,7 @@ Color darkSenderChatColor =
 ///Messages Color
 const Color errorMessageColor =
     Color.fromARGB(255, 166, 4, 4); // Color(0xffeb5479)
-const Color successMessageColor = Color(0xff00B2CA);
+const Color successMessageColor = Color(0xFF08213e);
 const Color warningMessageColor = Color(0xFFC2AF6F);
 
 //status button color

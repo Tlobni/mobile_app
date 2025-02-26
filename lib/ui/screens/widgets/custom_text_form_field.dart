@@ -40,6 +40,8 @@ class CustomTextFormField extends StatelessWidget {
   final TextCapitalization? capitalization;
   final bool? isRequired;
   final bool? isMobileRequired;
+  final bool? readOnly;
+  final VoidCallback? onTap;
 
   const CustomTextFormField({
     super.key,
@@ -66,6 +68,8 @@ class CustomTextFormField extends StatelessWidget {
     this.capitalization,
     this.isRequired,
     this.isMobileRequired = true,
+    this.readOnly,
+    this.onTap,
   });
 
   @override
@@ -80,7 +84,7 @@ class CustomTextFormField extends StatelessWidget {
       },
       keyboardAppearance: Brightness.light,
       textCapitalization: capitalization ?? TextCapitalization.none,
-      readOnly: isReadOnly ?? false,
+      readOnly: readOnly ?? false,
       style: TextStyle(
           fontSize: context.font.large, color: context.color.textDefaultColor),
       minLines: minLine ?? 1,
@@ -171,6 +175,7 @@ class CustomTextFormField extends StatelessWidget {
               borderSide: BorderSide(
                   width: 1.5, color: borderColor ?? context.color.borderColor),
               borderRadius: BorderRadius.circular(10))),
+      onTap: onTap,
     );
   }
 }

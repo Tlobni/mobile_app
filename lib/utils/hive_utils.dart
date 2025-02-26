@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:eClassify/app/app_theme.dart';
 import 'package:eClassify/app/routes.dart';
 import 'package:eClassify/data/model/user_model.dart';
@@ -288,6 +290,17 @@ class HiveUtils {
         }
       },
     );
+  }
+
+  static String getUserType() {
+    if (!isUserAuthenticated()) {
+      return "Client"; // Default to Client for non-authenticated users
+    }
+    return Hive.box(HiveKeys.userDetailsBox).get("type") ?? "Client";
+  }
+
+  static bool isProvider() {
+    return getUserType() == "Provider";
   }
 
   static void clear() async {

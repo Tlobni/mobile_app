@@ -112,6 +112,20 @@ class AuthenticationCubit extends Cubit<AuthenticationState> {
     mMultiAuthentication.requestVerification();
   }
 
+  void setSignUpSuccess(
+      UserCredential userCredential, EmailLoginPayload payload) {
+    // If you want to store type & payload internally, you can do so here.
+    type = AuthenticationType.email;
+    this.payload = payload;
+
+    // Directly emit success (no second login).
+    emit(AuthenticationSuccess(
+      AuthenticationType.email,
+      userCredential,
+      payload,
+    ));
+  }
+
   void signOut() {
     if (state is AuthenticationSuccess) {
       final isGoogleLogin =

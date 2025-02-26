@@ -199,7 +199,7 @@ class _SliderWidgetState extends State<SliderWidget>
     super.dispose();
     _bannerIndex.dispose();
     _timer.cancel();
-    _pageController.dispose(); // Dispose the PageController
+    _pageController.dispose();
   }
 
   void _startAutoSlider() {
@@ -211,11 +211,13 @@ class _SliderWidgetState extends State<SliderWidget>
       } else {
         _bannerIndex.value = 0;
       }
-      _pageController.animateToPage(
-        _bannerIndex.value,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
+      if (_pageController.hasClients) {
+        _pageController.animateToPage(
+          _bannerIndex.value,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
     });
   }
 

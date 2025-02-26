@@ -186,13 +186,20 @@ class SplashScreenState extends State<SplashScreen>
               },
               child: AnnotatedRegion(
                 value: SystemUiOverlayStyle(
-                  statusBarColor: context.color.territoryColor,
+                  statusBarColor: context.color.primaryColor,
                 ),
                 child: Scaffold(
-                  backgroundColor: context.color.territoryColor,
+                  backgroundColor: context.color.primaryColor,
                   bottomNavigationBar: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10.0),
-                    child: UiUtils.getSvg(AppIcons.companyLogo),
+                    child: Center(
+                      child: Image.asset(
+                        "assets/images/tlobni-logo.png",
+                        width: 250,
+                        height: 250,
+                      ),
+                    ),
+                    // child: UiUtils.getSvg(AppIcons.companyLogo),
                   ),
                   body: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -205,7 +212,7 @@ class SplashScreenState extends State<SplashScreen>
                           child: SizedBox(
                             width: 150,
                             height: 150,
-                            child: UiUtils.getSvg(AppIcons.splashLogo),
+                            // child: UiUtils.getSvg(AppIcons.splashLogo),
                           ),
                         ),
                       ),
@@ -213,19 +220,19 @@ class SplashScreenState extends State<SplashScreen>
                         padding: EdgeInsets.only(top: 10.0),
                         child: Column(
                           children: [
-                            CustomText(
-                              AppSettings.applicationName,
-                              fontSize: context.font.xxLarge,
-                              color: context.color.secondaryColor,
-                              textAlign: TextAlign.center,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            CustomText(
-                              "\"${"buyAndSellAnything".translate(context)}\"",
-                              fontSize: context.font.smaller,
-                              color: context.color.secondaryColor,
-                              textAlign: TextAlign.center,
-                            )
+                            // CustomText(
+                            //   AppSettings.applicationName,
+                            //   fontSize: context.font.xxLarge,
+                            //   color: context.color.secondaryColor,
+                            //   textAlign: TextAlign.center,
+                            //   fontWeight: FontWeight.w600,
+                            // ),
+                            // CustomText(
+                            //   "\"${"buyAndSellAnything".translate(context)}\"",
+                            //   fontSize: context.font.smaller,
+                            //   color: context.color.secondaryColor,
+                            //   textAlign: TextAlign.center,
+                            // )
                           ],
                         ),
                       ),

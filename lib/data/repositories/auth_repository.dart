@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:eClassify/utils/api.dart';
@@ -6,96 +7,147 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthRepository {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  static int? forceResendingToken;
 
-  Future<Map<String, dynamic>> numberLoginWithApi(
-      {String? phone,
-      required String uid,
-      required String type,
-      String? fcmId,
-      String? email,
-      String? name,
-      String? profile,
-      String? countryCode}) async {
+  /// Basic email login with your backend
+  Future<Map<String, dynamic>> loginWithApi({
+    required String uid,
+    required String type,
+    String? fcmId,
+    required String email, // Email is required
+    String? name,
+    String? profile,
+  }) async {
+    // We no longer handle phone here, removing phone and countryCode references.
     Map<String, String> parameters = {
-      if (phone != null) Api.mobile: phone,
       Api.firebaseId: uid,
       Api.type: type,
       Api.platformType: Platform.isAndroid ? "android" : "ios",
       if (fcmId != null) Api.fcmId: fcmId,
-      if (email != null) Api.email: email,
+      Api.email: email,
       if (name != null) Api.name: name,
-      if (countryCode != null) Api.countryCode: countryCode,
-      //if (profile != null) Api.profile: profile
+      // if (profile != null) Api.profile: profile
     };
 
+    // POST to your login API
     Map<String, dynamic> response = await Api.post(
       url: Api.loginApi,
-      parameter: parameters, /* useAuthToken: false*/
+      parameter: parameters,
     );
 
-    return {"token": response['token'], "data": response['data']};
+    return {
+      "token": response['token'],
+      "data": response['data'],
+    };
   }
 
+  /// If you still want to delete a user, you can keep this
   Future<dynamic> deleteUser() async {
-    Map<String, dynamic> response = await Api.delete(
-      url: Api.deleteUserApi,
-    );
-
+    Map<String, dynamic> response = await Api.delete(url: Api.deleteUserApi);
     return response;
   }
 
-  void loginEmailUser() async {}
-
-  Future<void> sendOTP(
-      {required String phoneNumber,
-      required Function(String verificationId) onCodeSent,
-      Function(dynamic e)? onError}) async {
-    await FirebaseAuth.instance.verifyPhoneNumber(
-      timeout: Duration(
-        seconds: Constant.otpTimeOutSecond,
-      ),
-      phoneNumber: phoneNumber,
-      verificationCompleted: (PhoneAuthCredential credential) {},
-      verificationFailed: (FirebaseAuthException e) {
-        onError?.call(ApiException(e.code));
-      },
-      codeSent: (String verificationId, int? resendToken) {
-        forceResendingToken = resendToken;
-        onCodeSent.call(verificationId);
-      },
-      codeAutoRetrievalTimeout: (String verificationId) {},
-      forceResendingToken: forceResendingToken,
+  Future<Map<String, dynamic>> login(String email, String password) async {
+    final response = await Api.post(
+      url: Api.login,
+      parameter: {'email': email, 'password': password},
     );
+    return {
+      "token": response['token'],
+      "user": response['user'],
+    };
   }
 
-  Future<UserCredential> verifyOTP({
-    required String otpVerificationId,
-    required String otp,
-  }) async {
-    PhoneAuthCredential credential = PhoneAuthProvider.credential(
-        verificationId: otpVerificationId, smsCode: otp);
-    UserCredential userCredential =
-        await _auth.signInWithCredential(credential);
-    return userCredential;
+  /// Email-based manual sign-in, if needed
+  void loginEmailUser() async {
+    // Empty because we're using Firebase + custom backend
   }
+
+  /// Since we no longer do phone authentication, remove sendOTP and verifyOTP if not used
 }
 
 class MultiAuthRepository {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
-  Future<UserCredential> createUserWithEmail(
-      {required String email, required String password}) async {
+  Future<Map<String, dynamic>> createUserWithEmail({
+    required String email,
+    required String password,
+    required String userType, // "Provider" or "Client"
+    String? providerType, // "Expert" or "Business"
+    String? fullName,
+    String? gender,
+    String? location,
+    String? businessName,
+    List<String>? categories,
+    String? phone,
+    bool? phonePublic,
+  }) async {
     try {
+      // 1️⃣ Firebase Authentication - Create User
       UserCredential credentials =
           await _firebaseAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      return credentials;
+      String uid = credentials.user!.uid;
+
+      // 2️⃣ Prepare User Data for your "user-signup" API
+      Map<String, dynamic> userData = {
+        "email": email,
+        "password": password,
+        "type": "email",
+        "platform_type": Platform.isAndroid ? "android" : "ios",
+        "firebase_id": uid,
+        "userType": userType,
+      };
+
+      if (userType == "Provider") {
+        userData["providerType"] = providerType;
+        userData["location"] = location;
+        userData["categories"] = categories?.join(",");
+        userData["phone"] = phone;
+
+        if (providerType == "Expert") {
+          userData["fullName"] = fullName;
+          userData["gender"] = gender;
+        } else if (providerType == "Business") {
+          userData["businessName"] = businessName;
+        }
+      } else {
+        userData["fullName"] = fullName;
+        userData["gender"] = gender;
+        userData["location"] = location;
+      }
+
+      // 3️⃣ Send data to "user-signup" API
+      Map<String, dynamic> response = await Api.post(
+        url: Api.loginApi, // or your "user-signup" endpoint
+        parameter: userData,
+      );
+
+      if (response["code"] == 200) {
+        final responseData = response['data'];
+        String? token = responseData["token"] as String?;
+        return {
+          "success": true,
+          "token": token ?? "",
+          "data": responseData,
+          "firebaseUser": credentials
+        };
+      } else {
+        final errorResponse = response['data'] is String
+            ? jsonDecode(response['data'])
+            : response['data'];
+        return {
+          "success": false,
+          "message": errorResponse["message"] ?? "Signup failed"
+        };
+      }
     } catch (e) {
-      rethrow;
+      return {
+        "success": false,
+        "message": e.toString(),
+      };
     }
   }
 }

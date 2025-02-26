@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -39,8 +40,9 @@ class Api {
       }
     } else {
       String? jwtToken = HiveUtils.getJWT();
+      log('CURRENT TOKEN: $jwtToken');
 
-      print("jwt token****$jwtToken");
+      log("jwt token****$jwtToken");
 
       return {
         "Authorization": "Bearer $jwtToken",
@@ -73,6 +75,7 @@ class Api {
   static String getMyItemApi = "my-items";
   static String getNotificationListApi = "get-notification-list";
   static String deleteUserApi = "delete-user";
+  static String login = "login";
   static String manageFavouriteApi = "manage-favourite";
   static String getPackageApi = "get-package";
   static String getLanguageApi = "get-languages";

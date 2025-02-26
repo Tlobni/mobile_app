@@ -9,6 +9,7 @@ import 'package:eClassify/ui/theme/theme.dart';
 import 'package:eClassify/utils/app_icon.dart';
 import 'package:eClassify/utils/custom_text.dart';
 import 'package:eClassify/utils/extensions/extensions.dart';
+import 'package:eClassify/utils/login/lib/payloads.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -77,9 +78,17 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       child: Scaffold(
         body: BlocConsumer<AuthenticationCubit, AuthenticationState>(
           listener: (context, state) async {
-            if (state is AuthenticationSuccess) {}
-
-            if (state is AuthenticationFail) {}
+            if (state is AuthenticationSuccess &&
+                state.payload is EmailLoginPayload) {
+              final userCred = state.credential;
+              // Possibly do something else.
+              // But you’ve likely already navigated to EmailVerificationScreen in onTapSignup.
+            }
+            if (state is AuthenticationFail) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.error.toString())),
+              );
+            }
           },
           builder: (context, state) {
             if (state is AuthenticationInProcess) {
