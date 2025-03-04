@@ -161,7 +161,7 @@ class Constant {
   static bool isNumberWithSuffix = false;
 
   //Demo mode settings
-  static bool isDemoModeOn = false;
+  static bool isDemoModeOn = true;
   static String demoCountryCode = "91";
   static String demoMobileNumber = "9876598765";
   static String demoModeOTP = "123456";

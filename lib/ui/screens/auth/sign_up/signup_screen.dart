@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:country_picker/country_picker.dart';
 import 'package:eClassify/app/app_theme.dart';
 import 'package:eClassify/app/routes.dart';
 import 'package:eClassify/data/cubits/auth/authentication_cubit.dart';
@@ -18,12 +19,14 @@ import 'package:eClassify/utils/constant.dart';
 import 'package:eClassify/utils/custom_text.dart';
 import 'package:eClassify/utils/extensions/extensions.dart';
 import 'package:eClassify/utils/helper_utils.dart';
+import 'package:eClassify/utils/hive_utils.dart';
 import 'package:eClassify/utils/login/lib/payloads.dart';
 import 'package:eClassify/utils/ui_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive/hive.dart';
 
 class SignupScreen extends StatefulWidget {
   final String? emailId;
@@ -62,12 +65,14 @@ class _SignupScreenState extends CloudState<SignupScreen> {
   final TextEditingController _expertFullNameController =
       TextEditingController();
   String? _expertGender; // example: 'Male','Female','Other'
+  String? _expertCountry; // Store selected country name
   final TextEditingController _expertLocationController =
       TextEditingController();
   final TextEditingController _expertPhoneController = TextEditingController();
 
   // Business fields
   final TextEditingController _businessNameController = TextEditingController();
+  String? _businessCountry; // Store selected country name
   final TextEditingController _businessLocationController =
       TextEditingController();
   final TextEditingController _businessPhoneController =
@@ -77,6 +82,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
   final TextEditingController _clientFullNameController =
       TextEditingController();
   String? _clientGender;
+  String? _clientCountry; // Store selected country name
   final TextEditingController _clientLocationController =
       TextEditingController();
 
@@ -127,9 +133,9 @@ class _SignupScreenState extends CloudState<SignupScreen> {
               : _clientGender,
           location: _userType == "Provider"
               ? (_providerType == "Expert"
-                  ? _expertLocationController.text.trim()
-                  : _businessLocationController.text.trim())
-              : _clientLocationController.text.trim(),
+                  ? _expertCountry ?? ""
+                  : _businessCountry ?? "")
+              : _clientCountry ?? "",
           businessName: _providerType == "Business"
               ? _businessNameController.text.trim()
               : null,
@@ -143,33 +149,89 @@ class _SignupScreenState extends CloudState<SignupScreen> {
         if (response["success"] == true) {
           // Get the user credential from the response
           final UserCredential userCredential = response["firebaseUser"];
-          final User firebaseUser = userCredential.user!;
 
-          // Send Email Verification
-          await firebaseUser.sendEmailVerification();
+          // Get the API response data
+          final apiData = response["data"];
 
-          // Emit success in the cubit to keep it consistent
+          log('API Response: $apiData');
+
+          // Store token from the API response
+          if (apiData != null && apiData.containsKey("token")) {
+            HiveUtils.setJWT(apiData["token"]);
+            log('Token stored: ${apiData["token"]}');
+          }
+
+          // Get user data from the response
+          final userData = apiData != null && apiData.containsKey("user")
+              ? apiData["user"]
+              : null;
+
+          // Get user role from the response
+          String userRole = "Client"; // Default role
+          if (userData != null &&
+              userData.containsKey("roles") &&
+              userData["roles"] is List &&
+              userData["roles"].isNotEmpty) {
+            userRole = userData["roles"][0]["name"] ?? "Client";
+          }
+
+          // Store user data in Hive
+          HiveUtils.setUserData({
+            'id': userData?["id"] != null
+                ? int.parse(userData["id"].toString())
+                : 0,
+            'name': userData?["name"] ??
+                (_userType == "Provider" && _providerType == "Expert"
+                    ? _expertFullNameController.text.trim()
+                    : _clientFullNameController.text.trim()),
+            'email': userData?["email"] ?? _emailController.text.trim(),
+            'mobile': _providerType == "Expert"
+                ? _expertPhoneController.text.trim()
+                : _businessPhoneController.text.trim(),
+            'profile': userData?["profile"] ?? "",
+            'type': userRole,
+            'firebaseId': userCredential.user?.uid ?? "",
+            'fcmId': "",
+            'notification': 1,
+            'address': "",
+            'businessName': _providerType == "Business"
+                ? _businessNameController.text.trim()
+                : "",
+            'categories': _providerSelectedCategories,
+            'phone': _providerType == "Expert"
+                ? _expertPhoneController.text.trim()
+                : _businessPhoneController.text.trim(),
+            'gender': _userType == "Provider" && _providerType == "Expert"
+                ? _expertGender
+                : _clientGender,
+            'location': _userType == "Provider"
+                ? (_providerType == "Expert"
+                    ? _expertCountry ?? ""
+                    : _businessCountry ?? "")
+                : _clientCountry ?? "",
+            'countryCode': "",
+            'isProfileCompleted': true,
+            'showPersonalDetails': 1,
+            'autoApproveItem': true,
+            'isVerified': true,
+          });
+
+          // Set user as authenticated
+          HiveUtils.setUserIsAuthenticated(true);
+
+          log('User data stored in Hive after signup');
+
+          // Skip email verification and proceed to login
           final payload = EmailLoginPayload(
             email: _emailController.text.trim(),
             password: _passwordController.text.trim(),
-            type: EmailLoginType.signup,
+            type: EmailLoginType.login, // Changed from signup to login
           );
 
           context.read<AuthenticationCubit>().setSignUpSuccess(
                 userCredential,
                 payload,
               );
-
-          // Navigate to EmailVerificationScreen or wait for the bloc listener to do so
-          // Navigator.push(
-          //   context,
-          //   MaterialPageRoute(
-          //     builder: (context) => EmailVerificationScreen(
-          //       email: _emailController.text,
-          //       password: _passwordController.text,
-          //     ),
-          //   ),
-          // );
         } else {
           // Show error
           ScaffoldMessenger.of(context).showSnackBar(
@@ -177,6 +239,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           );
         }
       } catch (e) {
+        log('Signup error: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString())),
         );
@@ -198,17 +261,28 @@ class _SignupScreenState extends CloudState<SignupScreen> {
             listener: (context, state) {
               if (state is AuthenticationSuccess) {
                 if (state.type == AuthenticationType.email) {
-                  // Send verification email
-                  FirebaseAuth.instance.currentUser?.sendEmailVerification();
+                  // Set user as authenticated
+                  HiveUtils.setUserIsAuthenticated(true);
 
-                  Navigator.push<dynamic>(context, BlurredRouter(
-                    builder: (context) {
-                      return EmailVerificationScreen(
-                        email: _emailController.text,
-                        password: _passwordController.text,
-                      );
-                    },
-                  ));
+                  // Get user role from Hive
+                  final userDetails = HiveUtils.getUserDetails();
+                  final userRole = userDetails.type ?? "Client";
+                  if (userRole == "Expert" || userRole == "Business") {
+                    Navigator.pushReplacementNamed(
+                      context,
+                      Routes.main,
+                      arguments: {"from": "signup"},
+                    );
+
+                    Navigator.pushNamed(Constant.navigatorKey.currentContext!,
+                        Routes.subscriptionPackageListRoute);
+                  } else {
+                    Navigator.pushReplacementNamed(
+                      context,
+                      Routes.main,
+                      arguments: {"from": "signup"},
+                    );
+                  }
                 }
               }
 
@@ -330,7 +404,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                         UiUtils.buildButton(
                           context,
                           onPressed: onTapSignup,
-                          buttonTitle: "verifyEmailAddress".translate(context),
+                          buttonTitle: "signUp".translate(context),
                           radius: 10,
                           disabled: false,
                           height: 46,
@@ -523,17 +597,20 @@ class _SignupScreenState extends CloudState<SignupScreen> {
         ),
         const SizedBox(height: 14),
 
+        // Country Selection
+        _buildCountrySelector(
+          context,
+          value: _expertCountry,
+          onChanged: (val) => setState(() => _expertCountry = val),
+          label: "Country",
+        ),
+        const SizedBox(height: 14),
+
         // Location
         CustomTextFormField(
           controller: _expertLocationController,
           fillColor: context.color.secondaryColor,
-          hintText: "Location",
-          // validator: (val) {
-          //   if ((val ?? '').trim().isEmpty) {
-          //     return "Location is required";
-          //   }
-          //   return null;
-          // },
+          hintText: "City/Area (optional)",
         ),
         const SizedBox(height: 14),
 
@@ -570,17 +647,20 @@ class _SignupScreenState extends CloudState<SignupScreen> {
         ),
         const SizedBox(height: 14),
 
+        // Country Selection
+        _buildCountrySelector(
+          context,
+          value: _businessCountry,
+          onChanged: (val) => setState(() => _businessCountry = val),
+          label: "Country",
+        ),
+        const SizedBox(height: 14),
+
         // Location
         CustomTextFormField(
           controller: _businessLocationController,
           fillColor: context.color.secondaryColor,
-          hintText: "Location",
-          // validator: (val) {
-          //   if ((val ?? '').trim().isEmpty) {
-          //     return "Location is required";
-          //   }
-          //   return null;
-          // },
+          hintText: "City/Area (optional)",
         ),
         const SizedBox(height: 14),
 
@@ -627,17 +707,20 @@ class _SignupScreenState extends CloudState<SignupScreen> {
         ),
         const SizedBox(height: 14),
 
+        // Country Selection
+        _buildCountrySelector(
+          context,
+          value: _clientCountry,
+          onChanged: (val) => setState(() => _clientCountry = val),
+          label: "Country",
+        ),
+        const SizedBox(height: 14),
+
         // Location
         CustomTextFormField(
           controller: _clientLocationController,
           fillColor: context.color.secondaryColor,
-          hintText: "Location",
-          // validator: (val) {
-          //   if ((val ?? '').trim().isEmpty) {
-          //     return "Location is required";
-          //   }
-          //   return null;
-          // },
+          hintText: "City/Area (optional)",
         ),
       ],
     );
@@ -675,6 +758,37 @@ class _SignupScreenState extends CloudState<SignupScreen> {
         );
       },
       controller: TextEditingController(text: value),
+      suffix: const Icon(Icons.arrow_drop_down),
+    );
+  }
+
+  // --- Country selector widget ---
+  Widget _buildCountrySelector(
+    BuildContext context, {
+    required String? value,
+    required Function(String?) onChanged,
+    required String label,
+  }) {
+    return CustomTextFormField(
+      fillColor: context.color.secondaryColor,
+      hintText: value ?? label,
+      readOnly: true,
+      onTap: () {
+        showCountryPicker(
+          context: context,
+          showPhoneCode: false,
+          countryListTheme: CountryListThemeData(
+            borderRadius: BorderRadius.circular(11),
+            searchTextStyle: TextStyle(
+              color: context.color.textColorDark,
+              fontSize: 16,
+            ),
+          ),
+          onSelect: (Country country) {
+            onChanged(country.name);
+          },
+        );
+      },
       suffix: const Icon(Icons.arrow_drop_down),
     );
   }

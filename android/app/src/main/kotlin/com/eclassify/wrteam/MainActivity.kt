@@ -1,4 +1,4 @@
-package com.eclassify.wrteam
+package com.tlobni.app
 
 
 import io.flutter.embedding.android.FlutterActivity

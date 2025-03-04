@@ -78,7 +78,7 @@ class _SubscriptionPackageListScreenState
       context.read<GetApiKeysCubit>().fetch();
     }
     context.read<FetchAdsListingSubscriptionPackagesCubit>().fetchPackages();
-    context.read<FetchFeaturedSubscriptionPackagesCubit>().fetchPackages();
+    // context.read<FetchFeaturedSubscriptionPackagesCubit>().fetchPackages();
     if (Platform.isIOS) {
       InAppPurchaseManager.getPending();
       _inAppPurchaseManager.listenIAP(context);
@@ -88,7 +88,7 @@ class _SubscriptionPackageListScreenState
             .getSetting(SystemSetting.freeAdListing) ==
         "1";
     if (!isFreeAdListingEnabled) {
-      _tabController = TabController(length: 2, vsync: this);
+      _tabController = TabController(length: 1, vsync: this);
       _tabController!.addListener(_handleTabSelection);
     } else {
       _tabController = null;
@@ -159,7 +159,7 @@ class _SubscriptionPackageListScreenState
                     controller: _tabController!,
                     tabs: [
                       Tab(text: "adsListing".translate(context)),
-                      Tab(text: "featuredAdsLbl".translate(context)),
+                      // Tab(text: "featuredAdsLbl".translate(context)),
                     ],
 
                     indicatorColor: context.color.territoryColor,
@@ -207,7 +207,7 @@ class _SubscriptionPackageListScreenState
                 controller: _tabController!,
                 children: [
                   adsListing(),
-                  featuredAds(),
+                  // featuredAds(),
                 ],
               ),
       ),

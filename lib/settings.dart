@@ -26,11 +26,12 @@ class PaymentGateway {
 
 class AppSettings {
   /// Basic Settings
-  static const String applicationName = 'eClassify';
-  static const String androidPackageName = 'com.eclassify.wrteam';
+  static const String applicationName = 'Tlobni';
+  static const String androidPackageName = 'com.tlobni.app';
   static const String shareAppText = "Share this App";
 
   static const String demoUrl = "http://127.0.0.1:8000";
+  // static const String demoUrl = "https://dashboard.tlobni.com";
 
   ///API Setting
 

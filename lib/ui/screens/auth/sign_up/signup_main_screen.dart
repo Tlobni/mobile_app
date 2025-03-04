@@ -503,8 +503,13 @@ class LoginScreenState extends State<SignUpMainScreen> {
       context: context,
       showWorldWide: false,
       showPhoneCode: true,
-      countryListTheme:
-          CountryListThemeData(borderRadius: BorderRadius.circular(11)),
+      countryListTheme: CountryListThemeData(
+        borderRadius: BorderRadius.circular(11),
+        searchTextStyle: TextStyle(
+          color: context.color.textColorDark,
+          fontSize: 16,
+        ),
+      ),
       onSelect: (Country value) {
         flagEmoji = value.flagEmoji;
         countryCode = value.phoneCode;

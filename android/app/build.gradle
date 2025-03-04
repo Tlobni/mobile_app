@@ -35,7 +35,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace "com.eclassify.wrteam"
+    namespace "com.tlobni.app"
     compileSdkVersion 34
     //ndkVersion "25.1.8937393"
     //buildToolsVersion "30.0.3"
@@ -59,7 +59,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.eclassify.wrteam"
+        applicationId "com.tlobni.app"
         minSdkVersion 24
         targetSdkVersion 34
         multiDexEnabled true

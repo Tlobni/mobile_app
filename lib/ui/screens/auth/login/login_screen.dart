@@ -62,6 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   bool isObscure = true;
   bool isBack = false;
+  bool _isButtonEnabled = false;
 
   @override
   void initState() {
@@ -70,11 +71,30 @@ class _LoginScreenState extends State<LoginScreen> {
     // If needed, read from widget.email
     if (widget.email?.isNotEmpty ?? false) {
       emailController.text = widget.email!;
+      _updateButtonState();
+    }
+
+    // Add listeners to update button state when text changes
+    emailController.addListener(_updateButtonState);
+    _passwordController.addListener(_updateButtonState);
+  }
+
+  void _updateButtonState() {
+    final newState =
+        emailController.text.isNotEmpty && _passwordController.text.isNotEmpty;
+    if (newState != _isButtonEnabled) {
+      setState(() {
+        _isButtonEnabled = newState;
+      });
     }
   }
 
   @override
   void dispose() {
+    // Remove listeners before disposing controllers
+    emailController.removeListener(_updateButtonState);
+    _passwordController.removeListener(_updateButtonState);
+
     emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -282,8 +302,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: onTapEmailLogin,
                 buttonTitle: 'signIn'.translate(context),
                 radius: 10,
-                disabled: emailController.text.isEmpty ||
-                    _passwordController.text.isEmpty,
+                disabled: !_isButtonEnabled,
                 disabledColor: const Color.fromARGB(255, 104, 102, 106),
               ),
               const SizedBox(height: 20),

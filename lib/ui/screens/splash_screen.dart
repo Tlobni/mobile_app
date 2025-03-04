@@ -44,6 +44,21 @@ class SplashScreenState extends State<SplashScreen>
     //locationPermission();
     super.initState();
 
+    // Check initial connectivity state
+    Connectivity().checkConnectivity().then((result) {
+      setState(() {
+        hasInternet = (!result.contains(ConnectivityResult.none));
+      });
+
+      if (hasInternet) {
+        context
+            .read<FetchSystemSettingsCubit>()
+            .fetchSettings(forceRefresh: true);
+        startTimer();
+      }
+    });
+
+    // Listen for connectivity changes
     subscription = Connectivity().onConnectivityChanged.listen((result) {
       setState(() {
         hasInternet = (!result.contains(ConnectivityResult.none));
@@ -77,6 +92,9 @@ class SplashScreenState extends State<SplashScreen>
       }
     } catch (e) {
       log("Error while load default language $e");
+      // Set isLanguageLoaded to true to prevent getting stuck
+      isLanguageLoaded = true;
+      setState(() {});
     }
   }
 
@@ -168,6 +186,13 @@ class SplashScreenState extends State<SplashScreen>
                 if (mounted) {
                   setState(() {});
                 }
+              } else if (state is FetchLanguageFailure) {
+                // Handle language fetch failure
+                log("Failed to fetch language: ${state.errorMessage}");
+                isLanguageLoaded = true;
+                if (mounted) {
+                  setState(() {});
+                }
               }
             },
             child: BlocListener<FetchSystemSettingsCubit,
@@ -182,7 +207,12 @@ class SplashScreenState extends State<SplashScreen>
                   isSettingsLoaded = true;
                   setState(() {});
                 }
-                if (state is FetchSystemSettingsFailure) {}
+                if (state is FetchSystemSettingsFailure) {
+                  log("Failed to fetch system settings: ${state.errorMessage}");
+                  isSettingsLoaded = true;
+                  isLanguageLoaded = true;
+                  setState(() {});
+                }
               },
               child: AnnotatedRegion(
                 value: SystemUiOverlayStyle(

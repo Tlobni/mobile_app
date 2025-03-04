@@ -242,15 +242,63 @@ class InAppPurchaseManager {
   }
 
   Future<void> buy(String productId, String packageId) async {
-    bool _isAvailable = await _inAppPurchase.isAvailable();
-    if (_isAvailable) {
-      ProductDetails productDetails = await getProductByProductId(productId);
-
+    // For testing purposes - simulate a successful purchase
+    if (productId == "test_product" || Constant.isDemoModeOn) {
       this.packageId = packageId;
       this.productId = productId;
-      await _inAppPurchase.buyConsumable(
-        purchaseParam: PurchaseParam(productDetails: productDetails),
-      );
+
+      // Simulate a successful purchase after a short delay
+      Future.delayed(Duration(seconds: 1), () {
+        final mockPurchase = PurchaseDetails(
+          productID: productId,
+          purchaseID: "test_purchase_${DateTime.now().millisecondsSinceEpoch}",
+          verificationData: PurchaseVerificationData(
+            localVerificationData: "test_data",
+            serverVerificationData: "test_data",
+            source: "mock",
+          ),
+          transactionDate: DateTime.now().toString(),
+          status: PurchaseStatus.purchased,
+        );
+
+        // Call the success handler directly
+        onSuccessfulPurchase(
+            Constant.navigatorKey.currentContext!, mockPurchase);
+      });
+
+      return;
+    }
+
+    // Original implementation for real purchases
+    bool _isAvailable = await _inAppPurchase.isAvailable();
+    if (_isAvailable) {
+      try {
+        ProductDetails productDetails = await getProductByProductId(productId);
+
+        this.packageId = packageId;
+        this.productId = productId;
+        await _inAppPurchase.buyConsumable(
+          purchaseParam: PurchaseParam(productDetails: productDetails),
+        );
+      } catch (e) {
+        print('Error during purchase: $e');
+        // Show error dialog for debugging
+        final context = Constant.navigatorKey.currentContext!;
+        if (context != null) {
+          UiUtils.showBlurredDialoge(
+            context,
+            dialoge: BlurredDialogBox(
+              title: "Purchase Error",
+              showCancelButton: false,
+              acceptTextColor: context.color.buttonColor,
+              content: CustomText(
+                  "Error: $e\n\nPlease use a valid product ID or enable demo mode for testing."),
+              isAcceptContainerPush: true,
+              onAccept: () async => Navigator.pop(context),
+            ),
+          );
+        }
+      }
     }
   }
 

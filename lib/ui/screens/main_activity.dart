@@ -402,11 +402,19 @@ class MainActivityState extends State<MainActivity>
     final isProvider = HiveUtils.getUserType() == "Expert" ||
         HiveUtils.getUserType() == "Business";
     log('isProvider: $isProvider');
+
+    // Check if user is logged in
+    final isLoggedIn = HiveUtils.isUserAuthenticated();
+
     return BottomAppBar(
       color: context.color.secondaryColor,
       shape: const CircularNotchedRectangle(),
       child: Container(
         color: context.color.secondaryColor,
+        // Add padding to the top when not logged in or not a provider
+        padding: (!isLoggedIn || !isProvider)
+            ? const EdgeInsets.only(top: 8.0)
+            : EdgeInsets.zero,
         child: Row(
             mainAxisSize: MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -431,7 +439,6 @@ class MainActivityState extends State<MainActivity>
                   child: isProvider
                       ? InkWell(
                           onTap: () async {
-                            //TODO:TEMP
                             UiUtils.checkUser(
                                 onNotGuest: () {
                                   context

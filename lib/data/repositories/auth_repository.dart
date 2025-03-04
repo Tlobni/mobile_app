@@ -121,26 +121,21 @@ class MultiAuthRepository {
 
       // 3️⃣ Send data to "user-signup" API
       Map<String, dynamic> response = await Api.post(
-        url: Api.loginApi, // or your "user-signup" endpoint
+        url: Api.loginApi, // This is the correct endpoint for user signup
         parameter: userData,
       );
 
-      if (response["code"] == 200) {
-        final responseData = response['data'];
-        String? token = responseData["token"] as String?;
+      // Handle the response based on the actual API response structure
+      if (response["status"] == true) {
         return {
           "success": true,
-          "token": token ?? "",
-          "data": responseData,
+          "data": response, // Pass the entire response
           "firebaseUser": credentials
         };
       } else {
-        final errorResponse = response['data'] is String
-            ? jsonDecode(response['data'])
-            : response['data'];
         return {
           "success": false,
-          "message": errorResponse["message"] ?? "Signup failed"
+          "message": response["message"] ?? "Signup failed"
         };
       }
     } catch (e) {
