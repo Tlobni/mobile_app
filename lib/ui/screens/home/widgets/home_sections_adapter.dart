@@ -287,11 +287,26 @@ class _ItemCardState extends State<ItemCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        CustomText(
-                          (widget.item?.price ?? 0.0).currencyFormat,
-                          fontWeight: FontWeight.bold,
-                          color: context.color.territoryColor,
-                          fontSize: context.font.large,
+                        Row(
+                          children: [
+                            CustomText(
+                              (widget.item?.price ?? 0.0).currencyFormat,
+                              fontWeight: FontWeight.bold,
+                              color: context.color.territoryColor,
+                              fontSize: context.font.large,
+                            ),
+                            if (widget.item?.priceType != null)
+                              Row(
+                                children: [
+                                  SizedBox(width: 4),
+                                  CustomText(
+                                    "/ ${_formatPriceType(widget.item?.priceType)}",
+                                    fontSize: context.font.small,
+                                    color: context.color.textLightColor,
+                                  ),
+                                ],
+                              ),
+                          ],
                         ),
                         CustomText(
                           widget.item!.name!,
@@ -420,5 +435,24 @@ class _ItemCardState extends State<ItemCard> {
                     );
                   });
             }));
+  }
+
+  String _formatPriceType(String? priceType) {
+    if (priceType == null) return "";
+
+    switch (priceType) {
+      case "session":
+        return "session";
+      case "consultation":
+        return "consultation";
+      case "hour":
+        return "hour";
+      case "class":
+        return "class";
+      case "fixed_fee":
+        return "fixed fee";
+      default:
+        return priceType;
+    }
   }
 }

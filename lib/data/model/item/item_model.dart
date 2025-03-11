@@ -1,6 +1,7 @@
 import 'package:eClassify/data/model/category_model.dart';
 import 'package:eClassify/data/model/custom_field/custom_field_model.dart';
 import 'package:eClassify/data/model/seller_ratings_model.dart';
+import 'dart:convert';
 
 class ItemModel {
   int? id;
@@ -8,6 +9,8 @@ class ItemModel {
   String? slug;
   String? description;
   double? price;
+  String? priceType;
+  Map<String, dynamic>? specialTags;
   String? image;
   dynamic watermarkimage;
   double? _latitude;
@@ -40,6 +43,9 @@ class ItemModel {
   String? city;
   String? state;
   String? country;
+  List<String>? locationType;
+  DateTime? expirationDate;
+  String? expirationTime;
   int? isPurchased;
   List<UserRatings>? review;
 
@@ -74,6 +80,8 @@ class ItemModel {
       this.category,
       this.description,
       this.price,
+      this.priceType,
+      this.specialTags,
       this.image,
       this.watermarkimage,
       dynamic latitude,
@@ -105,6 +113,9 @@ class ItemModel {
       this.city,
       this.state,
       this.country,
+      this.locationType,
+      this.expirationDate,
+      this.expirationTime,
       this.review,
       this.isPurchased}) {
     this.latitude = latitude;
@@ -117,6 +128,8 @@ class ItemModel {
       String? slug,
       String? description,
       double? price,
+      String? priceType,
+      Map<String, dynamic>? specialTags,
       String? image,
       dynamic watermarkimage,
       dynamic latitude,
@@ -148,6 +161,9 @@ class ItemModel {
       String? city,
       String? state,
       String? country,
+      List<String>? locationType,
+      DateTime? expirationDate,
+      String? expirationTime,
       int? isPurchased,
       List<UserRatings>? review}) {
     return ItemModel(
@@ -157,6 +173,8 @@ class ItemModel {
       category: category ?? this.category,
       description: description ?? this.description,
       price: price ?? this.price,
+      priceType: priceType ?? this.priceType,
+      specialTags: specialTags ?? this.specialTags,
       image: image ?? this.image,
       watermarkimage: watermarkimage ?? this.watermarkimage,
       latitude: latitude ?? this.latitude,
@@ -188,6 +206,9 @@ class ItemModel {
       city: city ?? this.city,
       state: state ?? this.state,
       country: country ?? this.country,
+      locationType: locationType ?? this.locationType,
+      expirationDate: expirationDate ?? this.expirationDate,
+      expirationTime: expirationTime ?? this.expirationTime,
       isPurchased: isPurchased ?? this.isPurchased,
       review: review ?? this.review,
     );
@@ -223,6 +244,23 @@ class ItemModel {
     totalLikes = json['total_likes'];
     views = json['clicks'];
     description = json['description'];
+    priceType = json['price_type'];
+
+    // Parse special_tags JSON field
+    if (json['special_tags'] != null) {
+      if (json['special_tags'] is String) {
+        try {
+          // If it's a string, try to parse it as JSON
+          specialTags = Map<String, dynamic>.from(
+              jsonDecode(json['special_tags'] as String));
+        } catch (e) {
+          specialTags = null;
+        }
+      } else if (json['special_tags'] is Map) {
+        // If it's already a Map, use it directly
+        specialTags = Map<String, dynamic>.from(json['special_tags']);
+      }
+    }
 
     image = json['image'];
     watermarkimage = json['watermark_image'];
@@ -247,7 +285,34 @@ class ItemModel {
     city = json['city'];
     state = json['state'];
     country = json['country'];
+
+    // Parse location_type field
+    if (json['location_type'] != null) {
+      if (json['location_type'] is String) {
+        // If it's a comma separated string, split it
+        locationType = (json['location_type'] as String)
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
+      } else if (json['location_type'] is List) {
+        // If it's already a List, convert each element to String
+        locationType = List<String>.from(json['location_type']);
+      }
+    }
+
+    // Parse expiration_date
+    if (json['expiration_date'] != null) {
+      try {
+        expirationDate = DateTime.parse(json['expiration_date']);
+      } catch (e) {
+        expirationDate = null;
+      }
+    }
+
+    expirationTime = json['expiration_time'];
     isPurchased = json['is_purchased'];
+
     if (json['review'] != null) {
       review = <UserRatings>[];
       json['review'].forEach((v) {
@@ -282,6 +347,10 @@ class ItemModel {
     data['slug'] = slug;
     data['description'] = description;
     data['price'] = price;
+    data['price_type'] = priceType;
+    if (specialTags != null) {
+      data['special_tags'] = specialTags;
+    }
     data['total_likes'] = totalLikes;
     data['clicks'] = views;
     data['image'] = image;
@@ -311,6 +380,16 @@ class ItemModel {
     data['city'] = city;
     data['state'] = state;
     data['country'] = country;
+
+    // Added fields
+    if (locationType != null && locationType!.isNotEmpty) {
+      data['location_type'] = locationType!.join(',');
+    }
+    if (expirationDate != null) {
+      data['expiration_date'] = expirationDate!.toIso8601String();
+    }
+    data['expiration_time'] = expirationTime;
+
     data['category'] = category!.toJson();
     if (areaId != null && area != null) {
       data['area'] = {
@@ -334,7 +413,7 @@ class ItemModel {
 
   @override
   String toString() {
-    return 'ItemModel{id: $id, name: $name,slug:$slug, description: $description, price: $price, image: $image, watermarkimage: $watermarkimage, latitude: $latitude, longitude: $longitude, address: $address, contact: $contact, total_likes: $totalLikes,isLiked: $isLike, isFeature: $isFeature,views: $views, type: $type, status: $status, active: $active, videoLink: $videoLink, user: $user, galleryImages: $galleryImages,itemOffers:$itemOffers, category: $category, customFields: $customFields,createdAt:$created,itemType:$itemType,userId:$userId,categoryId:$categoryId,isAlreadyOffered:$isAlreadyOffered,isAlreadyReported:$isAlreadyReported,allCategoryId:$allCategoryIds,rejected_reason:$rejectedReason,area_id:$areaId,area:$area,city:$city,state:$state,country:$country,is_purchased:$isPurchased,review:$review}';
+    return 'ItemModel{id: $id, name: $name, slug:$slug, description: $description, price: $price, priceType: $priceType, specialTags: $specialTags, image: $image, watermarkimage: $watermarkimage, latitude: $latitude, longitude: $longitude, address: $address, contact: $contact, total_likes: $totalLikes, isLiked: $isLike, isFeature: $isFeature, views: $views, type: $type, status: $status, active: $active, videoLink: $videoLink, user: $user, galleryImages: $galleryImages, itemOffers:$itemOffers, category: $category, customFields: $customFields, createdAt:$created, itemType:$itemType, userId:$userId, categoryId:$categoryId, isAlreadyOffered:$isAlreadyOffered, isAlreadyReported:$isAlreadyReported, allCategoryId:$allCategoryIds, rejected_reason:$rejectedReason, area_id:$areaId, area:$area, city:$city, state:$state, country:$country, locationType: $locationType, expirationDate: $expirationDate, expirationTime: $expirationTime, is_purchased:$isPurchased, review:$review}';
   }
 }
 

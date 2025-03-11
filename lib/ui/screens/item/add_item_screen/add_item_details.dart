@@ -139,7 +139,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       clearCloudData("item_details");
       clearCloudData("with_more_details");
       context.read<FetchCustomFieldsCubit>().fetchCustomFields(
-            categoryIds: item!.allCategoryIds!,
+            categoryIds: item?.allCategoryIds ?? "",
           );
       adTitleController.text = item?.name ?? "";
       adDescriptionController.text = item?.description ?? "";
@@ -278,19 +278,10 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
                         // Add service location options if applicable
                         if (postType == PostType.service) {
-                          // Get selected location types as an array instead of separate booleans
-                          List<String> selectedLocationTypes = [];
-
-                          if (_atClientLocation)
-                            selectedLocationTypes.add("client_location");
-                          if (_atPublicVenue)
-                            selectedLocationTypes.add("public_venue");
-                          if (_atMyLocation)
-                            selectedLocationTypes.add("my_location");
-                          if (_isVirtual) selectedLocationTypes.add("virtual");
-
-                          // Send as a single field rather than multiple boolean fields
-                          cloudData['location_type'] = selectedLocationTypes;
+                          cloudData['at_client_location'] = _atClientLocation;
+                          cloudData['at_public_venue'] = _atPublicVenue;
+                          cloudData['at_my_location'] = _atMyLocation;
+                          cloudData['is_virtual'] = _isVirtual;
                         }
 
                         // Add expiration date/time if applicable
@@ -352,7 +343,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
                         if (widget.isEdit == true) {
                           // Add item ID for editing
-                          cloudData['item_id'] = item?.id;
+                          cloudData['id'] = item?.id;
 
                           context.read<ManageItemCubit>().manage(
                               ManageItemType.edit,

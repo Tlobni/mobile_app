@@ -503,7 +503,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                       if (!isAddedByMe && model.user != null)
                         setSellerDetails(),
                       //Dynamic Ads here
-                      setLocation(),
+                      // setLocation(),
                       if (Constant.isGoogleBannerAdsEnabled == "1") ...[
                         Divider(
                             thickness: 1,
