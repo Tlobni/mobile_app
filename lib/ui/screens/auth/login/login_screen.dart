@@ -328,9 +328,9 @@ class _LoginScreenState extends State<LoginScreen> {
               const Spacer(),
 
               /// Google & Apple buttons if needed
-              if (Constant.googleAuthentication == "1" ||
-                  (Constant.appleAuthentication == "1" && Platform.isIOS))
-                googleAndAppleLogin(),
+              // if (Constant.googleAuthentication == "1" ||
+              //     (Constant.appleAuthentication == "1" && Platform.isIOS))
+              //   googleAndAppleLogin(),
 
               /// Terms & Policy
             ],

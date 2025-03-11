@@ -1,5 +1,6 @@
 import 'package:eClassify/app/routes.dart';
 import 'package:eClassify/data/cubits/category/fetch_category_cubit.dart';
+import 'package:eClassify/data/model/category_model.dart';
 import 'package:eClassify/ui/screens/home/home_screen.dart';
 import 'package:eClassify/ui/screens/home/widgets/category_home_card.dart';
 import 'package:eClassify/ui/screens/main_activity.dart';
@@ -20,7 +21,13 @@ class CategoryWidgetHome extends StatelessWidget {
     return BlocBuilder<FetchCategoryCubit, FetchCategoryState>(
       builder: (context, state) {
         if (state is FetchCategorySuccess) {
-          if (state.categories.isNotEmpty) {
+          // Filter categories to only show service_experience type
+          final serviceCategories = state.categories
+              .where(
+                  (category) => category.type == CategoryType.serviceExperience)
+              .toList();
+
+          if (serviceCategories.isNotEmpty) {
             return Padding(
               padding: const EdgeInsets.only(top: 12),
               child: SizedBox(
@@ -34,34 +41,34 @@ class CategoryWidgetHome extends StatelessWidget {
                   shrinkWrap: true,
                   scrollDirection: Axis.horizontal,
                   itemBuilder: (context, index) {
-                    if (state.categories.length > 10 &&
-                        index == state.categories.length) {
+                    if (serviceCategories.length > 10 &&
+                        index == serviceCategories.length) {
                       return moreCategory(context);
                     } else {
                       return CategoryHomeCard(
-                        title: state.categories[index].name!,
-                        url: state.categories[index].url!,
+                        title: serviceCategories[index].name!,
+                        url: serviceCategories[index].url!,
                         onTap: () {
-                          if (state.categories[index].children!.isNotEmpty) {
+                          if (serviceCategories[index].children!.isNotEmpty) {
                             Navigator.pushNamed(
                                 context, Routes.subCategoryScreen,
                                 arguments: {
                                   "categoryList":
-                                      state.categories[index].children,
-                                  "catName": state.categories[index].name,
-                                  "catId": state.categories[index].id,
+                                      serviceCategories[index].children,
+                                  "catName": serviceCategories[index].name,
+                                  "catId": serviceCategories[index].id,
                                   "categoryIds": [
-                                    state.categories[index].id.toString()
+                                    serviceCategories[index].id.toString()
                                   ]
                                 });
                           } else {
                             Navigator.pushNamed(context, Routes.itemsList,
                                 arguments: {
                                   'catID':
-                                      state.categories[index].id.toString(),
-                                  'catName': state.categories[index].name,
+                                      serviceCategories[index].id.toString(),
+                                  'catName': serviceCategories[index].name,
                                   "categoryIds": [
-                                    state.categories[index].id.toString()
+                                    serviceCategories[index].id.toString()
                                   ]
                                 });
                           }
@@ -69,9 +76,9 @@ class CategoryWidgetHome extends StatelessWidget {
                       );
                     }
                   },
-                  itemCount: state.categories.length > 10
-                      ? state.categories.length + 1
-                      : state.categories.length,
+                  itemCount: serviceCategories.length > 10
+                      ? serviceCategories.length + 1
+                      : serviceCategories.length,
                   separatorBuilder: (context, index) {
                     return const SizedBox(
                       width: 12,
@@ -95,12 +102,21 @@ class CategoryWidgetHome extends StatelessWidget {
   }
 
   Widget moreCategory(BuildContext context) {
+    // Get the current category type from the state
+    CategoryType? currentType;
+    if (context.read<FetchCategoryState>() is FetchCategorySuccess) {
+      currentType = (context.read<FetchCategoryState>() as FetchCategorySuccess)
+          .categoryType;
+    }
+
     return SizedBox(
       width: 70,
       child: GestureDetector(
         onTap: () {
-          Navigator.pushNamed(context, Routes.categories,
-              arguments: {"from": Routes.home}).then(
+          Navigator.pushNamed(context, Routes.categories, arguments: {
+            "from": Routes.home,
+            "categoryType": currentType, // Pass the current category type
+          }).then(
             (dynamic value) {
               if (value != null) {
                 selectedCategory = value;

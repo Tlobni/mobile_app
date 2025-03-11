@@ -40,6 +40,18 @@ class _CategoryFilterScreenState extends State<CategoryFilterScreen>
         }
       }
     });
+
+    // Fetch categories with type service_experience
+    if (context.read<FetchCategoryState>() is! FetchCategorySuccess ||
+        (context.read<FetchCategoryState>() is FetchCategorySuccess &&
+            (context.read<FetchCategoryState>() as FetchCategorySuccess)
+                    .categoryType !=
+                CategoryType.serviceExperience)) {
+      context.read<FetchCategoryCubit>().fetchCategories(
+            type: CategoryType.serviceExperience,
+          );
+    }
+
     super.initState();
   }
 
@@ -71,6 +83,12 @@ class _CategoryFilterScreenState extends State<CategoryFilterScreen>
                 return UiUtils.progress();
               }
               if (state is FetchCategorySuccess) {
+                // Filter categories to only show service_experience type
+                final serviceCategories = state.categories
+                    .where((category) =>
+                        category.type == CategoryType.serviceExperience)
+                    .toList();
+
                 return Padding(
                   padding: const EdgeInsets.only(top: 5.0),
                   child: Container(
@@ -97,7 +115,7 @@ class _CategoryFilterScreenState extends State<CategoryFilterScreen>
                         ),
                         Expanded(
                           child: ListView.separated(
-                            itemCount: state.categories.length,
+                            itemCount: serviceCategories.length,
                             padding: EdgeInsets.zero,
                             controller: _pageScrollController,
                             shrinkWrap: true,
@@ -108,21 +126,17 @@ class _CategoryFilterScreenState extends State<CategoryFilterScreen>
                               );
                             },
                             itemBuilder: (context, index) {
-                              CategoryModel category = state.categories[index];
+                              CategoryModel category = serviceCategories[index];
 
                               return ListTile(
                                 onTap: () {
-                                  widget.categoryList
-                                      .add(state.categories[index]);
+                                  widget.categoryList.add(category);
 
-                                  if (state.categories[index].children
-                                          ?.isNotEmpty ??
-                                      false) {
+                                  if (category.children?.isNotEmpty ?? false) {
                                     Navigator.pushNamed(
                                         context, Routes.subCategoryFilterScreen,
                                         arguments: {
-                                          "model":
-                                              state.categories[index].children,
+                                          "model": category.children,
                                           "selection": widget.categoryList,
                                         });
                                   } else {

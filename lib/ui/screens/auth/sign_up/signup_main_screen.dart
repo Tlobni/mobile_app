@@ -340,9 +340,9 @@ class LoginScreenState extends State<SignUpMainScreen> {
               const SizedBox(
                 height: 68,
               ),
-              if (Constant.googleAuthentication == "1" ||
-                  Constant.appleAuthentication == "1")
-                googleAndAppleSignUp(),
+              // if (Constant.googleAuthentication == "1" ||
+              //     Constant.appleAuthentication == "1")
+              //   googleAndAppleSignUp(),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

@@ -14,8 +14,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CategoryList extends StatefulWidget {
   final String? from;
+  final CategoryType? categoryType;
 
-  const CategoryList({super.key, this.from});
+  const CategoryList({super.key, this.from, this.categoryType});
 
   @override
   State<CategoryList> createState() => _CategoryListState();
@@ -23,7 +24,10 @@ class CategoryList extends StatefulWidget {
   static Route route(RouteSettings routeSettings) {
     Map? args = routeSettings.arguments as Map?;
     return BlurredRouter(
-      builder: (_) => CategoryList(from: args?['from']),
+      builder: (_) => CategoryList(
+        from: args?['from'],
+        categoryType: args?['categoryType'],
+      ),
     );
   }
 }
@@ -41,6 +45,17 @@ class _CategoryListState extends State<CategoryList>
         }
       }
     });
+
+    if (context.read<FetchCategoryState>() is! FetchCategorySuccess ||
+        (context.read<FetchCategoryState>() is FetchCategorySuccess &&
+            (context.read<FetchCategoryState>() as FetchCategorySuccess)
+                    .categoryType !=
+                widget.categoryType)) {
+      context
+          .read<FetchCategoryCubit>()
+          .fetchCategories(type: widget.categoryType);
+    }
+
     super.initState();
   }
 
@@ -71,6 +86,12 @@ class _CategoryListState extends State<CategoryList>
               return UiUtils.progress();
             }
             if (state is FetchCategorySuccess) {
+              // Filter categories to only show service_experience type
+              final serviceCategories = state.categories
+                  .where((category) =>
+                      category.type == CategoryType.serviceExperience)
+                  .toList();
+
               return Column(
                 children: [
                   Expanded(
@@ -89,13 +110,13 @@ class _CategoryListState extends State<CategoryList>
                       mainAxisSpacing: 14,
                     ),
                     itemBuilder: (context, index) {
-                      CategoryModel category = state.categories[index];
+                      CategoryModel category = serviceCategories[index];
                       return CategoryCard(
                         onTap: () {
                           if (widget.from == Routes.filterScreen) {
                             Navigator.pop(context, category);
                           } else {
-                            if (state.categories[index].children!.isEmpty) {
+                            if (category.children!.isEmpty) {
                               Constant.itemFilter = null;
                               HelperUtils.goToNextPage(
                                 Routes.itemsList,
@@ -111,13 +132,10 @@ class _CategoryListState extends State<CategoryList>
                               Navigator.pushNamed(
                                   context, Routes.subCategoryScreen,
                                   arguments: {
-                                    "categoryList":
-                                        state.categories[index].children,
-                                    "catName": state.categories[index].name,
-                                    "catId": state.categories[index].id,
-                                    "categoryIds": [
-                                      state.categories[index].id.toString()
-                                    ]
+                                    "categoryList": category.children,
+                                    "catName": category.name,
+                                    "catId": category.id,
+                                    "categoryIds": [category.id.toString()]
                                   }); //pass current index category id & name here
                             }
                           }
@@ -126,7 +144,7 @@ class _CategoryListState extends State<CategoryList>
                         url: category.url!,
                       );
                     },
-                    itemCount: state.categories.length,
+                    itemCount: serviceCategories.length,
                   )),
                   if (state.isLoadingMore) UiUtils.progress()
                 ],

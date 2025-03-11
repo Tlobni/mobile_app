@@ -174,10 +174,14 @@ class _MakeAnOfferItemScreenState extends State<MakeAnOfferItemScreen> {
                             itemId: widget.model.id.toString(),
                             date: widget.model.created!,
                             itemTitle: widget.model.name!,
-                            itemOfferId: state.data['id'],
+                            itemOfferId: state.data['id'] is String 
+                                ? int.parse(state.data['id']) 
+                                : state.data['id'],
                             itemPrice: widget.model.price!,
                             status: widget.model.status!,
-                            itemOfferPrice: int.parse(state.data['amount']),
+                            itemOfferPrice: state.data['amount'] != null
+                                ? double.parse(state.data['amount'].toString())
+                                : null,
                           ),
                         );
                       },

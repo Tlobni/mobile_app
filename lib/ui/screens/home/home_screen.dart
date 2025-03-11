@@ -39,6 +39,7 @@ import 'package:eClassify/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:eClassify/data/model/category_model.dart';
 
 const double sidePadding = 10;
 
@@ -80,7 +81,9 @@ class HomeScreenState extends State<HomeScreen>
     context.read<SliderCubit>().fetchSlider(
           context,
         );
-    context.read<FetchCategoryCubit>().fetchCategories();
+    context.read<FetchCategoryCubit>().fetchCategories(
+          type: CategoryType.serviceExperience,
+        );
     context.read<FetchHomeScreenCubit>().fetch(
         city: HiveUtils.getCityName(),
         areaId: HiveUtils.getAreaId(),
@@ -163,7 +166,9 @@ class HomeScreenState extends State<HomeScreen>
             context.read<SliderCubit>().fetchSlider(
                   context,
                 );
-            context.read<FetchCategoryCubit>().fetchCategories();
+            context.read<FetchCategoryCubit>().fetchCategories(
+                  type: CategoryType.serviceExperience,
+                );
             context.read<FetchHomeScreenCubit>().fetch(
                 city: HiveUtils.getCityName(),
                 areaId: HiveUtils.getAreaId(),

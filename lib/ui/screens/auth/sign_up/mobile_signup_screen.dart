@@ -335,9 +335,9 @@ class MobileSignUpScreenState extends State<MobileSignUpScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   if (Constant.emailAuthentication == '1') emailSignUp(),
-                  if (Constant.googleAuthentication == "1" ||
-                      Constant.appleAuthentication == "1")
-                    googleAndAppleAuth(),
+                  // if (Constant.googleAuthentication == "1" ||
+                  //     Constant.appleAuthentication == "1")
+                  //   googleAndAppleAuth(),
                   const SizedBox(
                     height: 24,
                   ),

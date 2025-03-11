@@ -1442,12 +1442,18 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                         ? int.parse(data['item_id'])
                         : data['item_id'],
                     amount: data['amount'] != null
-                        ? double.parse(data['amount'])
+                        ? double.parse(data['amount'].toString())
                         : null,
-                    buyerId: data['buyer_id'],
+                    buyerId: data['buyer_id'] is String
+                        ? int.parse(data['buyer_id'])
+                        : data['buyer_id'],
                     createdAt: data['created_at'],
-                    id: data['id'],
-                    sellerId: data['seller_id'],
+                    id: data['id'] is String
+                        ? int.parse(data['id'])
+                        : data['id'],
+                    sellerId: data['seller_id'] is String
+                        ? int.parse(data['seller_id'])
+                        : data['seller_id'],
                     updatedAt: data['updated_at'],
                     buyer: Buyer.fromJson(data['buyer']),
                     item: Item.fromJson(data['item']),
@@ -1483,12 +1489,14 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                         itemId: model.id.toString(),
                         date: model.created!,
                         itemTitle: model.name!,
-                        itemOfferId: state.data['id'],
+                        itemOfferId: state.data['id'] is String
+                            ? int.parse(state.data['id'])
+                            : state.data['id'],
                         itemPrice: model.price!,
                         status: model.status!,
                         buyerId: HiveUtils.getUserId(),
                         itemOfferPrice: state.data['amount'] != null
-                            ? double.parse(state.data['amount'])
+                            ? double.parse(state.data['amount'].toString())
                             : null,
                         isPurchased: model.isPurchased!,
                         alreadyReview: model.review == null
@@ -1517,8 +1525,9 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                     child: _buildButton("makeAnOffer".translate(context), () {
                       UiUtils.checkUser(
                           onNotGuest: () {
-                            safetyTipsBottomSheet();
-                            //makeOfferBottomSheet(model);
+                            context
+                                .read<MakeAnOfferItemCubit>()
+                                .makeAnOfferItem(id: model.id!, from: "offer");
                           },
                           context: context);
                     }, null, null),

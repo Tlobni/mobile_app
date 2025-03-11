@@ -118,6 +118,8 @@ class AppIcons {
   static String chatNavActive = _svgPath("bottomnav/chat_active");
   static String myAdsNav = _svgPath("bottomnav/myads");
   static String myAdsNavActive = _svgPath("bottomnav/myads_active");
+  static String favoriteNav = _svgPath("bottomnav/myads");
+  static String favoriteNavActive = _svgPath("bottomnav/myads_active");
   static String profileNav = _svgPath("bottomnav/profile");
   static String profileNavActive = _svgPath("bottomnav/profile_active");
 

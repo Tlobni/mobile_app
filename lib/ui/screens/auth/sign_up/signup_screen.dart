@@ -8,6 +8,8 @@ import 'package:eClassify/app/routes.dart';
 import 'package:eClassify/data/cubits/auth/authentication_cubit.dart';
 import 'package:eClassify/data/cubits/system/app_theme_cubit.dart';
 import 'package:eClassify/data/repositories/auth_repository.dart';
+import 'package:eClassify/data/repositories/category_repository.dart';
+import 'package:eClassify/data/model/category_model.dart';
 import 'package:eClassify/ui/screens/auth/sign_up/email_verification_screen.dart';
 import 'package:eClassify/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:eClassify/ui/screens/widgets/custom_text_form_field.dart';
@@ -64,7 +66,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
   // Expert fields
   final TextEditingController _expertFullNameController =
       TextEditingController();
-  String? _expertGender; // example: 'Male','Female','Other'
+  String? _expertGender; // example: 'Male','Female'
   String? _expertCountry; // Store selected country name
   final TextEditingController _expertLocationController =
       TextEditingController();
@@ -86,16 +88,68 @@ class _SignupScreenState extends CloudState<SignupScreen> {
   final TextEditingController _clientLocationController =
       TextEditingController();
 
-  // Categories used by Providers (Expert/Business)
-  final List<String> _allCategories = ["IT", "Finance", "Health", "Education"];
-  // We'll store the user's selected categories in one list for providers:
-  List<String> _providerSelectedCategories = [];
+  // Categories
+  // Replace hardcoded categories with fetched categories
+  List<CategoryModel> _categories = [];
+  bool _isLoadingCategories = true;
+  // We'll store the user's selected categories and subcategories
+  List<int> _selectedCategoryIds = [];
+  // Track which panels are expanded
+  List<bool> _expandedPanels = [];
 
   @override
   void initState() {
     super.initState();
     // If an email is passed in, pre-populate:
     // _emailController.text = widget.emailId ?? "";
+
+    // Fetch categories when the screen initializes
+    _fetchCategories();
+  }
+
+  // Fetch categories from the repository
+  Future<void> _fetchCategories() async {
+    setState(() {
+      _isLoadingCategories = true;
+    });
+
+    try {
+      final CategoryRepository categoryRepository = CategoryRepository();
+      // Fetch only provider categories for sign up page
+      final result = await categoryRepository.fetchCategories(
+          page: 1, type: CategoryType.providers);
+
+      setState(() {
+        // Only store categories with type 'providers'
+        _categories = result.modelList
+            .where((category) => category.type == CategoryType.providers)
+            .toList();
+        // Initialize expanded state for each category
+        _expandedPanels = List.generate(_categories.length, (_) => false);
+        _isLoadingCategories = false;
+      });
+    } catch (e) {
+      log('Error fetching categories: $e');
+      setState(() {
+        _isLoadingCategories = false;
+      });
+    }
+  }
+
+  // Check if a category or subcategory is selected
+  bool _isCategorySelected(int categoryId) {
+    return _selectedCategoryIds.contains(categoryId);
+  }
+
+  // Toggle selection of a category or subcategory
+  void _toggleCategorySelection(int categoryId) {
+    setState(() {
+      if (_isCategorySelected(categoryId)) {
+        _selectedCategoryIds.remove(categoryId);
+      } else {
+        _selectedCategoryIds.add(categoryId);
+      }
+    });
   }
 
   @override
@@ -139,7 +193,8 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           businessName: _providerType == "Business"
               ? _businessNameController.text.trim()
               : null,
-          categories: _providerSelectedCategories,
+          city: _expertLocationController.text.trim(),
+          categories: _selectedCategoryIds.map((id) => id.toString()).toList(),
           phone: _providerType == "Expert"
               ? _expertPhoneController.text.trim()
               : _businessPhoneController.text.trim(),
@@ -197,7 +252,8 @@ class _SignupScreenState extends CloudState<SignupScreen> {
             'businessName': _providerType == "Business"
                 ? _businessNameController.text.trim()
                 : "",
-            'categories': _providerSelectedCategories,
+            'categories':
+                _selectedCategoryIds.map((id) => id.toString()).toList(),
             'phone': _providerType == "Expert"
                 ? _expertPhoneController.text.trim()
                 : _businessPhoneController.text.trim(),
@@ -623,6 +679,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           controller: _expertPhoneController,
           fillColor: context.color.secondaryColor,
           hintText: "Phone",
+          validator: CustomTextFieldValidator.phoneNumber,
         ),
       ],
     );
@@ -668,11 +725,12 @@ class _SignupScreenState extends CloudState<SignupScreen> {
         _buildCategoryMultiSelect(),
         const SizedBox(height: 14),
 
-        // Phone - optional
+        // Phone - required (changed from optional)
         CustomTextFormField(
           controller: _businessPhoneController,
           fillColor: context.color.secondaryColor,
-          hintText: "Phone (optional)",
+          hintText: "Phone",
+          validator: CustomTextFieldValidator.phoneNumber,
         ),
       ],
     );
@@ -734,7 +792,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
     required String label,
     String? requiredMsg,
   }) {
-    final items = <String>["Male", "Female", "Other"];
+    final items = <String>["Male", "Female"];
     return CustomTextFormField(
       fillColor: context.color.secondaryColor,
       hintText: label,
@@ -784,6 +842,17 @@ class _SignupScreenState extends CloudState<SignupScreen> {
               fontSize: 16,
             ),
           ),
+          countryFilter: [
+            'SA', // Saudi Arabia
+            'AE', // United Arab Emirates
+            'QA', // Qatar
+            'OM', // Oman
+            'KW', // Kuwait
+            'LB', // Lebanon
+            'EG', // Egypt
+            'JO', // Jordan
+            'IQ', // Iraq
+          ],
           onSelect: (Country country) {
             onChanged(country.name);
           },
@@ -803,28 +872,42 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           fontWeight: FontWeight.w600,
         ),
         const SizedBox(height: 8),
-        Wrap(
-          spacing: 6.0,
-          runSpacing: 6.0,
-          children: _allCategories.map((cat) {
-            final isSelected = _providerSelectedCategories.contains(cat);
-            return FilterChip(
-              label: Text(cat),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    _providerSelectedCategories.add(cat);
-                  } else {
-                    _providerSelectedCategories.remove(cat);
-                  }
-                });
-              },
-            );
-          }).toList(),
+
+        GestureDetector(
+          onTap: () => _showCategorySelectionDialog(),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: context.color.secondaryColor,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: context.color.borderColor.darken(10)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _selectedCategoryIds.isEmpty
+                        ? "Choose Categories"
+                        : "${_selectedCategoryIds.length} categories selected",
+                    style: TextStyle(
+                      color: _selectedCategoryIds.isEmpty
+                          ? context.color.textColorDark.withOpacity(0.5)
+                          : context.color.textColorDark,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_drop_down,
+                  color: context.color.textColorDark,
+                ),
+              ],
+            ),
+          ),
         ),
+
         // If none selected, show an inline message
-        if (_providerSelectedCategories.isEmpty)
+        if (_selectedCategoryIds.isEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 4.0),
             child: Text(
@@ -834,6 +917,378 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           ),
       ],
     );
+  }
+
+  // Show category selection dialog
+  void _showCategorySelectionDialog() {
+    // Search controller
+    final TextEditingController searchController = TextEditingController();
+    // Track filtered categories
+    List<CategoryModel> filteredCategories = [];
+    // Track expanded panels in the dialog
+    List<bool> dialogExpandedPanels = [];
+    // Track loading state
+    bool isDialogLoading = true;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(builder: (context, setState) {
+          // Load categories when dialog opens
+          if (isDialogLoading) {
+            _loadCategoriesForDialog(
+                    setState, filteredCategories, dialogExpandedPanels)
+                .then((_) {
+              setState(() {
+                isDialogLoading = false;
+              });
+            });
+          }
+
+          // Filter function
+          void filterCategories(String query) {
+            if (query.isEmpty) {
+              setState(() {
+                // Only include categories with type 'providers'
+                filteredCategories = _categories
+                    .where(
+                        (category) => category.type == CategoryType.providers)
+                    .toList();
+              });
+              return;
+            }
+
+            query = query.toLowerCase();
+            setState(() {
+              // First check main categories, but only those with type 'providers'
+              filteredCategories = _categories.where((category) {
+                // Only include categories with type 'providers'
+                if (category.type != CategoryType.providers) {
+                  return false;
+                }
+
+                final matchesMainCategory =
+                    category.name?.toLowerCase().contains(query) ?? false;
+
+                // Check if any subcategory matches
+                final hasMatchingSubcategory = category.children?.any(
+                        (subcategory) =>
+                            subcategory.name?.toLowerCase().contains(query) ??
+                            false) ??
+                    false;
+
+                return matchesMainCategory || hasMatchingSubcategory;
+              }).toList();
+
+              // Auto-expand categories with matching subcategories
+              for (int i = 0; i < filteredCategories.length; i++) {
+                final category = filteredCategories[i];
+                final originalIndex = _categories.indexOf(category);
+                final hasSubcategories =
+                    category.children != null && category.children!.isNotEmpty;
+
+                final hasMatchingSubcategory = category.children?.any(
+                        (subcategory) =>
+                            subcategory.name?.toLowerCase().contains(query) ??
+                            false) ??
+                    false;
+
+                if (hasMatchingSubcategory) {
+                  dialogExpandedPanels[_categories.indexOf(category)] = true;
+                }
+              }
+            });
+          }
+
+          return Dialog(
+            insetPadding: EdgeInsets.zero, // Remove default padding
+            child: Container(
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height,
+              child: Column(
+                children: [
+                  // Header with title and close button
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: context.color.secondaryColor,
+                      border: Border(
+                        bottom: BorderSide(
+                          color: context.color.borderColor.darken(10),
+                          width: 0.5,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                        const Expanded(
+                          child: Text(
+                            "Select Categories",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            // Update the main state with selected categories
+                            this.setState(() {});
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text("Done"),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Search field
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: TextField(
+                      controller: searchController,
+                      decoration: InputDecoration(
+                        hintText: "Search categories or subcategories",
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 16),
+                      ),
+                      onChanged: filterCategories,
+                    ),
+                  ),
+
+                  // Loading indicator or categories list
+                  Expanded(
+                    child: isDialogLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : filteredCategories.isEmpty
+                            ? const Center(
+                                child: Text("No matching categories found"))
+                            : ListView.builder(
+                                itemCount: filteredCategories.length,
+                                itemBuilder: (context, index) {
+                                  final category = filteredCategories[index];
+                                  final originalIndex =
+                                      _categories.indexOf(category);
+                                  final hasSubcategories =
+                                      category.children != null &&
+                                          category.children!.isNotEmpty;
+
+                                  return Column(
+                                    children: [
+                                      // Parent category
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: context.color.secondaryColor,
+                                          border: Border(
+                                            bottom: BorderSide(
+                                              color: context.color.borderColor
+                                                  .darken(10),
+                                              width: 0.5,
+                                            ),
+                                          ),
+                                        ),
+                                        child: ListTile(
+                                          title: Text(
+                                            category.name ?? "Unknown",
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.w500),
+                                          ),
+                                          leading: Checkbox(
+                                            value: _isCategorySelected(
+                                                category.id ?? 0),
+                                            onChanged: (bool? value) {
+                                              if (category.id != null) {
+                                                setState(() {
+                                                  if (value == true) {
+                                                    if (!_selectedCategoryIds
+                                                        .contains(
+                                                            category.id!)) {
+                                                      _selectedCategoryIds
+                                                          .add(category.id!);
+                                                    }
+
+                                                    // Also select all subcategories
+                                                    if (hasSubcategories) {
+                                                      for (var subcategory
+                                                          in category
+                                                              .children!) {
+                                                        if (subcategory.id !=
+                                                                null &&
+                                                            !_selectedCategoryIds
+                                                                .contains(
+                                                                    subcategory
+                                                                        .id!)) {
+                                                          _selectedCategoryIds
+                                                              .add(subcategory
+                                                                  .id!);
+                                                        }
+                                                      }
+                                                    }
+                                                  } else {
+                                                    _selectedCategoryIds
+                                                        .remove(category.id!);
+
+                                                    // Also deselect all subcategories
+                                                    if (hasSubcategories) {
+                                                      for (var subcategory
+                                                          in category
+                                                              .children!) {
+                                                        if (subcategory.id !=
+                                                            null) {
+                                                          _selectedCategoryIds
+                                                              .remove(
+                                                                  subcategory
+                                                                      .id!);
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                });
+                                              }
+                                            },
+                                          ),
+                                          // Only show trailing arrow if there are subcategories
+                                          trailing: hasSubcategories
+                                              ? Icon(
+                                                  dialogExpandedPanels[
+                                                          originalIndex]
+                                                      ? Icons.keyboard_arrow_up
+                                                      : Icons
+                                                          .keyboard_arrow_down,
+                                                  color: context
+                                                      .color.textColorDark,
+                                                )
+                                              : null,
+                                          // Make the entire row clickable to expand/collapse if it has subcategories
+                                          onTap: hasSubcategories
+                                              ? () {
+                                                  setState(() {
+                                                    dialogExpandedPanels[
+                                                            originalIndex] =
+                                                        !dialogExpandedPanels[
+                                                            originalIndex];
+                                                  });
+                                                }
+                                              : null,
+                                        ),
+                                      ),
+
+                                      // Subcategories (if expanded and has subcategories)
+                                      if (hasSubcategories &&
+                                          dialogExpandedPanels[originalIndex])
+                                        Container(
+                                          color: context.color.secondaryColor
+                                              .withOpacity(0.5),
+                                          child: Column(
+                                            children: category.children!
+                                                .map((subcategory) {
+                                              // Filter subcategories if search is active
+                                              if (searchController
+                                                  .text.isNotEmpty) {
+                                                final query = searchController
+                                                    .text
+                                                    .toLowerCase();
+                                                if (!(subcategory.name
+                                                        ?.toLowerCase()
+                                                        .contains(query) ??
+                                                    false)) {
+                                                  return Container(); // Skip non-matching subcategories
+                                                }
+                                              }
+
+                                              return Padding(
+                                                padding: const EdgeInsets.only(
+                                                    left: 20.0),
+                                                child: ListTile(
+                                                  title: Text(
+                                                      subcategory.name ??
+                                                          "Unknown"),
+                                                  leading: Checkbox(
+                                                    value: _isCategorySelected(
+                                                        subcategory.id ?? 0),
+                                                    onChanged: (bool? value) {
+                                                      if (subcategory.id !=
+                                                          null) {
+                                                        setState(() {
+                                                          if (value == true) {
+                                                            if (!_selectedCategoryIds
+                                                                .contains(
+                                                                    subcategory
+                                                                        .id!)) {
+                                                              _selectedCategoryIds
+                                                                  .add(
+                                                                      subcategory
+                                                                          .id!);
+                                                            }
+                                                          } else {
+                                                            _selectedCategoryIds
+                                                                .remove(
+                                                                    subcategory
+                                                                        .id!);
+                                                          }
+                                                        });
+                                                      }
+                                                    },
+                                                  ),
+                                                ),
+                                              );
+                                            }).toList(),
+                                          ),
+                                        ),
+                                    ],
+                                  );
+                                },
+                              ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+      },
+    );
+  }
+
+  // Load categories for the dialog
+  Future<void> _loadCategoriesForDialog(
+    StateSetter setState,
+    List<CategoryModel> filteredCategories,
+    List<bool> dialogExpandedPanels,
+  ) async {
+    try {
+      final CategoryRepository categoryRepository = CategoryRepository();
+      // Fetch only provider categories for the dialog
+      final result = await categoryRepository.fetchCategories(
+          page: 1, type: CategoryType.providers);
+
+      setState(() {
+        _categories = result.modelList;
+        // Only add categories with type 'providers' to filteredCategories
+        filteredCategories.addAll(_categories
+            .where((category) => category.type == CategoryType.providers)
+            .toList());
+        dialogExpandedPanels
+            .addAll(List.generate(_categories.length, (_) => false));
+        _expandedPanels = List.generate(_categories.length, (_) => false);
+        _isLoadingCategories = false;
+      });
+    } catch (e) {
+      log('Error fetching categories in dialog: $e');
+      setState(() {
+        _isLoadingCategories = false;
+      });
+    }
   }
 
   // --- Provided from the original code ---

@@ -14,12 +14,29 @@ class Type {
   }
 }
 
+// Define enum for category types
+enum CategoryType {
+  serviceExperience('service_experience'),
+  providers('providers');
+
+  final String value;
+  const CategoryType(this.value);
+
+  factory CategoryType.fromString(String? value) {
+    return CategoryType.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => CategoryType.serviceExperience,
+    );
+  }
+}
+
 class CategoryModel {
   final int? id;
   final String? name;
   final String? url;
   final List<CategoryModel>? children;
   final String? description;
+  final CategoryType? type; // Added type field
 
   //final String translatedName;
   final int? subcategoriesCount;
@@ -31,6 +48,7 @@ class CategoryModel {
     this.description,
     this.children,
     this.subcategoriesCount,
+    this.type, // Added type parameter
     //required this.translatedName,
   });
 
@@ -47,6 +65,7 @@ class CategoryModel {
           url: json['image'],
           subcategoriesCount: json['subcategories_count'] ?? 0,
           children: children,
+          type: CategoryType.fromString(json['type']), // Parse type from JSON
           description: json['description'] ?? "");
     } catch (e) {
       rethrow;
@@ -61,6 +80,7 @@ class CategoryModel {
       'image': url,
       'subcategories_count': subcategoriesCount,
       "description": description,
+      'type': type?.value, // Convert type to string value
       'subcategories': children!.map((child) => child.toJson()).toList(),
     };
     return data;
@@ -68,6 +88,6 @@ class CategoryModel {
 
   @override
   String toString() {
-    return 'CategoryModel( id: $id, translated_name:$name, url: $url, descrtiption:$description, children: $children,subcategories_count:$subcategoriesCount)';
+    return 'CategoryModel( id: $id, translated_name:$name, url: $url, descrtiption:$description, type: ${type?.value}, children: $children,subcategories_count:$subcategoriesCount)';
   }
 }

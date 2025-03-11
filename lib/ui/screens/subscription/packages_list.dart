@@ -130,12 +130,12 @@ class _SubscriptionPackageListScreenState
         title: "subsctiptionPlane".translate(context),
         bottomHeight: isFreeAdListingEnabled ? 0 : 49,
         actions: [
-          if (Platform.isIOS)
-            CupertinoButton(
-                child: Text("restore".translate(context)),
-                onPressed: () async {
-                  await InAppPurchase.instance.restorePurchases();
-                })
+          // if (Platform.isIOS)
+          //   CupertinoButton(
+          //       child: Text("restore".translate(context)),
+          //       onPressed: () async {
+          //         await InAppPurchase.instance.restorePurchases();
+          //       })
         ],
         bottom: isFreeAdListingEnabled
             ? null

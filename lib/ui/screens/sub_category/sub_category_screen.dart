@@ -58,18 +58,20 @@ class _CategoryListState extends State<SubCategoryScreen>
 
   void getSubCategories() {
     if (widget.categoryList.isEmpty) {
-      context
-          .read<FetchSubCategoriesCubit>()
-          .fetchSubCategories(categoryId: widget.catId);
+      context.read<FetchSubCategoriesCubit>().fetchSubCategories(
+            categoryId: widget.catId,
+            type: CategoryType.serviceExperience,
+          );
     }
   }
 
   void pageScrollListen() {
     if (controller.isEndReached()) {
       if (context.read<FetchSubCategoriesCubit>().hasMoreData()) {
-        context
-            .read<FetchSubCategoriesCubit>()
-            .fetchSubCategories(categoryId: widget.catId);
+        context.read<FetchSubCategoriesCubit>().fetchSubCategories(
+              categoryId: widget.catId,
+              type: CategoryType.serviceExperience,
+            );
       }
     }
   }

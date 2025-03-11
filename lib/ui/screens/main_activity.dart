@@ -406,6 +406,9 @@ class MainActivityState extends State<MainActivity>
     // Check if user is logged in
     final isLoggedIn = HiveUtils.isUserAuthenticated();
 
+    // Check if user is a Client
+    final isClient = HiveUtils.getUserType() == "Client";
+
     return BottomAppBar(
       color: context.color.secondaryColor,
       shape: const CircularNotchedRectangle(),
@@ -427,11 +430,56 @@ class MainActivityState extends State<MainActivity>
                   FetchUserPackageLimitState>(
                 listener: (context, state) {
                   if (state is FetchUserPackageLimitFailure) {
-                    UiUtils.noPackageAvailableDialog(context);
+                    // Check if the error message is "User is pending"
+                    if (state.error.toString() == "User is pending") {
+                      // Show pending dialog for this specific error message
+                      UiUtils.showBlurredDialoge(
+                        context,
+                        dialoge: BlurredDialogBox(
+                          onAccept: () async {
+                            // Just close the dialog without returning anything
+                            // and use async to ensure it works as Future
+                          },
+                          svgImageColor: context.color.territoryColor,
+                          showCancelButton: false,
+                          title: "Pending".translate(context),
+                          content: CustomText(
+                            "Your subscription is pending. The admin will contact you soon.",
+                            textAlign: TextAlign.center,
+                          ),
+                          acceptButtonName:
+                              "OK", // Ensuring the button text is OK or any label you prefer
+                          acceptTextColor: Colors
+                              .white, // Setting button text color to white
+                        ),
+                      );
+                    } else {
+                      // Show the regular error dialog for other errors
+                      UiUtils.noPackageAvailableDialog(context);
+                    }
+                  }
+                  if (state is FetchUserPackageLimitPending) {
+                    UiUtils.showBlurredDialoge(
+                      context,
+                      dialoge: BlurredDialogBox(
+                        onAccept: () async {
+                          // Just close the dialog without returning anything
+                          // and use async to ensure it works as Future
+                          Navigator.of(context).pop();
+                        },
+                        svgImagePath: AppIcons.notification,
+                        svgImageColor: context.color.territoryColor,
+                        showCancelButton: false,
+                        title: "Pending".translate(context),
+                        content: CustomText(
+                          state.message,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    );
                   }
                   if (state is FetchUserPackageLimitInSuccess) {
-                    Navigator.pushNamed(context, Routes.selectCategoryScreen,
-                        arguments: <String, dynamic>{});
+                    Navigator.pushNamed(context, Routes.selectCategoryScreen);
                   }
                 },
                 child: Transform(
@@ -461,8 +509,17 @@ class MainActivityState extends State<MainActivity>
                       : SizedBox(),
                 ),
               ),
-              buildBottomNavigationbarItem(2, AppIcons.myAdsNav,
-                  AppIcons.myAdsNavActive, "myAdsTab".translate(context)),
+              buildBottomNavigationbarItem(
+                  2,
+                  isClient
+                      ? AppIcons.favoriteNav ?? AppIcons.myAdsNav
+                      : AppIcons.myAdsNav,
+                  isClient
+                      ? AppIcons.favoriteNavActive ?? AppIcons.myAdsNavActive
+                      : AppIcons.myAdsNavActive,
+                  isClient
+                      ? "favorites".translate(context)
+                      : "myAdsTab".translate(context)),
               buildBottomNavigationbarItem(3, AppIcons.profileNav,
                   AppIcons.profileNavActive, "profileTab".translate(context))
             ]),

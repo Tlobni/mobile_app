@@ -19,6 +19,12 @@ class FetchUserPackageLimitFailure extends FetchUserPackageLimitState {
   FetchUserPackageLimitFailure(this.error);
 }
 
+class FetchUserPackageLimitPending extends FetchUserPackageLimitState {
+  final String message;
+
+  FetchUserPackageLimitPending(this.message);
+}
+
 class FetchUserPackageLimitCubit extends Cubit<FetchUserPackageLimitState> {
   FetchUserPackageLimitCubit() : super(FetchUserPackageLimitInitial());
   AdvertisementRepository repository = AdvertisementRepository();
@@ -27,7 +33,13 @@ class FetchUserPackageLimitCubit extends Cubit<FetchUserPackageLimitState> {
     emit(FetchUserPackageLimitInProgress());
 
     repository.fetchUserPackageLimit(packageType: packageType).then((value) {
-      emit(FetchUserPackageLimitInSuccess(value['message']));
+      // Check if status is 0, which means pending
+      if (value['status'] == 0) {
+        emit(FetchUserPackageLimitPending(
+            value['message'] ?? 'Your request is pending'));
+      } else {
+        emit(FetchUserPackageLimitInSuccess(value['message']));
+      }
     }).catchError((e) {
       emit(FetchUserPackageLimitFailure(e.toString()));
     });

@@ -315,11 +315,11 @@ class InAppPurchaseManager {
       // Show the dialog
       UiUtils.showBlurredDialoge(context,
           dialoge: BlurredDialogBox(
-            title: "Purchase completed",
+            title: "Pending Approval",
             showCancelButton: false,
             acceptTextColor: context.color.buttonColor,
             content:
-                const CustomText("Your purchase has completed successfully"),
+                const CustomText("Your request is pending approval. An admin will contact you soon."),
             isAcceptContainerPush: true,
             onAccept: () => Future.value().then(
               (_) {

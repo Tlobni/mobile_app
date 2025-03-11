@@ -20,6 +20,7 @@ class FetchSubCategoriesSuccess extends FetchSubCategoriesState {
   final bool isLoadingMore;
   final bool hasError;
   final List<CategoryModel> categories;
+  final CategoryType? categoryType;
 
   FetchSubCategoriesSuccess({
     required this.total,
@@ -27,6 +28,7 @@ class FetchSubCategoriesSuccess extends FetchSubCategoriesState {
     required this.isLoadingMore,
     required this.hasError,
     required this.categories,
+    this.categoryType,
   });
 
   FetchSubCategoriesSuccess copyWith({
@@ -35,6 +37,7 @@ class FetchSubCategoriesSuccess extends FetchSubCategoriesState {
     bool? isLoadingMore,
     bool? hasError,
     List<CategoryModel>? categories,
+    CategoryType? categoryType,
   }) {
     return FetchSubCategoriesSuccess(
       total: total ?? this.total,
@@ -42,6 +45,7 @@ class FetchSubCategoriesSuccess extends FetchSubCategoriesState {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasError: hasError ?? this.hasError,
       categories: categories ?? this.categories,
+      categoryType: categoryType ?? this.categoryType,
     );
   }
 
@@ -52,6 +56,7 @@ class FetchSubCategoriesSuccess extends FetchSubCategoriesState {
       'isLoadingMore': isLoadingMore,
       'hasError': hasError,
       'categories': categories.map((x) => x.toJson()).toList(),
+      'categoryType': categoryType?.value,
     };
   }
 
@@ -66,6 +71,7 @@ class FetchSubCategoriesSuccess extends FetchSubCategoriesState {
           (x) => CategoryModel.fromJson(x as Map<String, dynamic>),
         ),
       ),
+      categoryType: CategoryType.values[map['categoryType'] as int],
     );
   }
 
@@ -92,22 +98,26 @@ class FetchSubCategoriesCubit extends Cubit<FetchSubCategoriesState> {
 
   final CategoryRepository _categoryRepository = CategoryRepository();
 
-  Future<void> fetchSubCategories(
-      {bool? forceRefresh,
-      bool? loadWithoutDelay,
-      required int categoryId}) async {
+  Future<void> fetchSubCategories({
+    bool? forceRefresh,
+    bool? loadWithoutDelay,
+    required int categoryId,
+    CategoryType? type,
+  }) async {
     try {
       emit(FetchSubCategoriesInProgress());
 
       DataOutput<CategoryModel> categories = await _categoryRepository
-          .fetchCategories(page: 1, categoryId: categoryId);
+          .fetchCategories(page: 1, categoryId: categoryId, type: type);
 
       emit(FetchSubCategoriesSuccess(
-          total: categories.total,
-          categories: categories.modelList,
-          page: 1,
-          hasError: false,
-          isLoadingMore: false));
+        total: categories.total,
+        categories: categories.modelList,
+        page: 1,
+        hasError: false,
+        isLoadingMore: false,
+        categoryType: type,
+      ));
     } catch (e) {
       emit(FetchSubCategoriesFailure(e.toString()));
     }
@@ -129,9 +139,14 @@ class FetchSubCategoriesCubit extends Cubit<FetchSubCategoriesState> {
         }
         emit(
             (state as FetchSubCategoriesSuccess).copyWith(isLoadingMore: true));
+
+        CategoryType? currentType =
+            (state as FetchSubCategoriesSuccess).categoryType;
+
         DataOutput<CategoryModel> result =
             await _categoryRepository.fetchCategories(
           page: (state as FetchSubCategoriesSuccess).page + 1,
+          type: currentType,
         );
 
         FetchSubCategoriesSuccess categoryState =
@@ -143,11 +158,13 @@ class FetchSubCategoriesCubit extends Cubit<FetchSubCategoriesState> {
         await HelperUtils.precacheSVG(list);
 
         emit(FetchSubCategoriesSuccess(
-            isLoadingMore: false,
-            hasError: false,
-            categories: categoryState.categories,
-            page: (state as FetchSubCategoriesSuccess).page + 1,
-            total: result.total));
+          isLoadingMore: false,
+          hasError: false,
+          categories: categoryState.categories,
+          page: (state as FetchSubCategoriesSuccess).page + 1,
+          total: result.total,
+          categoryType: currentType,
+        ));
       }
     } catch (e) {
       emit((state as FetchSubCategoriesSuccess)

@@ -76,6 +76,7 @@ class MultiAuthRepository {
     String? fullName,
     String? gender,
     String? location,
+    String? city,
     String? businessName,
     List<String>? categories,
     String? phone,
@@ -104,6 +105,7 @@ class MultiAuthRepository {
       if (userType == "Provider") {
         userData["providerType"] = providerType;
         userData["location"] = location;
+        userData["city"] = city;
         userData["categories"] = categories?.join(",");
         userData["phone"] = phone;
 
@@ -117,6 +119,7 @@ class MultiAuthRepository {
         userData["fullName"] = fullName;
         userData["gender"] = gender;
         userData["location"] = location;
+        userData["city"] = city;
       }
 
       // 3️⃣ Send data to "user-signup" API

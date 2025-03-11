@@ -31,24 +31,30 @@ class Api {
     if (!HiveUtils.isUserAuthenticated()) {
       if (HiveUtils.getLanguage() != null ||
           HiveUtils.getLanguage()?['data'] != null) {
-        return {
-          "Accept": "application/json",
-          "Content-Language": HiveUtils.getLanguage()['code'] ?? ""
-        };
+        log("User not authenticated, using language headers only");
+        return {"Accept": "application/json", "Content-Language": "en" ?? ""};
       } else {
+        log("User not authenticated and no language set, using empty headers");
         return {};
       }
     } else {
       String? jwtToken = HiveUtils.getJWT();
       log('CURRENT TOKEN: $jwtToken');
-
       log("jwt token****$jwtToken");
 
-      return {
+      // Check if token is valid
+      if (jwtToken == null || jwtToken.isEmpty) {
+        log("WARNING: JWT token is null or empty");
+      }
+
+      Map<String, dynamic> authHeaders = {
         "Authorization": "Bearer $jwtToken",
         "Accept": "application/json",
-        "Content-Language": HiveUtils.getLanguage()['code'] ?? ""
+        "Content-Language": 'en' ?? ""
       };
+
+      log("Using authentication headers: $authHeaders");
+      return authHeaders;
     }
   }
 
@@ -389,7 +395,9 @@ class Api {
       Map<String, dynamic>? queryParameters,
       bool? useBaseUrl}) async {
     try {
-//
+      log("Making GET request to: ${(useBaseUrl ?? true) ? Constant.baseUrl : ""}$url");
+      log("Query parameters: $queryParameters");
+
       final Dio dio = Dio();
       dio.interceptors.add(NetworkRequestInterceptor());
 
@@ -399,21 +407,25 @@ class Api {
           options: Options(headers: headers()));
 
       if (response.data['error'] == true) {
-/* if(kDebugMode&&response.data?['details']!=null){
-
-
-          throw ApiException(response.data['details'].toString());
-        }*/
-
+        log("API returned error: ${response.data['message']}");
+        if (response.data['details'] != null) {
+          log("Error details: ${response.data['details']}");
+        }
         throw ApiException(response.data['message'].toString());
       }
       return Map.from(response.data);
     } on DioException catch (e) {
+      log("DioException occurred: ${e.message}");
+      log("Request: ${e.requestOptions.uri}");
+      log("Response status: ${e.response?.statusCode}");
+      log("Response data: ${e.response?.data}");
+
       if (e.response?.statusCode == 401) {
+        log("Authentication error (401): User token expired or invalid");
         userExpired();
-// throw "auth-expired";
       }
       if (e.response?.statusCode == 503) {
+        log("Server not available (503)");
         throw "server-not-available";
       }
 
@@ -421,8 +433,11 @@ class Api {
           ? "no-internet"
           : "Something went wrong with error ${e.response?.statusCode}");
     } on ApiException catch (e) {
+      log("ApiException: ${e.errorMessage}");
       throw ApiException(e.errorMessage);
     } catch (e, st) {
+      log("Unexpected error in API.get: $e");
+      log("Stack trace: $st");
       throw ApiException(st.toString());
     }
   }

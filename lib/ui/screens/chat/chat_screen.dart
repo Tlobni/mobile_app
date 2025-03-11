@@ -1147,7 +1147,7 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget offerWidget() {
-    if (widget.itemOfferPrice != null) {
+    if (widget.itemOfferPrice != null && widget.itemOfferPrice! > 0) {
       if (int.parse(HiveUtils.getUserId()!) == int.parse(widget.buyerId!)) {
         return Align(
           alignment: AlignmentDirectional.topEnd,

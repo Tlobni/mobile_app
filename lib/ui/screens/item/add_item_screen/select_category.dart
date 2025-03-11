@@ -41,12 +41,47 @@ class SelectCategoryScreen extends StatefulWidget {
 
 class _SelectCategoryScreenState extends CloudState<SelectCategoryScreen> {
   late final ScrollController controller = ScrollController();
+  bool _isInitialized = false;
 
   @override
   void initState() {
+    super.initState();
     controller.addListener(pageScrollListen);
 
-    super.initState();
+    // Delay the provider access to ensure it's available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeCategories();
+    });
+  }
+
+  void _initializeCategories() {
+    if (!mounted) return;
+
+    try {
+      // Check if we need to fetch categories
+      final fetchCategoryCubit = context.read<FetchCategoryCubit>();
+      final state = fetchCategoryCubit.state;
+
+      if (state is! FetchCategorySuccess ||
+          (state is FetchCategorySuccess &&
+              state.categoryType != CategoryType.serviceExperience)) {
+        fetchCategoryCubit.fetchCategories(
+          type: CategoryType.serviceExperience,
+        );
+      }
+
+      setState(() {
+        _isInitialized = true;
+      });
+    } catch (e) {
+      print("Error initializing categories: $e");
+      // If we can't access the provider, we'll try again after a short delay
+      Future.delayed(Duration(milliseconds: 500), () {
+        if (mounted) {
+          _initializeCategories();
+        }
+      });
+    }
   }
 
   @override
@@ -72,109 +107,126 @@ class _SelectCategoryScreenState extends CloudState<SelectCategoryScreen> {
         child: Scaffold(
           appBar: UiUtils.buildAppBar(context,
               showBackButton: true,
-              title: "adListing".translate(context), onBackPress: () {
+              title: "Choose Category".translate(context), onBackPress: () {
             Navigator.of(context).popUntil((route) => route.isFirst);
           }),
-          body: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            controller: controller,
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: BlocBuilder<FetchCategoryCubit, FetchCategoryState>(
-                  builder: (context, state) {
-                if (state is FetchCategoryFailure) {
-                  return CustomText(state.errorMessage);
-                }
-                if (state is FetchCategoryInProgress) {
-                  return Center(child: UiUtils.progress());
-                }
+          body: !_isInitialized
+              ? Center(child: UiUtils.progress())
+              : SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  controller: controller,
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: BlocBuilder<FetchCategoryCubit, FetchCategoryState>(
+                        builder: (context, state) {
+                      if (state is FetchCategoryFailure) {
+                        return CustomText(state.errorMessage);
+                      }
+                      if (state is FetchCategoryInProgress) {
+                        return Center(child: UiUtils.progress());
+                      }
 
-                if (state is FetchCategorySuccess) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomText(
-                        "selectTheCategory".translate(context),
-                        fontSize: context.font.large,
-                        fontWeight: FontWeight.w600,
-                        color: context.color.textColorDark,
-                      ),
-                      const SizedBox(
-                        height: 18,
-                      ),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            SliverGridDelegateWithFixedCrossAxisCountAndFixedHeight(
-                          crossAxisCount: 3,
-                          height:
-                              MediaQuery.of(context).size.height * 0.18, //149,
-                          crossAxisSpacing: 14,
-                          mainAxisSpacing: 14,
-                        ),
-                        itemBuilder: (context, index) {
-                          CategoryModel category = state.categories[index];
+                      if (state is FetchCategorySuccess) {
+                        // Filter categories to only show service_experience type
+                        final serviceCategories = state.categories
+                            .where((category) =>
+                                category.type == CategoryType.serviceExperience)
+                            .toList();
 
-                          return CategoryCard(
-                            onTap: () {
-                              if (category.children!.isEmpty &&
-                                  category.subcategoriesCount == 0) {
-                                if (TouchManager.canProcessTouch()) {
-                                  addCloudData("breadCrumb", [category]);
-                                  List<CategoryModel>? breadCrumbList =
-                                      getCloudData("breadCrumb")
-                                          as List<CategoryModel>?;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CustomText(
+                              "First, select a category for your post:"
+                                  .translate(context),
+                              fontSize: context.font.large,
+                              fontWeight: FontWeight.w600,
+                              color: context.color.textColorDark,
+                            ),
+                            const SizedBox(height: 8),
+                            CustomText(
+                              "Choosing the right category helps your post reach the right audience"
+                                  .translate(context),
+                              fontSize: context.font.small,
+                              color: context.color.textLightColor,
+                            ),
+                            const SizedBox(height: 16),
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCountAndFixedHeight(
+                                crossAxisCount: 3,
+                                height: MediaQuery.of(context).size.height *
+                                    0.18, //149,
+                                crossAxisSpacing: 14,
+                                mainAxisSpacing: 14,
+                              ),
+                              itemBuilder: (context, index) {
+                                CategoryModel category =
+                                    serviceCategories[index];
 
-                                  screenStack++;
-                                  Navigator.pushNamed(
-                                    context,
-                                    Routes.addItemDetails,
-                                    arguments: <String, dynamic>{
-                                      "breadCrumbItems": breadCrumbList
-                                    },
-                                  ).then((value) {
-                                    List<CategoryModel> bcd =
-                                        getCloudData("breadCrumb");
-                                    addCloudData("breadCrumb", bcd);
-                                    //}
-                                  });
-                                  Future.delayed(Duration(seconds: 1), () {
-                                    // Notify that touch processing is complete
-                                    TouchManager.touchProcessed();
-                                  });
-                                }
-                              } else {
-                                if (TouchManager.canProcessTouch()) {
-                                  addCloudData("breadCrumb", [category]);
+                                return CategoryCard(
+                                  onTap: () {
+                                    if (category.children!.isEmpty &&
+                                        category.subcategoriesCount == 0) {
+                                      if (TouchManager.canProcessTouch()) {
+                                        addCloudData("breadCrumb", [category]);
+                                        List<CategoryModel>? breadCrumbList =
+                                            getCloudData("breadCrumb")
+                                                as List<CategoryModel>?;
 
-                                  screenStack++;
-                                  Navigator.pushNamed(context,
-                                      Routes.selectNestedCategoryScreen,
-                                      arguments: {
-                                        "current": category,
-                                      });
-                                  Future.delayed(Duration(seconds: 1), () {
-                                    // Notify that touch processing is complete
-                                    TouchManager.touchProcessed();
-                                  });
-                                }
-                              }
-                            },
-                            title: category.name!,
-                            url: category.url!,
-                          );
-                        },
-                        itemCount: state.categories.length,
-                      ),
-                      if (state.isLoadingMore) UiUtils.progress()
-                    ],
-                  );
-                }
-                return Container();
-              }),
-            ),
-          ),
+                                        screenStack++;
+                                        Navigator.pushNamed(
+                                          context,
+                                          Routes.selectPostTypeScreen,
+                                          arguments: <String, dynamic>{
+                                            "breadCrumbItems": breadCrumbList
+                                          },
+                                        ).then((value) {
+                                          List<CategoryModel> bcd =
+                                              getCloudData("breadCrumb");
+                                          addCloudData("breadCrumb", bcd);
+                                          //}
+                                        });
+                                        Future.delayed(Duration(seconds: 1),
+                                            () {
+                                          // Notify that touch processing is complete
+                                          TouchManager.touchProcessed();
+                                        });
+                                      }
+                                    } else {
+                                      if (TouchManager.canProcessTouch()) {
+                                        addCloudData("breadCrumb", [category]);
+
+                                        screenStack++;
+                                        Navigator.pushNamed(context,
+                                            Routes.selectNestedCategoryScreen,
+                                            arguments: {
+                                              "current": category,
+                                            });
+                                        Future.delayed(Duration(seconds: 1),
+                                            () {
+                                          // Notify that touch processing is complete
+                                          TouchManager.touchProcessed();
+                                        });
+                                      }
+                                    }
+                                  },
+                                  title: category.name!,
+                                  url: category.url!,
+                                );
+                              },
+                              itemCount: serviceCategories.length,
+                            ),
+                            if (state.isLoadingMore) UiUtils.progress()
+                          ],
+                        );
+                      }
+                      return Container();
+                    }),
+                  ),
+                ),
         ),
       ),
     );
@@ -226,18 +278,20 @@ class _SelectNestedCategoryState extends CloudState<SelectNestedCategory> {
 
   void getSubCategories() {
     if (widget.current.children!.isEmpty) {
-      context
-          .read<FetchSubCategoriesCubit>()
-          .fetchSubCategories(categoryId: widget.current.id!);
+      context.read<FetchSubCategoriesCubit>().fetchSubCategories(
+            categoryId: widget.current.id!,
+            type: CategoryType.serviceExperience,
+          );
     }
   }
 
   void pageScrollListen() {
     if (controller.isEndReached()) {
       if (context.read<FetchSubCategoriesCubit>().hasMoreData()) {
-        context
-            .read<FetchSubCategoriesCubit>()
-            .fetchSubCategories(categoryId: widget.current.id!);
+        context.read<FetchSubCategoriesCubit>().fetchSubCategories(
+              categoryId: widget.current.id!,
+              type: CategoryType.serviceExperience,
+            );
       }
     }
   }
@@ -379,7 +433,7 @@ class _SelectNestedCategoryState extends CloudState<SelectNestedCategory> {
                                       screenStack++;
                                       Navigator.pushNamed(
                                         context,
-                                        Routes.addItemDetails,
+                                        Routes.selectPostTypeScreen,
                                         arguments: <String, dynamic>{
                                           "breadCrumbItems": breadCrumbData
                                             ..add(
@@ -508,9 +562,10 @@ class _SelectNestedCategoryState extends CloudState<SelectNestedCategory> {
             if (state.errorMessage == "no-internet") {
               return NoInternet(
                 onRetry: () {
-                  context
-                      .read<FetchSubCategoriesCubit>()
-                      .fetchSubCategories(categoryId: widget.current.id!);
+                  context.read<FetchSubCategoriesCubit>().fetchSubCategories(
+                        categoryId: widget.current.id!,
+                        type: CategoryType.serviceExperience,
+                      );
                 },
               );
             }
@@ -523,9 +578,10 @@ class _SelectNestedCategoryState extends CloudState<SelectNestedCategory> {
           if (state.categories.isEmpty) {
             return NoDataFound(
               onTap: () {
-                context
-                    .read<FetchSubCategoriesCubit>()
-                    .fetchSubCategories(categoryId: widget.current.id!);
+                context.read<FetchSubCategoriesCubit>().fetchSubCategories(
+                      categoryId: widget.current.id!,
+                      type: CategoryType.serviceExperience,
+                    );
               },
             );
           }
@@ -545,7 +601,7 @@ class _SelectNestedCategoryState extends CloudState<SelectNestedCategory> {
 
                         Navigator.pushNamed(
                           context,
-                          Routes.addItemDetails,
+                          Routes.selectPostTypeScreen,
                           arguments: <String, dynamic>{
                             "breadCrumbItems": breadCrumbData
                               ..add(state.categories[index])

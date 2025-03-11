@@ -1,0 +1,238 @@
+import 'package:flutter/material.dart';
+import 'package:eClassify/utils/custom_text.dart';
+import 'package:eClassify/utils/extensions/extensions.dart';
+
+class LocationAutocomplete extends StatefulWidget {
+  final TextEditingController controller;
+  final Function(String) onSelected;
+  final Function(Map<String, String>)? onLocationSelected;
+  final String hintText;
+
+  const LocationAutocomplete({
+    Key? key,
+    required this.controller,
+    required this.onSelected,
+    this.onLocationSelected,
+    required this.hintText,
+  }) : super(key: key);
+
+  @override
+  State<LocationAutocomplete> createState() => _LocationAutocompleteState();
+}
+
+class _LocationAutocompleteState extends State<LocationAutocomplete> {
+  final FocusNode _focusNode = FocusNode();
+  OverlayEntry? _overlayEntry;
+  final LayerLink _layerLink = LayerLink();
+
+  // Updated list of cities with country and state information
+  final List<Map<String, String>> _locations = [
+    // Saudi Arabia
+    {'city': 'Riyadh', 'state': 'Riyadh Province', 'country': 'Saudi Arabia'},
+    {'city': 'Jeddah', 'state': 'Makkah Province', 'country': 'Saudi Arabia'},
+    {'city': 'Mecca', 'state': 'Makkah Province', 'country': 'Saudi Arabia'},
+    {'city': 'Medina', 'state': 'Medina Province', 'country': 'Saudi Arabia'},
+    {'city': 'Dammam', 'state': 'Eastern Province', 'country': 'Saudi Arabia'},
+
+    // UAE
+    {'city': 'Dubai', 'state': 'Dubai', 'country': 'UAE'},
+    {'city': 'Abu Dhabi', 'state': 'Abu Dhabi', 'country': 'UAE'},
+    {'city': 'Sharjah', 'state': 'Sharjah', 'country': 'UAE'},
+    {'city': 'Ajman', 'state': 'Ajman', 'country': 'UAE'},
+    {'city': 'Ras Al Khaimah', 'state': 'Ras Al Khaimah', 'country': 'UAE'},
+
+    // Qatar
+    {'city': 'Doha', 'state': '', 'country': 'Qatar'},
+    {'city': 'Al Wakrah', 'state': '', 'country': 'Qatar'},
+    {'city': 'Al Khor', 'state': '', 'country': 'Qatar'},
+
+    // Oman
+    {'city': 'Muscat', 'state': 'Muscat Governorate', 'country': 'Oman'},
+    {'city': 'Salalah', 'state': 'Dhofar Governorate', 'country': 'Oman'},
+    {
+      'city': 'Sohar',
+      'state': 'North Al Batinah Governorate',
+      'country': 'Oman'
+    },
+
+    // Kuwait
+    {'city': 'Kuwait City', 'state': 'Al Asimah', 'country': 'Kuwait'},
+    {'city': 'Hawalli', 'state': 'Hawalli Governorate', 'country': 'Kuwait'},
+
+    // Lebanon
+    {'city': 'Beirut', 'state': 'Beirut Governorate', 'country': 'Lebanon'},
+    {'city': 'Tripoli', 'state': 'North Governorate', 'country': 'Lebanon'},
+    {'city': 'Sidon', 'state': 'South Governorate', 'country': 'Lebanon'},
+    {'city': 'Tyre', 'state': 'South Governorate', 'country': 'Lebanon'},
+    {
+      'city': 'Byblos',
+      'state': 'Mount Lebanon Governorate',
+      'country': 'Lebanon'
+    },
+    {
+      'city': 'Baalbek',
+      'state': 'Baalbek-Hermel Governorate',
+      'country': 'Lebanon'
+    },
+
+    // Egypt
+    {'city': 'Cairo', 'state': 'Cairo Governorate', 'country': 'Egypt'},
+    {
+      'city': 'Alexandria',
+      'state': 'Alexandria Governorate',
+      'country': 'Egypt'
+    },
+    {'city': 'Giza', 'state': 'Giza Governorate', 'country': 'Egypt'},
+    {'city': 'Luxor', 'state': 'Luxor Governorate', 'country': 'Egypt'},
+
+    // Jordan
+    {'city': 'Amman', 'state': 'Amman Governorate', 'country': 'Jordan'},
+    {'city': 'Zarqa', 'state': 'Zarqa Governorate', 'country': 'Jordan'},
+    {'city': 'Irbid', 'state': 'Irbid Governorate', 'country': 'Jordan'},
+
+    // Iraq
+    {'city': 'Baghdad', 'state': 'Baghdad Governorate', 'country': 'Iraq'},
+    {'city': 'Basra', 'state': 'Basra Governorate', 'country': 'Iraq'},
+    {'city': 'Mosul', 'state': 'Nineveh Governorate', 'country': 'Iraq'},
+    {'city': 'Erbil', 'state': 'Erbil Governorate', 'country': 'Iraq'},
+  ];
+
+  List<Map<String, String>> _filteredLocations = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(() {
+      if (_focusNode.hasFocus) {
+        _showOverlay();
+      } else {
+        _hideOverlay();
+      }
+    });
+
+    widget.controller.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    final text = widget.controller.text.toLowerCase();
+    if (text.isEmpty) {
+      _filteredLocations = [];
+    } else {
+      _filteredLocations = _locations.where((location) {
+        return location['city']!.toLowerCase().contains(text) ||
+            location['country']!.toLowerCase().contains(text);
+      }).toList();
+    }
+
+    if (_overlayEntry != null) {
+      setState(() {});
+      _updateOverlay();
+    }
+  }
+
+  void _updateOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = _createOverlayEntry();
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  void _showOverlay() {
+    _overlayEntry = _createOverlayEntry();
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  void _hideOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  OverlayEntry _createOverlayEntry() {
+    final RenderBox renderBox = context.findRenderObject() as RenderBox;
+    final size = renderBox.size;
+
+    return OverlayEntry(
+      builder: (context) => Positioned(
+        width: size.width,
+        child: CompositedTransformFollower(
+          link: _layerLink,
+          showWhenUnlinked: false,
+          offset: Offset(0.0, size.height),
+          child: Material(
+            elevation: 4.0,
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: 200,
+              ),
+              child: _filteredLocations.isEmpty
+                  ? Container(
+                      padding: EdgeInsets.all(16),
+                      child: CustomText(
+                        "No locations found",
+                        color: Colors.grey,
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      itemCount: _filteredLocations.length,
+                      itemBuilder: (context, index) {
+                        final location = _filteredLocations[index];
+                        final displayText =
+                            "${location['city']}, ${location['country']}";
+
+                        return ListTile(
+                          title: CustomText(displayText),
+                          onTap: () {
+                            widget.controller.text = displayText;
+                            widget.onSelected(displayText);
+
+                            // Pass the full location data
+                            if (widget.onLocationSelected != null) {
+                              widget.onLocationSelected!(location);
+                            }
+
+                            _hideOverlay();
+                            FocusScope.of(context).unfocus();
+                          },
+                        );
+                      },
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(() {});
+    _focusNode.dispose();
+    widget.controller.removeListener(_onTextChanged);
+    _hideOverlay();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: TextField(
+        controller: widget.controller,
+        focusNode: _focusNode,
+        decoration: InputDecoration(
+          hintText: widget.hintText,
+          prefixIcon: Icon(Icons.location_on_outlined),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.blue),
+          ),
+        ),
+      ),
+    );
+  }
+}

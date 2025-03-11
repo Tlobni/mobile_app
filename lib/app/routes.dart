@@ -54,6 +54,7 @@ import 'package:eClassify/ui/screens/widgets/maintenance_mode.dart';
 import 'package:eClassify/utils/constant.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:eClassify/ui/screens/item/add_item_screen/select_post_type.dart';
 
 class Routes {
   static const splash = 'splash';
@@ -137,6 +138,8 @@ class Routes {
 
   //Sandbox[test]
   static const playground = 'playground';
+
+  static const selectPostTypeScreen = '/selectPostTypeScreen';
 
   static String currentRoute = '';
   static String previousRoute = '';
@@ -285,6 +288,9 @@ class Routes {
         return NearbyLocationScreen.route(routeSettings);
       case myReviewsScreen:
         return MyReviewScreen.route(routeSettings);
+
+      case selectPostTypeScreen:
+        return SelectPostTypeScreen.route(routeSettings);
 
       default:
         return CupertinoPageRoute(builder: (context) => const Scaffold());
