@@ -1522,22 +1522,21 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               children: [
                 if (chatedUser == null)
                   Expanded(
-                    child: _buildButton("makeAnOffer".translate(context), () {
+                    child: _buildButton("Book To Open Chat", () {
                       UiUtils.checkUser(
                           onNotGuest: () {
                             context
                                 .read<MakeAnOfferItemCubit>()
-                                .makeAnOfferItem(id: model.id!, from: "offer");
+                                .makeAnOfferItem(id: model.id!, from: "chat");
                           },
                           context: context);
                     }, null, null),
                   ),
-                if (chatedUser == null) SizedBox(width: 10),
-                Expanded(
-                  child: _buildButton("chat".translate(context), () {
-                    UiUtils.checkUser(
-                        onNotGuest: () {
-                          if (chatedUser != null) {
+                if (chatedUser != null)
+                  Expanded(
+                    child: _buildButton("chat".translate(context), () {
+                      UiUtils.checkUser(
+                          onNotGuest: () {
                             Navigator.push(context, BlurredRouter(
                               builder: (context) {
                                 return MultiBlocProvider(
@@ -1595,15 +1594,10 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                                 );
                               },
                             ));
-                          } else {
-                            context
-                                .read<MakeAnOfferItemCubit>()
-                                .makeAnOfferItem(id: model.id!, from: "chat");
-                          }
-                        },
-                        context: context);
-                  }, null, null),
-                ),
+                          },
+                          context: context);
+                    }, null, null),
+                  ),
               ],
             ),
           );

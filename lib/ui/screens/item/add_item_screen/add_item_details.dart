@@ -448,7 +448,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         SizedBox(
                           height: 18,
                         ),
-                        CustomText("adTitle".translate(context)),
+                        CustomText("adTitle".translate(context) + " *"),
                         SizedBox(
                           height: 10,
                         ),
@@ -466,7 +466,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         SizedBox(
                           height: 15,
                         ),
-                        CustomText("descriptionLbl".translate(context)),
+                        CustomText("descriptionLbl".translate(context) + " *"),
                         SizedBox(
                           height: 15,
                         ),
@@ -496,12 +496,15 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         // Service Location Options
                         _buildServiceLocationOptions(context),
 
+                        // Experience Location
+                        _buildExperienceLocationSection(context),
+
                         // Auto-Expiration Date & Time (for Experience only)
                         _buildExpirationDateTimeSection(context),
 
                         Row(
                           children: [
-                            CustomText("mainPicture".translate(context)),
+                            CustomText("mainPicture".translate(context) + " *"),
                             const SizedBox(
                               width: 3,
                             ),
@@ -529,7 +532,8 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         ),
                         Row(
                           children: [
-                            CustomText("otherPictures".translate(context)),
+                            CustomText("otherPictures".translate(context) +
+                                " (optional)"),
                             const SizedBox(
                               width: 3,
                             ),
@@ -547,7 +551,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         SizedBox(
                           height: 10,
                         ),
-                        CustomText("price".translate(context)),
+                        CustomText("price".translate(context) + " *"),
                         SizedBox(
                           height: 10,
                         ),
@@ -570,7 +574,8 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         SizedBox(
                           height: 10,
                         ),
-                        CustomText("phoneNumber".translate(context)),
+                        CustomText(
+                            "phoneNumber".translate(context) + " (optional)"),
                         SizedBox(
                           height: 10,
                         ),
@@ -592,7 +597,8 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         SizedBox(
                           height: 10,
                         ),
-                        CustomText("videoLink".translate(context)),
+                        CustomText(
+                            "videoLink".translate(context) + " (optional)"),
                         SizedBox(
                           height: 10,
                         ),
@@ -1146,7 +1152,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CustomText(
-          "Price Type".translate(context),
+          "Price Type".translate(context) + " *",
           fontSize: context.font.large,
           fontWeight: FontWeight.w500,
         ),
@@ -1236,14 +1242,14 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CustomText(
-          "Service Location Options".translate(context),
+          "Service Location Options".translate(context) + " *",
           fontSize: context.font.large,
           fontWeight: FontWeight.w500,
         ),
         SizedBox(height: 10),
 
         // Location field with autocomplete
-        CustomText("Service Location".translate(context)),
+        CustomText("Service Location".translate(context) + " *"),
         SizedBox(height: 8),
         LocationAutocomplete(
           controller: locationController,
@@ -1314,6 +1320,57 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     );
   }
 
+  // Experience Location
+  Widget _buildExperienceLocationSection(BuildContext context) {
+    // Only show for Experience type
+    dynamic rawPostType = getCloudData("post_type");
+    PostType? postType;
+
+    if (rawPostType is PostType) {
+      postType = rawPostType;
+    } else {
+      // Handle the case where post_type is not properly cast
+      return SizedBox.shrink();
+    }
+
+    if (postType != PostType.experience) return SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CustomText(
+          "Experience Location".translate(context) + " *",
+          fontSize: context.font.large,
+          fontWeight: FontWeight.w500,
+        ),
+        SizedBox(height: 10),
+
+        // Location field with autocomplete
+        CustomText("Location".translate(context) + " *"),
+        SizedBox(height: 8),
+        LocationAutocomplete(
+          controller: locationController,
+          hintText: "enterLocation".translate(context),
+          onSelected: (value) {
+            locationController.text = value;
+          },
+          onLocationSelected: (locationData) {
+            setState(() {
+              formatedAddress = AddressComponent(
+                city: locationData['city'],
+                state: locationData['state'],
+                country: locationData['country'],
+                area: locationData['city'], // Using city as area if needed
+                mixed: "${locationData['city']}, ${locationData['country']}",
+              );
+            });
+          },
+        ),
+        SizedBox(height: 15),
+      ],
+    );
+  }
+
   // Auto-Expiration Date & Time
   Widget _buildExpirationDateTimeSection(BuildContext context) {
     // Only show for Experience type
@@ -1333,7 +1390,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CustomText(
-          "Auto-Expiration Date & Time".translate(context),
+          "Auto-Expiration Date & Time".translate(context) + " *",
           fontSize: context.font.large,
           fontWeight: FontWeight.w500,
         ),
@@ -1538,14 +1595,14 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       missingFields.add("Ad Title");
     }
 
+    // Check description (required for both types)
+    if (adDescriptionController.text.isEmpty) {
+      missingFields.add("Description");
+    }
+
     // Check price
     if (adPriceController.text.isEmpty) {
       missingFields.add("Price");
-    }
-
-    // Check phone number
-    if (adPhoneNumberController.text.isEmpty) {
-      missingFields.add("Phone Number");
     }
 
     // Check price type
@@ -1560,6 +1617,14 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       missingFields.add("Main Picture");
     }
 
+    // Location check for both types
+    if (formatedAddress == null ||
+        ((formatedAddress!.city == "" || formatedAddress!.city == null) &&
+            (formatedAddress!.area == "" || formatedAddress!.area == null)) ||
+        (formatedAddress!.country == "" || formatedAddress!.country == null)) {
+      missingFields.add("Location");
+    }
+
     // For experience type, check expiration date and time
     if (postType == PostType.experience) {
       if (_expirationDate == null) {
@@ -1567,17 +1632,6 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       }
       if (_expirationTime == null) {
         missingFields.add("Expiration Time");
-      }
-    }
-
-    // For service type, check location if not set
-    if (postType == PostType.service) {
-      if (formatedAddress == null ||
-          ((formatedAddress!.city == "" || formatedAddress!.city == null) &&
-              (formatedAddress!.area == "" || formatedAddress!.area == null)) ||
-          (formatedAddress!.country == "" ||
-              formatedAddress!.country == null)) {
-        missingFields.add("Location");
       }
     }
 
