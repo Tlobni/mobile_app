@@ -32,16 +32,26 @@ import 'package:hive/hive.dart';
 
 class SignupScreen extends StatefulWidget {
   final String? emailId;
+  final String? userType; // 'Provider' or 'Client'
+  final String?
+      providerType; // 'Expert' or 'Business' (only if userType is 'Provider')
 
-  const SignupScreen({super.key, this.emailId});
+  const SignupScreen({
+    super.key,
+    this.emailId,
+    this.userType,
+    this.providerType,
+  });
 
   static BlurredRouter route(RouteSettings settings) {
     Map? args = settings.arguments as Map?;
     return BlurredRouter(
       builder: (context) {
         return SignupScreen(
-            // emailId: args!['emailId'],
-            );
+          emailId: args?['emailId'],
+          userType: args?['userType'],
+          providerType: args?['providerType'],
+        );
       },
     );
   }
@@ -100,8 +110,20 @@ class _SignupScreenState extends CloudState<SignupScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Set initial user type and provider type based on selection from account type screen
+    if (widget.userType != null) {
+      _userType = widget.userType!;
+    }
+
+    if (widget.providerType != null) {
+      _providerType = widget.providerType!;
+    }
+
     // If an email is passed in, pre-populate:
-    // _emailController.text = widget.emailId ?? "";
+    if (widget.emailId?.isNotEmpty ?? false) {
+      _emailController.text = widget.emailId!;
+    }
 
     // Fetch categories when the screen initializes
     _fetchCategories();
@@ -362,54 +384,49 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                         // "Skip" button
                         Align(
                           alignment: AlignmentDirectional.bottomEnd,
-                          child: FittedBox(
-                            fit: BoxFit.none,
-                            child: MaterialButton(
-                              onPressed: () {
-                                Navigator.pushReplacementNamed(
-                                  context,
-                                  Routes.main,
-                                  arguments: {
-                                    "from": "login",
-                                    "isSkipped": true,
-                                  },
-                                );
-                              },
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              color:
-                                  context.color.forthColor.withOpacity(0.102),
-                              elevation: 0,
-                              height: 28,
-                              minWidth: 64,
-                              child: CustomText(
-                                "skip".translate(context),
-                                color: context.color.forthColor,
-                              ),
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.pushReplacementNamed(
+                                context,
+                                Routes.main,
+                                arguments: {
+                                  "from": "login",
+                                  "isSkipped": true,
+                                },
+                              );
+                            },
+                            child: CustomText(
+                              "Skip for later",
+                              color: const Color(0xFF0F2137).withOpacity(0.6),
+                              fontSize: context.font.small,
                             ),
                           ),
                         ),
-                        // Heading
+
+                        // Tlobni Logo
+                        Center(
+                          child: Image.asset(
+                            'assets/images/tlobni-logo.png',
+                            height: 80,
+                            width: 100,
+                          ),
+                        ),
+
+                        // Heading with account type
                         CustomText(
-                          "welcome".translate(context),
+                          "Sign Up",
                           fontSize: context.font.extraLarge,
                         ),
                         const SizedBox(height: 8),
+
+                        // Show what kind of account is being created
                         CustomText(
-                          "signUpToeClassify".translate(context),
+                          _userType == 'Client' ? "Client" : _providerType,
                           fontSize: context.font.large,
-                          color: context.color.textColorDark.brighten(50),
+                          color: context.color.territoryColor,
+                          fontWeight: FontWeight.bold,
                         ),
                         const SizedBox(height: 24),
-
-                        // ============== NEW UI: Provider / Client selection ==============
-                        _buildUserTypeSelector(),
-
-                        // ========== If Provider -> Show Expert or Business fields =========
-                        if (_userType == 'Provider')
-                          _buildProviderTypeSelector(),
-                        const SizedBox(height: 16),
 
                         // Conditionally show fields for Expert, Business, or Client
                         if (_userType == 'Provider' &&
@@ -469,13 +486,6 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                         ),
                         const SizedBox(height: 36),
 
-                        // Social or phone login if enabled
-                        // // if (Constant.mobileAuthentication == "1") mobileAuth(),
-                        // if (Constant.googleAuthentication == "1" ||
-                        //     Constant.appleAuthentication == "1")
-                        //   googleAndAppleAuth(),
-                        // const SizedBox(height: 24),
-
                         // Already have account? -> Login
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -507,117 +517,6 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                 ),
               );
             },
-          ),
-        ),
-      ),
-    );
-  }
-
-  // --- Provider / Client selection ---
-  Widget _buildUserTypeSelector() {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.color.secondaryColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: context.color.borderColor.darken(10)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _userType = 'Provider'),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: _userType == 'Provider'
-                      ? context.color.territoryColor
-                      : Colors.transparent,
-                  borderRadius:
-                      const BorderRadius.horizontal(left: Radius.circular(7)),
-                ),
-                child: Text(
-                  'Provider',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _userType == 'Provider'
-                        ? Colors.white
-                        : context.color.textColorDark,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _userType = 'Client'),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: _userType == 'Client'
-                      ? context.color.territoryColor
-                      : Colors.transparent,
-                  borderRadius:
-                      const BorderRadius.horizontal(right: Radius.circular(7)),
-                ),
-                child: Text(
-                  'Client',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _userType == 'Client'
-                        ? Colors.white
-                        : context.color.textColorDark,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- Expert / Business selection ---
-  Widget _buildProviderTypeSelector() {
-    return Container(
-      margin: const EdgeInsets.only(top: 14),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: context.color.secondaryColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: context.color.borderColor.darken(10)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildProviderTypeOption('Expert'),
-          const SizedBox(width: 8),
-          _buildProviderTypeOption('Business'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProviderTypeOption(String type) {
-    final isSelected = _providerType == type;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _providerType = type),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color:
-                isSelected ? context.color.territoryColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text(
-            type,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: isSelected ? Colors.white : context.color.textColorDark,
-              fontWeight: FontWeight.w500,
-            ),
           ),
         ),
       ),

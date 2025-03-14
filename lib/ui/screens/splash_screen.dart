@@ -160,7 +160,7 @@ class SplashScreenState extends State<SplashScreen>
             Navigator.of(context)
                 .pushReplacementNamed(Routes.main, arguments: {'from': "main"});
           } else {
-            Navigator.of(context).pushReplacementNamed(Routes.login);
+            Navigator.of(context).pushReplacementNamed(Routes.welcome);
           }
         }
       });

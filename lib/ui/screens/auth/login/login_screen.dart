@@ -116,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   /// Open Signup Screen
   void navigateToSignup() {
-    Navigator.pushReplacementNamed(context, Routes.signup);
+    Navigator.pushReplacementNamed(context, Routes.accountType);
   }
 
   @override
@@ -204,36 +204,36 @@ class _LoginScreenState extends State<LoginScreen> {
               /// Skip Button
               Align(
                 alignment: AlignmentDirectional.topEnd,
-                child: FittedBox(
-                  fit: BoxFit.none,
-                  child: MaterialButton(
-                    onPressed: () {
-                      HiveUtils.setUserSkip();
-                      HelperUtils.killPreviousPages(
-                        context,
-                        Routes.main,
-                        {"from": "login", "isSkipped": true},
-                      );
-                    },
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    color: context.color.forthColor.withOpacity(0.102),
-                    elevation: 0,
-                    height: 28,
-                    minWidth: 64,
-                    child: CustomText(
-                      "skip".translate(context),
-                      color: context.color.forthColor,
-                    ),
+                child: TextButton(
+                  onPressed: () {
+                    HiveUtils.setUserSkip();
+                    HelperUtils.killPreviousPages(
+                      context,
+                      Routes.main,
+                      {"from": "login", "isSkipped": true},
+                    );
+                  },
+                  child: CustomText(
+                    "Skip for later",
+                    color: const Color(0xFF0F2137).withOpacity(0.6),
+                    fontSize: context.font.small,
                   ),
                 ),
               ),
-              const SizedBox(height: 66),
+
+              // Tlobni Logo
+              Center(
+                child: Image.asset(
+                  'assets/images/tlobni-logo.png',
+                  height: 80,
+                  width: 100,
+                ),
+              ),
+              const SizedBox(height: 20),
 
               /// Title
               CustomText(
-                "welcomeback".translate(context),
+                "Sign In",
                 fontSize: context.font.extraLarge,
                 color: context.color.textDefaultColor,
               ),
@@ -241,7 +241,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               /// Email Login Fields
               CustomText(
-                'loginWithEmail'.translate(context),
+                'Enter your credentials to continue',
                 fontSize: context.font.large,
                 color: context.color.textColorDark,
               ),

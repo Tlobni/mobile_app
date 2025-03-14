@@ -1,5 +1,6 @@
 import 'package:eClassify/ui/screens/ad_details_screen.dart';
 import 'package:eClassify/ui/screens/advertisement/my_advertisment_screen.dart';
+import 'package:eClassify/ui/screens/auth/account_type/account_type_screen.dart';
 import 'package:eClassify/ui/screens/auth/login/forgot_password.dart';
 import 'package:eClassify/ui/screens/auth/login/login_screen.dart';
 import 'package:eClassify/ui/screens/auth/sign_up/mobile_signup_screen.dart';
@@ -49,6 +50,7 @@ import 'package:eClassify/ui/screens/sub_category/sub_category_screen.dart';
 import 'package:eClassify/ui/screens/subscription/packages_list.dart';
 import 'package:eClassify/ui/screens/subscription/transaction_history_screen.dart';
 import 'package:eClassify/ui/screens/user_profile/edit_profile.dart';
+import 'package:eClassify/ui/screens/welcome/welcome_screen.dart';
 import 'package:eClassify/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:eClassify/ui/screens/widgets/maintenance_mode.dart';
 import 'package:eClassify/utils/constant.dart';
@@ -59,6 +61,8 @@ import 'package:eClassify/ui/screens/item/add_item_screen/select_post_type.dart'
 class Routes {
   static const splash = 'splash';
   static const onboarding = 'onboarding';
+  static const welcome = 'welcome';
+  static const accountType = 'accountType';
   static const login = 'login';
   static const forgotPassword = 'forgotPassword';
   static const signup = 'signup';
@@ -173,7 +177,11 @@ class Routes {
         return BlurredRouter(builder: ((context) => const SplashScreen()));
       case onboarding:
         return CupertinoPageRoute(
-            builder: ((context) => const OnboardingScreen()));
+            builder: ((context) => const WelcomeScreen()));
+      case welcome:
+        return WelcomeScreen.route(routeSettings);
+      case accountType:
+        return AccountTypeScreen.route(routeSettings);
       case main:
         return MainActivity.route(routeSettings);
       case login:
