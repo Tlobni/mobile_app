@@ -2,10 +2,13 @@ import 'dart:io';
 
 import 'package:eClassify/data/cubits/subscription/assign_free_package_cubit.dart';
 import 'package:eClassify/data/cubits/subscription/get_payment_intent_cubit.dart';
+import 'package:eClassify/data/cubits/subscription/in_app_purchase_cubit.dart';
 import 'package:eClassify/data/helper/widgets.dart';
 import 'package:eClassify/data/model/subscription_pacakage_model.dart';
 import 'package:eClassify/settings.dart';
 import 'package:eClassify/ui/screens/subscription/payment_gatways.dart';
+import 'package:eClassify/ui/screens/widgets/animated_routes/blur_page_route.dart';
+import 'package:eClassify/ui/screens/widgets/blurred_dialoge_box.dart';
 import 'package:eClassify/ui/theme/theme.dart';
 import 'package:eClassify/utils/app_icon.dart';
 import 'package:eClassify/utils/constant.dart';
@@ -347,31 +350,94 @@ class _ItemListingSubscriptionPlansItemState
                                             widget.model.iosProductId!,
                                             widget.model.id!.toString());
                                       } else {
-                                        // For non-iOS platforms, trigger the endpoint directly
-                                        // without showing payment gateway selection
-                                        _selectedGateway = AppSettings
-                                                    .getEnabledPaymentGateways()
-                                                .isNotEmpty
-                                            ? AppSettings
-                                                    .getEnabledPaymentGateways()
-                                                .first
-                                                .type
-                                            : "stripe"; // Default to stripe if no gateways available
-
+                                        // Trigger the in-app purchase
                                         context
-                                            .read<GetPaymentIntentCubit>()
-                                            .getPaymentIntent(
-                                                paymentMethod:
-                                                    _selectedGateway == "stripe"
-                                                        ? "Stripe"
-                                                        : _selectedGateway ==
-                                                                "paystack"
-                                                            ? "Paystack"
-                                                            : _selectedGateway ==
-                                                                    "razorpay"
-                                                                ? "Razorpay"
-                                                                : "PhonePe",
-                                                packageId: widget.model.id!);
+                                            .read<InAppPurchaseCubit>()
+                                            .inAppPurchase(
+                                                packageId: int.parse(
+                                                    widget.model.id!.toString()),
+                                                method: "apple",
+                                                purchaseToken: "test_product");
+
+                                        // Show the dialog
+                                        UiUtils.showBlurredDialoge(context,
+                                            dialoge: BlurredDialogBox(
+                                              title: "Pending Approval",
+                                              showCancelButton: false,
+                                              acceptTextColor:
+                                                  context.color.buttonColor,
+                                              content: const CustomText(
+                                                  "Your request is pending approval. An admin will contact you soon."),
+                                              isAcceptContainerPush: true,
+                                              onAccept: () =>
+                                                  Future.value().then(
+                                                (_) {
+                                                  // Close the dialog
+
+                                                  // Listen to the cubit state after the dialog is dismissed
+                                                  final cubitState = context
+                                                      .read<
+                                                          InAppPurchaseCubit>()
+                                                      .state;
+                                                  if (cubitState
+                                                      is InAppPurchaseInSuccess) {
+                                                    HelperUtils
+                                                        .showSnackBarMessage(
+                                                            context,
+                                                            cubitState
+                                                                .responseMessage);
+                                                    Navigator.pop(Constant
+                                                        .navigatorKey
+                                                        .currentContext!);
+                                                  } else if (cubitState
+                                                      is InAppPurchaseFailure) {
+                                                    HelperUtils
+                                                        .showSnackBarMessage(
+                                                            context,
+                                                            cubitState.error);
+                                                  }
+                                                  Navigator.pop(Constant
+                                                      .navigatorKey
+                                                      .currentContext!);
+                                                  return;
+                                                },
+                                              ),
+                                            ));
+                                        // widget.inAppPurchaseManager.buy(
+                                        //     widget.model.iosProductId!,
+                                        //     widget.model.id!.toString());
+                                        // // First show pending approval dialog like in iOS
+                                        // UiUtils.showBlurredDialoge(context,
+                                        //     dialoge: BlurredDialogBox(
+                                        //       title: "Pending Approval",
+                                        //       showCancelButton: false,
+                                        //       acceptTextColor:
+                                        //           context.color.buttonColor,
+                                        //       content: const CustomText(
+                                        //           "Your request is pending approval. An admin will contact you soon."),
+                                        //       isAcceptContainerPush: true,
+                                        //       onAccept: () {
+                                        //         Navigator.pop(context);
+                                        //         // Then continue with payment intent
+                                        //         context
+                                        //             .read<
+                                        //                 GetPaymentIntentCubit>()
+                                        //             .getPaymentIntent(
+                                        //                 paymentMethod: _selectedGateway ==
+                                        //                         "stripe"
+                                        //                     ? "Stripe"
+                                        //                     : _selectedGateway ==
+                                        //                             "paystack"
+                                        //                         ? "Paystack"
+                                        //                         : _selectedGateway ==
+                                        //                                 "razorpay"
+                                        //                             ? "Razorpay"
+                                        //                             : "PhonePe",
+                                        //                 packageId:
+                                        //                     widget.model.id!);
+                                        //         return Future.value();
+                                        //       },
+                                        // ));
                                       }
                                     } else {
                                       context

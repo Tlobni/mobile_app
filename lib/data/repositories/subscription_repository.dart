@@ -9,7 +9,7 @@ class SubscriptionRepository {
       {required String type}) async {
     Map<String, dynamic> response = await Api.get(
         url: Api.getPackageApi,
-        queryParameters: {if (Platform.isIOS) "platform": "ios", "type": type});
+        queryParameters: {"platform": "ios", "type": type});
 
     List<SubscriptionPackageModel> modelList = (response['data'] as List)
         .map((element) => SubscriptionPackageModel.fromJson(element))
@@ -31,10 +31,9 @@ class SubscriptionRepository {
       Map<String, dynamic> parameters = {
         Api.packageId: packageId,
         if (isPackageAvailable) 'flag': 1,
+        'platform': Platform.isAndroid ? "android" : "ios",
+        'force_pending': true,
       };
-      // if (isPackageAvailable) {
-      //   parameters['flag'] = 1;
-      // }
 
       await Api.post(url: Api.userPurchasePackageApi, parameter: parameters);
     } catch (e) {

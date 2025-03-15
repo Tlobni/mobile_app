@@ -45,14 +45,19 @@ class AdvertisementRepository {
 
   Future<Map> getPaymentIntent(
       {required int packageId, required String paymentMethod}) async {
-    Map response = await Api.post(
+    Map<String, dynamic> parameters = {
+      "package_id": packageId,
+      "payment_method": paymentMethod,
+      "platform": Platform.isAndroid ? "android" : "ios",
+      "force_pending": true,
+      if (paymentMethod == "Paystack") "platform_type": "app"
+    };
+
+    Map<String, dynamic> response = await Api.post(
       url: Api.getPaymentIntentApi,
-      parameter: {
-        "package_id": packageId,
-        "payment_method": paymentMethod,
-        if (paymentMethod == "Paystack") "platform_type": "app"
-      },
+      parameter: parameters,
     );
+
     return response;
   }
 }

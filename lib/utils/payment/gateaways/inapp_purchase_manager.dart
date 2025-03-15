@@ -242,6 +242,10 @@ class InAppPurchaseManager {
   }
 
   Future<void> buy(String productId, String packageId) async {
+    // Note: Android platforms don't use this method directly, but instead show the pending approval dialog
+    // and then use GetPaymentIntentCubit directly in item_listing_subscription_plans_item.dart.
+    // See item_listing_subscription_plans_item.dart for the Android implementation.
+
     // For testing purposes - simulate a successful purchase
     if (productId == "test_product" || Constant.isDemoModeOn) {
       this.packageId = packageId;
@@ -318,8 +322,8 @@ class InAppPurchaseManager {
             title: "Pending Approval",
             showCancelButton: false,
             acceptTextColor: context.color.buttonColor,
-            content:
-                const CustomText("Your request is pending approval. An admin will contact you soon."),
+            content: const CustomText(
+                "Your request is pending approval. An admin will contact you soon."),
             isAcceptContainerPush: true,
             onAccept: () => Future.value().then(
               (_) {
