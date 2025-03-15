@@ -3,10 +3,12 @@
 import 'dart:developer';
 
 import 'package:eClassify/app/routes.dart';
+import 'package:eClassify/data/cubits/category/fetch_category_cubit.dart';
 import 'package:eClassify/data/cubits/custom_field/fetch_custom_fields_cubit.dart';
 import 'package:eClassify/data/model/category_model.dart';
 import 'package:eClassify/data/model/item_filter_model.dart';
 import 'package:eClassify/ui/screens/item/add_item_screen/custom_filed_structure/custom_field.dart';
+import 'package:eClassify/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
 import 'package:eClassify/ui/screens/main_activity.dart';
 import 'package:eClassify/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:eClassify/ui/screens/widgets/dynamic_field.dart';
@@ -21,6 +23,116 @@ import 'package:eClassify/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+// Custom category filter screen that works with our filter page
+class FilterCategoryScreen extends StatefulWidget {
+  final List<CategoryModel> categoryList;
+
+  const FilterCategoryScreen({Key? key, required this.categoryList})
+      : super(key: key);
+
+  @override
+  State<FilterCategoryScreen> createState() => _FilterCategoryScreenState();
+}
+
+class _FilterCategoryScreenState extends State<FilterCategoryScreen>
+    with TickerProviderStateMixin {
+  final ScrollController _pageScrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _pageScrollController.addListener(() {
+      if (_pageScrollController.isEndReached()) {
+        if (context.read<FetchCategoryCubit>().hasMoreData()) {
+          context.read<FetchCategoryCubit>().fetchCategoriesMore();
+        }
+      }
+    });
+
+    // Fetch categories with type service_experience (don't try to read state directly)
+    context.read<FetchCategoryCubit>().fetchCategories(
+          type: CategoryType.serviceExperience,
+        );
+  }
+
+  @override
+  void dispose() {
+    _pageScrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: UiUtils.buildAppBar(
+        context,
+        showBackButton: true,
+        title: "categories".translate(context),
+      ),
+      body: BlocBuilder<FetchCategoryCubit, FetchCategoryState>(
+        builder: (context, state) {
+          if (state is FetchCategoryInProgress) {
+            return Center(
+              child: CircularProgressIndicator(
+                color: Theme.of(context).colorScheme.territoryColor,
+              ),
+            );
+          }
+          if (state is FetchCategoryFailure) {
+            return Center(
+              child: Text(state.errorMessage),
+            );
+          }
+          if (state is FetchCategorySuccess) {
+            // Filter out any provider categories, only show serviceExperience
+            final categories = state.categories
+                .where((category) =>
+                    category.type == CategoryType.serviceExperience)
+                .toList();
+
+            if (categories.isEmpty) {
+              return Center(
+                child: CustomText("No Data Found".translate(context)),
+              );
+            }
+            return ListView.builder(
+              controller: _pageScrollController,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+              itemCount: categories.length + (state.isLoadingMore ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == categories.length) {
+                  return Center(
+                    child: CircularProgressIndicator(
+                      color: Theme.of(context).colorScheme.territoryColor,
+                    ),
+                  );
+                }
+                return InkWell(
+                  onTap: () {
+                    widget.categoryList.add(categories[index]);
+                    Navigator.pop(context);
+                  },
+                  child: ListTile(
+                    leading: SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: UiUtils.getImage(categories[index].url ?? "",
+                          fit: BoxFit.contain),
+                    ),
+                    title: CustomText(categories[index].name ?? ""),
+                  ),
+                );
+              },
+            );
+          }
+          return const SizedBox();
+        },
+      ),
+    );
+  }
+}
 
 class FilterScreen extends StatefulWidget {
   final Function update;
@@ -62,6 +174,7 @@ class FilterScreenState extends State<FilterScreen> {
       TextEditingController(text: Constant.itemFilter?.minPrice);
   TextEditingController maxController =
       TextEditingController(text: Constant.itemFilter?.maxPrice);
+  TextEditingController locationController = TextEditingController();
 
   // = 2; // 0: last_week   1: yesterday
   dynamic defaultCategoryID = currentVisitingCategoryId;
@@ -85,6 +198,7 @@ class FilterScreenState extends State<FilterScreen> {
   void dispose() {
     minController.dispose();
     maxController.dispose();
+    locationController.dispose();
     super.dispose();
   }
 
@@ -139,6 +253,7 @@ class FilterScreenState extends State<FilterScreen> {
 
       minController.clear();
       maxController.clear();
+      locationController.clear();
       widget.categoryList?.clear();
       selectedCategories.clear();
       moreDetailDynamicFields.clear();
@@ -157,6 +272,14 @@ class FilterScreenState extends State<FilterScreen> {
       country = HiveUtils.getCountryName() ?? "";
       latitude = HiveUtils.getLatitude() ?? null;
       longitude = HiveUtils.getLongitude() ?? null;
+
+      // Update location controller text if available
+      if ([city, _state, country]
+          .where((element) => element.isNotEmpty)
+          .isNotEmpty) {
+        locationController.text =
+            [city, country].where((element) => element.isNotEmpty).join(", ");
+      }
     }
   }
 
@@ -169,27 +292,6 @@ class FilterScreenState extends State<FilterScreen> {
     }
 
     return false;
-  }
-
-  void _onTapChooseLocation() async {
-    FocusManager.instance.primaryFocus?.unfocus();
-    Navigator.pushNamed(context, Routes.countriesScreen,
-        arguments: {"from": "filter"}).then((value) {
-      if (value != null) {
-        Map<String, dynamic> location = value as Map<String, dynamic>;
-
-        setState(() {
-          area = location["area"] ?? "";
-          city = location["city"] ?? "";
-          areaId = location["area_id"] ?? null;
-          radius = location["radius"] ?? null;
-          country = location["country"] ?? "";
-          _state = location["state"] ?? "";
-          latitude = location["latitude"] ?? null;
-          longitude = location["longitude"] ?? null;
-        });
-      }
-    });
   }
 
   Map<String, dynamic> convertToCustomFields(Map<dynamic, dynamic> fieldsData) {
@@ -279,6 +381,7 @@ class FilterScreenState extends State<FilterScreen> {
                 country: country,
                 longitude: longitude,
                 latitude: latitude,
+                area: area,
                 customFields: customFields));
 
             Navigator.pop(context, true);
@@ -385,59 +488,27 @@ class FilterScreenState extends State<FilterScreen> {
   }
 
   Widget locationWidget(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        _onTapChooseLocation();
-      },
-      child: Padding(
-        padding: const EdgeInsets.only(top: 10.0),
-        child: Container(
-          height: 55,
-          decoration: BoxDecoration(
-              color: context.color.secondaryColor,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: context.color.borderColor.darken(30),
-                width: 1,
-              )),
-          child: Padding(
-            padding: const EdgeInsetsDirectional.only(start: 14.0),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                UiUtils.getSvg(AppIcons.locationIcon,
-                    color: context.color.textDefaultColor),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsetsDirectional.only(start: 10.0),
-                    child: /*(city != "" && city != null)
-                        ? CustomText(
-                            "${area != null && area != "" ? '$area,' : ''}$city, $_state, $country",
-                            overflow: TextOverflow.ellipsis,
-                            softWrap: true,
-                          )*/
-                        [area, city, _state, country]
-                                .where((element) =>
-                                    element != null && element.isNotEmpty)
-                                .join(", ")
-                                .isNotEmpty
-                            ? CustomText(
-                                [area, city, _state, country]
-                                    .where((element) =>
-                                        element != null && element.isNotEmpty)
-                                    .join(", "),
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: true,
-                              )
-                            : CustomText("allCities".translate(context),
-                                color: context.color.textDefaultColor
-                                    .withOpacity(0.3)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+    return Padding(
+      padding: const EdgeInsets.only(top: 10.0),
+      child: LocationAutocomplete(
+        controller: locationController,
+        hintText: "allCities".translate(context),
+        onSelected: (String location) {
+          // Basic handling when only the string is returned
+        },
+        onLocationSelected: (Map<String, String> locationData) {
+          setState(() {
+            city = locationData['city'] ?? "";
+            _state = locationData['state'] ?? "";
+            country = locationData['country'] ?? "";
+            area = ""; // Reset area as it's not in the autocomplete data
+            areaId = null; // Reset areaId
+            radius = null; // Reset radius
+            // We don't have lat/lng in the autocomplete data
+            latitude = null;
+            longitude = null;
+          });
+        },
       ),
     );
   }
@@ -446,8 +517,23 @@ class FilterScreenState extends State<FilterScreen> {
     return InkWell(
       onTap: () {
         categoryList.clear();
-        Navigator.pushNamed(context, Routes.categoryFilterScreen,
-            arguments: {"categoryList": categoryList}).then((value) {
+        // Use MaterialPageRoute with BlocProvider to ensure the FetchCategoryCubit is available
+        Navigator.of(context)
+            .push(
+          MaterialPageRoute(
+            builder: (context) => BlocProvider(
+              create: (context) {
+                final cubit = FetchCategoryCubit();
+                // No need to fetch here, the screen will do it properly now
+                return cubit;
+              },
+              child: FilterCategoryScreen(
+                categoryList: categoryList,
+              ),
+            ),
+          ),
+        )
+            .then((value) {
           if (categoryList.isNotEmpty) {
             setState(() {});
             selectedCategories.clear();
@@ -518,7 +604,8 @@ class FilterScreenState extends State<FilterScreen> {
             longitude: longitude,
             latitude: latitude,
             minPrice: minController.text,
-            categoryId: selectedCategory?.id ?? "",
+            categoryId:
+                selectedCategories.isNotEmpty ? selectedCategories.last : "",
             postedSince: postedOn,
           );
 

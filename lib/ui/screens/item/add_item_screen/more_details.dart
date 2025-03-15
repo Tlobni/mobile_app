@@ -65,17 +65,25 @@ class _AddMoreDetailsScreenState extends CloudState<AddMoreDetailsScreen> {
           if (widget.isEdit == true) {
             ItemModel item = getCloudData('edit_request') as ItemModel;
 
-            /*CustomFieldModel matchingField =
-                item.customFields!.firstWhere((e) => e.id == field.id);*/
+            // Find the matching custom field value in the item
+            if (item.customFields != null) {
+              CustomFieldModel? matchingField =
+                  item.customFields!.any((e) => e.id == field.id)
+                      ? item.customFields?.firstWhere((e) => e.id == field.id)
+                      : null;
 
-            CustomFieldModel? matchingField =
-                item.customFields!.any((e) => e.id == field.id)
-                    ? item.customFields?.firstWhere((e) => e.id == field.id)
-                    : null;
-            if (matchingField != null) {
-              // Set 'value' in 'fieldData' based on the matching field's value
-              fieldData['value'] = matchingField.value;
-            } // Use null-aware operator '?.' for safety
+              if (matchingField != null && matchingField.value != null) {
+                // Set 'value' in 'fieldData' based on the matching field's value
+                fieldData['value'] = matchingField.value;
+
+                // Pre-populate the AbstractField.fieldsData for submission
+                if (matchingField.value is List &&
+                    (matchingField.value as List).isNotEmpty) {
+                  AbstractField.fieldsData[field.id.toString()] =
+                      matchingField.value;
+                }
+              }
+            }
           }
 
           fieldData['isEdit'] = widget.isEdit == true;

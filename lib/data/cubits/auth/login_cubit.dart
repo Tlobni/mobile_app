@@ -81,7 +81,6 @@ class LoginCubit extends Cubit<LoginState> {
         'fcmId': response['fcm_id'],
         'notification': response['notification'],
         'address': response['address'],
-        'businessName': response['business_name'],
         'categories': response['categories'],
         'phone': response['phone'],
         'gender': response['gender'],

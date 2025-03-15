@@ -77,7 +77,6 @@ class MultiAuthRepository {
     String? gender,
     String? location,
     String? city,
-    String? businessName,
     List<String>? categories,
     String? phone,
     bool? phonePublic,
@@ -112,9 +111,7 @@ class MultiAuthRepository {
         if (providerType == "Expert") {
           userData["fullName"] = fullName;
           userData["gender"] = gender;
-        } else if (providerType == "Business") {
-          userData["businessName"] = businessName;
-        }
+        } 
       } else {
         userData["fullName"] = fullName;
         userData["gender"] = gender;

@@ -12,6 +12,7 @@ import 'package:eClassify/data/cubits/system/fetch_system_settings_cubit.dart';
 import 'package:eClassify/data/model/item/item_model.dart';
 import 'package:eClassify/data/model/system_settings_model.dart';
 import 'package:eClassify/ui/screens/chat/chat_list_screen.dart';
+import 'package:eClassify/ui/screens/favorite_screen.dart';
 import 'package:eClassify/ui/screens/home/home_screen.dart';
 import 'package:eClassify/ui/screens/home/search_screen.dart';
 import 'package:eClassify/ui/screens/item/my_items_screen.dart';
@@ -305,7 +306,9 @@ class MainActivityState extends State<MainActivity>
   late List<Widget> pages = [
     HomeScreen(from: widget.from),
     ChatListScreen(),
-    const ItemsScreen(),
+    HiveUtils.getUserType() == "Client"
+        ? const FavoriteScreen()
+        : const ItemsScreen(),
     const ProfileScreen(),
   ];
 
@@ -380,9 +383,24 @@ class MainActivityState extends State<MainActivity>
       }
     }
     searchBody = {};
-    if (index == 1 || index == 2) {
+    if (index == 1) {
       UiUtils.checkUser(
           onNotGuest: () {
+            currentTab = index;
+            pageController.jumpToPage(currentTab);
+            setState(
+              () {},
+            );
+          },
+          context: context);
+    } else if (index == 2) {
+      UiUtils.checkUser(
+          onNotGuest: () {
+            // Re-initialize the page dynamically based on current user role
+            pages[2] = HiveUtils.getUserType() == "Client"
+                ? const FavoriteScreen()
+                : const ItemsScreen();
+
             currentTab = index;
             pageController.jumpToPage(currentTab);
             setState(
@@ -393,15 +411,16 @@ class MainActivityState extends State<MainActivity>
     } else {
       currentTab = index;
       pageController.jumpToPage(currentTab);
-
-      setState(() {});
+      setState(
+        () {},
+      );
     }
   }
 
   BottomAppBar bottomBar() {
     final isProvider = HiveUtils.getUserType() == "Expert" ||
         HiveUtils.getUserType() == "Business";
-    log('isProvider: $isProvider');
+    log('Bottom navigation: User type is ${HiveUtils.getUserType()}, isProvider: $isProvider');
 
     // Check if user is logged in
     final isLoggedIn = HiveUtils.isUserAuthenticated();
@@ -426,66 +445,69 @@ class MainActivityState extends State<MainActivity>
                   AppIcons.homeNavActive, "homeTab".translate(context)),
               buildBottomNavigationbarItem(1, AppIcons.chatNav,
                   AppIcons.chatNavActive, "chat".translate(context)),
-              BlocListener<FetchUserPackageLimitCubit,
-                  FetchUserPackageLimitState>(
-                listener: (context, state) {
-                  if (state is FetchUserPackageLimitFailure) {
-                    // Check if the error message is "User is pending"
-                    if (state.error.toString() == "User is pending") {
-                      // Show pending dialog for this specific error message
-                      UiUtils.showBlurredDialoge(
-                        context,
-                        dialoge: BlurredDialogBox(
-                          onAccept: () async {
-                            // Just close the dialog without returning anything
-                            // and use async to ensure it works as Future
-                          },
-                          svgImageColor: context.color.territoryColor,
-                          showCancelButton: false,
-                          title: "Pending".translate(context),
-                          content: CustomText(
-                            "Your subscription is pending. The admin will contact you soon.",
-                            textAlign: TextAlign.center,
-                          ),
-                          acceptButtonName:
-                              "OK", // Ensuring the button text is OK or any label you prefer
-                          acceptTextColor: Colors
-                              .white, // Setting button text color to white
-                        ),
-                      );
-                    } else {
-                      // Show the regular error dialog for other errors
-                      UiUtils.noPackageAvailableDialog(context);
-                    }
-                  }
-                  if (state is FetchUserPackageLimitPending) {
-                    UiUtils.showBlurredDialoge(
-                      context,
-                      dialoge: BlurredDialogBox(
-                        onAccept: () async {
-                          // Just close the dialog without returning anything
-                          // and use async to ensure it works as Future
-                          Navigator.of(context).pop();
-                        },
-                        svgImagePath: AppIcons.notification,
-                        svgImageColor: context.color.territoryColor,
-                        showCancelButton: false,
-                        title: "Pending".translate(context),
-                        content: CustomText(
-                          state.message,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    );
-                  }
-                  if (state is FetchUserPackageLimitInSuccess) {
-                    Navigator.pushNamed(context, Routes.selectCategoryScreen);
-                  }
-                },
-                child: Transform(
-                  transform: Matrix4.identity()..translate(0.toDouble(), -20),
-                  child: isProvider
-                      ? InkWell(
+              // Only show post button if user is a provider
+              isProvider
+                  ? BlocListener<FetchUserPackageLimitCubit,
+                      FetchUserPackageLimitState>(
+                      listener: (context, state) {
+                        if (state is FetchUserPackageLimitFailure) {
+                          // Check if the error message is "User is pending"
+                          if (state.error.toString() == "User is pending") {
+                            // Show pending dialog for this specific error message
+                            UiUtils.showBlurredDialoge(
+                              context,
+                              dialoge: BlurredDialogBox(
+                                onAccept: () async {
+                                  // Just close the dialog without returning anything
+                                  // and use async to ensure it works as Future
+                                },
+                                svgImageColor: context.color.territoryColor,
+                                showCancelButton: false,
+                                title: "Pending".translate(context),
+                                content: CustomText(
+                                  "Your subscription is pending. The admin will contact you soon.",
+                                  textAlign: TextAlign.center,
+                                ),
+                                acceptButtonName:
+                                    "OK", // Ensuring the button text is OK or any label you prefer
+                                acceptTextColor: Colors
+                                    .white, // Setting button text color to white
+                              ),
+                            );
+                          } else {
+                            // Show the regular error dialog for other errors
+                            UiUtils.noPackageAvailableDialog(context);
+                          }
+                        }
+                        if (state is FetchUserPackageLimitPending) {
+                          UiUtils.showBlurredDialoge(
+                            context,
+                            dialoge: BlurredDialogBox(
+                              onAccept: () async {
+                                // Just close the dialog without returning anything
+                                // and use async to ensure it works as Future
+                                Navigator.of(context).pop();
+                              },
+                              svgImagePath: AppIcons.notification,
+                              svgImageColor: context.color.territoryColor,
+                              showCancelButton: false,
+                              title: "Pending".translate(context),
+                              content: CustomText(
+                                state.message,
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          );
+                        }
+                        if (state is FetchUserPackageLimitInSuccess) {
+                          Navigator.pushNamed(
+                              context, Routes.selectCategoryScreen);
+                        }
+                      },
+                      child: Transform(
+                        transform: Matrix4.identity()
+                          ..translate(0.toDouble(), -20),
+                        child: InkWell(
                           onTap: () async {
                             UiUtils.checkUser(
                                 onNotGuest: () {
@@ -505,17 +527,15 @@ class MainActivityState extends State<MainActivity>
                                     svgEdit.toSVGString() ?? "",
                                   ),
                           ),
-                        )
-                      : SizedBox(),
-                ),
-              ),
+                        ),
+                      ),
+                    )
+                  : SizedBox(), // Empty box if not a provider
               buildBottomNavigationbarItem(
                   2,
+                  isClient ? AppIcons.favoriteNav : AppIcons.myAdsNav,
                   isClient
-                      ? AppIcons.favoriteNav ?? AppIcons.myAdsNav
-                      : AppIcons.myAdsNav,
-                  isClient
-                      ? AppIcons.favoriteNavActive ?? AppIcons.myAdsNavActive
+                      ? AppIcons.favoriteNavActive
                       : AppIcons.myAdsNavActive,
                   isClient
                       ? "favorites".translate(context)

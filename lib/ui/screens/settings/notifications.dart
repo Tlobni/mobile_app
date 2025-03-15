@@ -14,9 +14,11 @@ import 'package:eClassify/utils/api.dart';
 import 'package:eClassify/utils/custom_text.dart';
 import 'package:eClassify/utils/extensions/extensions.dart';
 import 'package:eClassify/utils/helper_utils.dart';
+import 'package:eClassify/utils/hive_utils.dart';
 import 'package:eClassify/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:developer' as developer;
 
 late NotificationData selectedNotification;
 
@@ -44,6 +46,11 @@ class NotificationsState extends State<Notifications> {
     AdHelper.loadInterstitialAd();
     context.read<FetchNotificationsCubit>().fetchNotifications();
     _pageScrollController.addListener(_pageScroll);
+
+    // Mark notifications as read when screen is opened
+    if (HiveUtils.isUserAuthenticated()) {
+      _markNotificationsAsRead();
+    }
   }
 
   void _pageScroll() {
@@ -167,6 +174,17 @@ class NotificationsState extends State<Notifications> {
               itemBuilder: (context, index) {
                 NotificationData notificationData =
                     state.notificationdata[index];
+
+                // For providers, visually mark provider-specific notifications as read
+                // when they view them
+                if (HiveUtils.getUserType() == "Expert" ||
+                    HiveUtils.getUserType() == "Business") {
+                  if (notificationData.isProviderNotification() &&
+                      !notificationData.isRead) {
+                    notificationData.markAsRead();
+                  }
+                }
+
                 return GestureDetector(
                   onTap: () {
                     selectedNotification = notificationData;
@@ -260,5 +278,24 @@ class NotificationsState extends State<Notifications> {
       throw CustomException(response[Api.message]);
     }
     return itemData;
+  }
+
+  // Mark provider notifications as read
+  void _markNotificationsAsRead() {
+    // Only mark as read for providers
+    final isProvider = HiveUtils.getUserType() == "Expert" ||
+        HiveUtils.getUserType() == "Business";
+
+    if (!isProvider) return;
+
+    // Instead of using a custom endpoint, let's update the notifications
+    // locally and count them as read when displayed
+    context.read<FetchNotificationsCubit>().fetchNotifications().then((_) {
+      // We can update the state in the UI to reflect notifications as read
+      // This is a visual change, as the backend might not support direct "mark as read"
+      developer.log('Notifications fetched and displayed as read');
+    }).catchError((error) {
+      developer.log('Error fetching notifications: $error');
+    });
   }
 }

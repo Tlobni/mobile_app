@@ -85,6 +85,22 @@ class FetchHomeAllItemsCubit extends Cubit<FetchHomeAllItemsState> {
     }
   }
 
+  void updateItem(ItemModel editedItem) {
+    if (state is FetchHomeAllItemsSuccess) {
+      final currentState = state as FetchHomeAllItemsSuccess;
+      final List<ItemModel> updatedItems = List.from(currentState.items);
+
+      final int index =
+          updatedItems.indexWhere((item) => item.id == editedItem.id);
+
+      if (index != -1) {
+        updatedItems[index] = editedItem;
+
+        emit(currentState.copyWith(items: updatedItems));
+      }
+    }
+  }
+
   Future<void> fetchMore(
       {String? country,
       String? stateName,

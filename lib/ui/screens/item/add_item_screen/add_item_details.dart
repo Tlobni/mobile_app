@@ -1,9 +1,11 @@
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:dotted_border/dotted_border.dart';
 import 'package:eClassify/app/routes.dart';
 import 'package:eClassify/data/cubits/custom_field/fetch_custom_fields_cubit.dart';
 import 'package:eClassify/data/cubits/item/manage_item_cubit.dart';
+import 'package:eClassify/data/cubits/item/fetch_my_item_cubit.dart';
 import 'package:eClassify/data/model/category_model.dart';
 import 'package:eClassify/data/model/item/item_model.dart';
 import 'package:eClassify/ui/screens/item/add_item_screen/confirm_location_screen.dart';
@@ -11,6 +13,7 @@ import 'package:eClassify/ui/screens/item/add_item_screen/models/post_type.dart'
 import 'package:eClassify/ui/screens/item/add_item_screen/select_category.dart';
 import 'package:eClassify/ui/screens/item/add_item_screen/widgets/image_adapter.dart';
 import 'package:eClassify/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
+import 'package:eClassify/ui/screens/item/my_item_tab_screen.dart';
 import 'package:eClassify/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:eClassify/ui/screens/widgets/blurred_dialoge_box.dart';
 import 'package:eClassify/ui/screens/widgets/custom_text_form_field.dart';
@@ -136,6 +139,9 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     if (widget.isEdit == true) {
       item = getCloudData('edit_request') as ItemModel;
 
+      // Debug the item's location details
+      _debugItemLocationDetails();
+
       clearCloudData("item_details");
       clearCloudData("with_more_details");
       context.read<FetchCustomFieldsCubit>().fetchCustomFields(
@@ -147,6 +153,84 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       adPhoneNumberController.text = item?.contact ?? "";
       adAdditionalDetailsController.text = item?.videoLink ?? "";
       titleImageURL = item?.image ?? "";
+
+      // Set the price type if it exists
+      if (item?.priceType != null && item!.priceType!.isNotEmpty) {
+        _priceType = item!.priceType;
+      }
+
+      // Set the formatted address for location
+      if (item != null) {
+        formatedAddress = AddressComponent(
+            area: item!.area,
+            areaId: item!.areaId,
+            city: item!.city,
+            country: item!.country,
+            state: item!.state,
+            mixed: "${item!.city}, ${item!.country}");
+
+        // Set location controller text - prioritize showing city and country
+        // Build location text prioritizing city and country
+        String cityCountry = "";
+        if ((item!.city != null && item!.city!.isNotEmpty) &&
+            (item!.country != null && item!.country!.isNotEmpty)) {
+          cityCountry = "${item!.city}, ${item!.country}";
+        }
+
+        // If we have city,country - use that, otherwise try other combinations
+        if (cityCountry.isNotEmpty) {
+          locationController.text = cityCountry;
+        } else {
+          // Fallback to combining all location parts
+          String locationText = [
+            item!.area,
+            item!.city,
+            item!.state,
+            item!.country
+          ].where((part) => part != null && part.isNotEmpty).join(', ');
+
+          if (locationText.isNotEmpty) {
+            locationController.text = locationText;
+          }
+        }
+
+        print("Location set to: ${locationController.text}");
+      }
+
+      // Load special tags if they exist
+      if (item?.specialTags != null) {
+        try {
+          print("Loading special tags: ${item!.specialTags}");
+
+          if (item!.specialTags!.containsKey('exclusive_women')) {
+            // Handle both boolean and string values
+            var value = item!.specialTags!['exclusive_women'];
+            _specialTags['exclusive_women'] = (value == true) ||
+                (value == "true") ||
+                (value.toString().toLowerCase() == "true");
+          }
+
+          if (item!.specialTags!.containsKey('corporate_package')) {
+            // Handle both boolean and string values
+            var value = item!.specialTags!['corporate_package'];
+            _specialTags['corporate_package'] = (value == true) ||
+                (value == "true") ||
+                (value.toString().toLowerCase() == "true");
+          }
+        } catch (e) {
+          print("Error loading special tags: $e");
+        }
+      }
+
+      // Load service location options
+      if (item?.locationType != null) {
+        List<String> locationTypes = item!.locationType ?? [];
+
+        _atClientLocation = locationTypes.contains('client_location');
+        _atPublicVenue = locationTypes.contains('public_venue');
+        _atMyLocation = locationTypes.contains('my_location');
+        _isVirtual = locationTypes.contains('virtual');
+      }
 
       List<String?>? list = item?.galleryImages?.map((e) => e.image).toList();
       mixedItemImageList.addAll([...list ?? []]);
@@ -178,11 +262,86 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     });
   }
 
+  void _debugItemLocationDetails() {
+    if (widget.isEdit == true && item != null) {
+      print("=== DEBUG ITEM LOCATION DETAILS ===");
+      print("Item ID: ${item!.id}");
+      print("City: ${item!.city}");
+      print("Country: ${item!.country}");
+      print("State: ${item!.state}");
+      print("Area: ${item!.area}");
+      print("Area ID: ${item!.areaId}");
+      print("All Location Data: ${item!.toJson()}");
+      print("=================================");
+    }
+  }
+
+  // Safely update location data without immediate setState
+  void _updateLocationData(Map<String, String> locationData) {
+    // Update the address component directly
+    formatedAddress = AddressComponent(
+      city: locationData['city'] ?? formatedAddress?.city,
+      state: locationData['state'] ?? formatedAddress?.state,
+      country: locationData['country'] ?? formatedAddress?.country,
+      area: locationData['city'] ?? formatedAddress?.area,
+      mixed: "${locationData['city'] ?? ''}, ${locationData['country'] ?? ''}",
+      areaId: formatedAddress?.areaId,
+    );
+
+    // Always ensure the locationController has the consistent value
+    if (formatedAddress != null &&
+        formatedAddress!.mixed != null &&
+        formatedAddress!.mixed!.isNotEmpty) {
+      // Only update if it's different to avoid unnecessary text controller changes
+      if (locationController.text != formatedAddress!.mixed) {
+        locationController.text = formatedAddress!.mixed!;
+      }
+    }
+
+    // Schedule a rebuild for after the current call stack is complete
+    if (mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          // This empty setState will trigger a rebuild with the updated data
+        });
+      });
+    }
+
+    // Add debug log
+    print("Location updated to: ${locationController.text}");
+    print("FormatedAddress: $formatedAddress");
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<ManageItemCubit, ManageItemState>(
       listener: (context, state) {
         if (state is ManageItemSuccess) {
+          // Get the updated item
+          ItemModel updatedItem = state.model;
+
+          if (widget.isEdit == true) {
+            // If we're editing, update other BLoCs with this item
+            try {
+              // If we have myAdsCubitReference (from MyItemTabScreen)
+              String? statusKey = getCloudData('edit_from') as String?;
+              if (statusKey != null &&
+                  myAdsCubitReference.containsKey(statusKey)) {
+                // Update the specific tab's cubit
+                FetchMyItemsCubit tabCubit = myAdsCubitReference[statusKey]!;
+                tabCubit.edit(updatedItem);
+                print("Successfully updated MyItemTab with status: $statusKey");
+              }
+
+              // Also try to update the cubit in the current context
+              context
+                  .read<ManageItemCubit>()
+                  .updateItemInOtherBlocs(updatedItem, context);
+            } catch (e) {
+              print("Error updating other BLoCs: $e");
+            }
+          }
+
           // Show success message
           HelperUtils.showSnackBarMessage(
               context,
@@ -190,8 +349,14 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                   ? "Item updated successfully"
                   : "Item posted successfully");
 
-          // Navigate to homepage
-          Navigator.of(context).popUntil((route) => route.isFirst);
+          // Navigate back with a result
+          if (widget.isEdit == true) {
+            // Pop with true value to indicate successful edit
+            Navigator.of(context).pop(true);
+          } else {
+            // For new item, just navigate to home
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          }
         } else if (state is ManageItemFail) {
           // Show error message
           HelperUtils.showSnackBarMessage(
@@ -225,18 +390,54 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                       return;
                     }
 
+                    // Set up location check
+                    bool isEdit = widget.isEdit == true;
+                    bool hasLocationData = false;
+
+                    // Check if the item already has location data in edit mode
+                    if (isEdit && item != null) {
+                      hasLocationData = (item!.city != null &&
+                              item!.city!.isNotEmpty) ||
+                          (item!.area != null && item!.area!.isNotEmpty) ||
+                          (item!.country != null && item!.country!.isNotEmpty);
+                    }
+
                     // For experience type OR if location is valid for service type
                     if (postType == PostType.experience ||
-                        formatedAddress != null &&
+                        hasLocationData ||
+                        (formatedAddress != null &&
                             !((formatedAddress!.city == "" ||
                                     formatedAddress!.city == null) &&
                                 (formatedAddress!.area == "" ||
                                     formatedAddress!.area == null)) &&
                             !(formatedAddress!.country == "" ||
-                                formatedAddress!.country == null)) {
+                                formatedAddress!.country == null))) {
                       try {
-                        Map<String, dynamic> cloudData =
+                        // Create a fresh cloudData map to ensure we're collecting current values
+                        // This avoids using potentially stale data from getCloudData("with_more_details")
+                        Map<String, dynamic> cloudData = {};
+
+                        // Merge any existing custom fields data which might have been set in more_details screen
+                        Map<String, dynamic> existingData =
                             getCloudData("with_more_details") ?? {};
+                        if (existingData.containsKey('custom_fields')) {
+                          cloudData['custom_fields'] =
+                              existingData['custom_fields'];
+                        } else if (AbstractField.fieldsData.isNotEmpty) {
+                          // If we have data in AbstractField.fieldsData but it wasn't in more_details,
+                          // encode it directly
+                          cloudData['custom_fields'] =
+                              json.encode(AbstractField.fieldsData);
+                          print(
+                              "Using AbstractField.fieldsData directly: ${AbstractField.fieldsData}");
+                        }
+
+                        // Preserve any file references or binary data from the previous screen
+                        existingData.forEach((key, value) {
+                          if (key.startsWith('custom_file_') || value is File) {
+                            cloudData[key] = value;
+                          }
+                        });
 
                         // Add form data to cloudData
                         cloudData['name'] = adTitleController.text;
@@ -269,7 +470,14 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         }
 
                         // Add special tags and price type
-                        cloudData['special_tags'] = _specialTags;
+                        // Format special tags as strings to match database format
+                        Map<String, String> formattedSpecialTags = {};
+                        _specialTags.forEach((key, value) {
+                          formattedSpecialTags[key] = value.toString();
+                        });
+
+                        print("Saving special tags: $formattedSpecialTags");
+                        cloudData['special_tags'] = formattedSpecialTags;
                         cloudData['price_type'] = _priceType;
 
                         // Add post type
@@ -278,6 +486,32 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
                         // Add service location options if applicable
                         if (postType == PostType.service) {
+                          // Create a list to gather location types
+                          List<String> locationTypes = [];
+
+                          if (_atClientLocation)
+                            locationTypes.add('client_location');
+                          if (_atPublicVenue) locationTypes.add('public_venue');
+                          if (_atMyLocation) locationTypes.add('my_location');
+                          if (_isVirtual) locationTypes.add('virtual');
+
+                          print("Saving location types: $locationTypes");
+
+                          // Store location types in the format expected by the API
+                          // The API might expect different formats for new vs edit
+                          if (locationTypes.isNotEmpty) {
+                            if (widget.isEdit == true) {
+                              // For edit, send as array/list (original format from loaded item)
+                              cloudData['location_type'] =
+                                  locationTypes.join(',');
+                            } else {
+                              // For new posts, try both formats to ensure compatibility
+                              cloudData['location_type'] =
+                                  locationTypes.join(',');
+                            }
+                          }
+
+                          // Add individual flags for backward compatibility
                           cloudData['at_client_location'] = _atClientLocation;
                           cloudData['at_public_venue'] = _atPublicVenue;
                           cloudData['at_my_location'] = _atMyLocation;
@@ -838,10 +1072,6 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                 clipBehavior: Clip.antiAlias,
                 decoration:
                     BoxDecoration(borderRadius: BorderRadius.circular(10)),
-                child: Image.file(
-                  file,
-                  fit: BoxFit.cover,
-                ),
               ),
             ],
           ),
@@ -906,7 +1136,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                 titleImageURL = "";
                 setState(() {});
               });
-            })
+            }),
         ],
       );
     });
@@ -1238,6 +1468,18 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
     if (postType != PostType.service) return SizedBox.shrink();
 
+    // Debug the current state of location options
+    print("Current service location options:");
+    print("At Client's Location: $_atClientLocation");
+    print("At Public Venue: $_atPublicVenue");
+    print("At My Location: $_atMyLocation");
+    print("Virtual: $_isVirtual");
+    print("Current location text: ${locationController.text}");
+    if (formatedAddress != null) {
+      print(
+          "Formatted address - City: ${formatedAddress!.city}, Country: ${formatedAddress!.country}");
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1255,65 +1497,73 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
           controller: locationController,
           hintText: "enterLocation".translate(context),
           onSelected: (value) {
+            // Just update the controller, don't call setState() here
             locationController.text = value;
           },
           onLocationSelected: (locationData) {
-            setState(() {
-              formatedAddress = AddressComponent(
-                city: locationData['city'],
-                state: locationData['state'],
-                country: locationData['country'],
-                area: locationData['city'], // Using city as area if needed
-                mixed: "${locationData['city']}, ${locationData['country']}",
-              );
-            });
+            // Use the shared method to update location data safely
+            _updateLocationData(locationData);
           },
         ),
         SizedBox(height: 15),
 
-        Column(
-          children: [
-            _buildCheckboxOption(
-              context,
-              title: "At the Client's Location",
-              value: _atClientLocation,
-              onChanged: (value) {
-                setState(() {
-                  _atClientLocation = value ?? false;
-                });
-              },
-            ),
-            _buildCheckboxOption(
-              context,
-              title: "At a Public Venue",
-              value: _atPublicVenue,
-              onChanged: (value) {
-                setState(() {
-                  _atPublicVenue = value ?? false;
-                });
-              },
-            ),
-            _buildCheckboxOption(
-              context,
-              title: "At My Location",
-              value: _atMyLocation,
-              onChanged: (value) {
-                setState(() {
-                  _atMyLocation = value ?? false;
-                });
-              },
-            ),
-            _buildCheckboxOption(
-              context,
-              title: "Online (Virtual)",
-              value: _isVirtual,
-              onChanged: (value) {
-                setState(() {
-                  _isVirtual = value ?? false;
-                });
-              },
-            ),
-          ],
+        // Location type options with improved visibility
+        Container(
+          padding: EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            border: Border.all(color: context.color.borderColor),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CustomText(
+                "Service Delivery Methods".translate(context),
+                fontWeight: FontWeight.w500,
+              ),
+              SizedBox(height: 5),
+              _buildCheckboxOption(
+                context,
+                title: "At the Client's Location",
+                value: _atClientLocation,
+                onChanged: (value) {
+                  setState(() {
+                    _atClientLocation = value ?? false;
+                  });
+                },
+              ),
+              _buildCheckboxOption(
+                context,
+                title: "At a Public Venue",
+                value: _atPublicVenue,
+                onChanged: (value) {
+                  setState(() {
+                    _atPublicVenue = value ?? false;
+                  });
+                },
+              ),
+              _buildCheckboxOption(
+                context,
+                title: "At My Location",
+                value: _atMyLocation,
+                onChanged: (value) {
+                  setState(() {
+                    _atMyLocation = value ?? false;
+                  });
+                },
+              ),
+              _buildCheckboxOption(
+                context,
+                title: "Online (Virtual)",
+                value: _isVirtual,
+                onChanged: (value) {
+                  setState(() {
+                    _isVirtual = value ?? false;
+                  });
+                },
+              ),
+            ],
+          ),
         ),
         SizedBox(height: 15),
       ],
@@ -1352,18 +1602,12 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
           controller: locationController,
           hintText: "enterLocation".translate(context),
           onSelected: (value) {
+            // Just update the controller, don't call setState
             locationController.text = value;
           },
           onLocationSelected: (locationData) {
-            setState(() {
-              formatedAddress = AddressComponent(
-                city: locationData['city'],
-                state: locationData['state'],
-                country: locationData['country'],
-                area: locationData['city'], // Using city as area if needed
-                mixed: "${locationData['city']}, ${locationData['country']}",
-              );
-            });
+            // Use the shared method to update location data safely
+            _updateLocationData(locationData);
           },
         ),
         SizedBox(height: 15),
@@ -1554,8 +1798,14 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     required bool value,
     required Function(bool?) onChanged,
   }) {
+    // Debug print to help diagnose the issue
+    print("Building checkbox for $title with value $value");
+
     return InkWell(
-      onTap: () => onChanged(!value),
+      onTap: () {
+        print("Checkbox tapped: $title - changing from $value to ${!value}");
+        onChanged(!value);
+      },
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6.0),
         child: Row(
@@ -1566,7 +1816,10 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
               ),
               child: Checkbox(
                 value: value,
-                onChanged: onChanged,
+                onChanged: (newValue) {
+                  print("Checkbox changed via checkbox: $title - to $newValue");
+                  onChanged(newValue);
+                },
                 activeColor: context.color.textColorDark,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
@@ -1617,20 +1870,40 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       missingFields.add("Main Picture");
     }
 
+    // In edit mode, we may have already retrieved the location from the item
+    bool isEdit = widget.isEdit == true;
+
     // Location check for both types
-    if (formatedAddress == null ||
-        ((formatedAddress!.city == "" || formatedAddress!.city == null) &&
-            (formatedAddress!.area == "" || formatedAddress!.area == null)) ||
-        (formatedAddress!.country == "" || formatedAddress!.country == null)) {
-      missingFields.add("Location");
+    if (!isEdit &&
+        (formatedAddress == null ||
+            ((formatedAddress!.city == "" || formatedAddress!.city == null) &&
+                (formatedAddress!.area == "" ||
+                    formatedAddress!.area == null)) ||
+            (formatedAddress!.country == "" ||
+                formatedAddress!.country == null))) {
+      // In edit mode, check if the item has location data
+      if (isEdit && item != null) {
+        bool hasLocationData = (item!.city != null && item!.city!.isNotEmpty) ||
+            (item!.area != null && item!.area!.isNotEmpty) ||
+            (item!.country != null && item!.country!.isNotEmpty);
+        if (!hasLocationData) {
+          missingFields.add("Location");
+        }
+      } else {
+        missingFields.add("Location");
+      }
     }
 
     // For experience type, check expiration date and time
     if (postType == PostType.experience) {
-      if (_expirationDate == null) {
+      if (_expirationDate == null &&
+          !(isEdit && item?.expirationDate != null)) {
         missingFields.add("Expiration Date");
       }
-      if (_expirationTime == null) {
+      if (_expirationTime == null &&
+          !(isEdit &&
+              item?.expirationTime != null &&
+              item!.expirationTime!.isNotEmpty)) {
         missingFields.add("Expiration Time");
       }
     }
@@ -1662,7 +1935,16 @@ class AddressComponent {
     this.area,
     this.areaId,
     this.mixed,
-  });
+  }) {
+    // Automatically set mixed if not provided but we have city and country
+    if (mixed == null &&
+        city != null &&
+        country != null &&
+        city!.isNotEmpty &&
+        country!.isNotEmpty) {
+      mixed = "$city, $country";
+    }
+  }
 
   static AddressComponent copyWithFields(
     AddressComponent original, {
@@ -1670,13 +1952,25 @@ class AddressComponent {
     String? newState,
     String? newCountry,
   }) {
+    String? newMixed;
+    if (newCity != null && original.country != null) {
+      newMixed = "$newCity, ${original.country}";
+    } else if (original.city != null && newCountry != null) {
+      newMixed = "${original.city}, $newCountry";
+    }
+
     return AddressComponent(
       city: newCity ?? original.city,
       state: newState ?? original.state,
       country: newCountry ?? original.country,
       area: original.area,
       areaId: original.areaId,
-      mixed: original.mixed,
+      mixed: newMixed ?? original.mixed,
     );
+  }
+
+  @override
+  String toString() {
+    return 'AddressComponent{city: $city, country: $country, state: $state, area: $area, areaId: $areaId, mixed: $mixed}';
   }
 }

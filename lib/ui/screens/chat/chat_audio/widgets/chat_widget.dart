@@ -141,7 +141,33 @@ class ChatMessageState extends State<ChatMessage>
     ///This will check if text contains link
     final matcher = RegExp(
         r"(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)");
-    return matcher.hasMatch(input);
+
+    // First check if it matches our pattern
+    bool isMatch = matcher.hasMatch(input);
+
+    if (isMatch) {
+      // If it doesn't start with http:// or https://, it needs to be prefixed
+      if (!input.startsWith('http://') && !input.startsWith('https://')) {
+        // If it starts with www., prefix with https://
+        if (input.startsWith('www.')) {
+          link = 'https://$input';
+        } else {
+          // Otherwise prefix with https://www.
+          link = 'https://www.$input';
+        }
+      } else {
+        link = input;
+      }
+
+      try {
+        // Try to parse as URI to further validate
+        final uri = Uri.parse(link!);
+        return uri.hasScheme && uri.host.isNotEmpty;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
   }
 
   List _replaceLink() {
@@ -252,18 +278,27 @@ class ChatMessageState extends State<ChatMessage>
                                   ValueListenableBuilder(
                                       valueListenable: _linkAddNotifier,
                                       builder: (context, dynamic value, c) {
-                                        if (value == null) {
+                                        if (value == null ||
+                                            value == "" ||
+                                            value.toString().trim().isEmpty) {
                                           return const SizedBox.shrink();
                                         }
 
                                         return FutureBuilder(
                                           future: AnyLinkPreview.getMetadata(
-                                              link: value),
+                                                  link: value)
+                                              .catchError((error) {
+                                            // Handle any errors that occur during metadata retrieval
+                                            debugPrint(
+                                                "Link preview error: $error");
+                                            return null;
+                                          }),
                                           builder: (context,
                                               AsyncSnapshot snapshot) {
                                             if (snapshot.connectionState ==
                                                 ConnectionState.done) {
-                                              if (snapshot.data == null) {
+                                              if (snapshot.data == null ||
+                                                  snapshot.hasError) {
                                                 return const SizedBox.shrink();
                                               }
                                               return LinkPreviw(
@@ -287,15 +322,26 @@ class ChatMessageState extends State<ChatMessage>
                                         //This will add link to msg
                                         if (_isLink(data)) {
                                           //This will notify priview object that it has link
-                                          _linkAddNotifier.value = data;
-                                          _linkAddNotifier.notifyListeners();
+                                          try {
+                                            if (link != null &&
+                                                link!.isNotEmpty) {
+                                              _linkAddNotifier.value = link;
+                                              _linkAddNotifier
+                                                  .notifyListeners();
+                                            }
+                                          } catch (e) {
+                                            debugPrint(
+                                                "Error setting link: $e");
+                                          }
 
                                           return TextSpan(
                                               text: data,
                                               recognizer: TapGestureRecognizer()
                                                 ..onTap = () async {
-                                                  await launchUrl(
-                                                      Uri.parse(data));
+                                                  if (link != null) {
+                                                    await launchUrl(
+                                                        Uri.parse(link!));
+                                                  }
                                                 },
                                               style: TextStyle(
                                                   decoration:

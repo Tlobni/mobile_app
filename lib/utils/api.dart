@@ -307,7 +307,15 @@ class Api {
       return Map.from(resp);
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
-        userExpired();
+        // Check if this is a login attempt by examining the URL
+        if (url == login) {
+          // For login attempts, we should throw an authentication error
+          // rather than assuming the user account is deactivated
+          throw ApiException("invalid_credentials");
+        } else {
+          // For other API calls, the user's session may have expired
+          userExpired();
+        }
       }
 
       if (e.response?.statusCode == 503) {

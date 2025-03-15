@@ -2,18 +2,22 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:eClassify/app/routes.dart';
 import 'package:eClassify/data/cubits/category/fetch_category_cubit.dart';
 import 'package:eClassify/data/cubits/chat/blocked_users_list_cubit.dart';
 import 'package:eClassify/data/cubits/chat/get_buyer_chat_users_cubit.dart';
 import 'package:eClassify/data/cubits/favorite/favorite_cubit.dart';
 import 'package:eClassify/data/cubits/home/fetch_home_all_items_cubit.dart';
 import 'package:eClassify/data/cubits/home/fetch_home_screen_cubit.dart';
+import 'package:eClassify/data/cubits/item/manage_item_cubit.dart';
 import 'package:eClassify/data/cubits/slider_cubit.dart';
 import 'package:eClassify/data/cubits/system/fetch_system_settings_cubit.dart';
 import 'package:eClassify/data/cubits/system/get_api_keys_cubit.dart';
+import 'package:eClassify/data/cubits/fetch_notifications_cubit.dart';
 import 'package:eClassify/data/helper/designs.dart';
 import 'package:eClassify/data/model/home/home_screen_section.dart';
 import 'package:eClassify/data/model/item/item_model.dart';
+import 'package:eClassify/data/model/notification_data.dart';
 import 'package:eClassify/data/model/system_settings_model.dart';
 import 'package:eClassify/ui/screens/ad_banner_screen.dart';
 import 'package:eClassify/ui/screens/home/slider_widget.dart';
@@ -30,6 +34,7 @@ import 'package:eClassify/ui/theme/theme.dart';
 //import 'package:uni_links/uni_links.dart';
 
 import 'package:eClassify/utils/api.dart';
+import 'package:eClassify/utils/app_icon.dart';
 import 'package:eClassify/utils/constant.dart';
 import 'package:eClassify/utils/extensions/extensions.dart';
 import 'package:eClassify/utils/hive_utils.dart';
@@ -63,6 +68,14 @@ class HomeScreenState extends State<HomeScreen>
 
   //
   bool isCategoryEmpty = false;
+
+  // Notification related variables
+  List<NotificationData> _notifications = [];
+  bool _isNotificationLoading = false;
+  Timer? _notificationRefreshTimer;
+
+  // Stream subscription for item updates
+  StreamSubscription? _itemUpdatesSubscription;
 
   //
   late final ScrollController _scrollController = ScrollController();
@@ -98,12 +111,30 @@ class HomeScreenState extends State<HomeScreen>
         country: HiveUtils.getCountryName(),
         state: HiveUtils.getStateName());
 
-    if (HiveUtils.isUserAuthenticated()) {
-      context.read<FavoriteCubit>().getFavorite();
-      //fetchApiKeys();
-      context.read<GetBuyerChatListCubit>().fetch();
-      context.read<BlockedUsersListCubit>().blockedUsersList();
-    }
+    context.read<FavoriteCubit>().getFavorite();
+    //fetchApiKeys();
+    context.read<GetBuyerChatListCubit>().fetch();
+    context.read<BlockedUsersListCubit>().blockedUsersList();
+
+    // Start loading notifications
+    _fetchNotifications();
+
+    // Set up a refresh timer for notifications (every 2 minutes)
+    _notificationRefreshTimer =
+        Timer.periodic(const Duration(minutes: 2), (timer) {
+      if (mounted) {
+        _fetchNotifications();
+      }
+    });
+
+    // Listen for item update events
+    _itemUpdatesSubscription =
+        ItemEvents().itemEditedStream.stream.listen((updatedItem) {
+      print("Home screen received item update: ${updatedItem.id}");
+      if (mounted) {
+        context.read<FetchHomeAllItemsCubit>().updateItem(updatedItem);
+      }
+    });
 
     _scrollController.addListener(() {
       if (_scrollController.isEndReached()) {
@@ -124,6 +155,8 @@ class HomeScreenState extends State<HomeScreen>
 
   @override
   void dispose() {
+    _notificationRefreshTimer?.cancel();
+    _itemUpdatesSubscription?.cancel();
     super.dispose();
   }
 
@@ -157,6 +190,59 @@ class HomeScreenState extends State<HomeScreen>
                   start: sidePadding, end: sidePadding),
               child: const LocationWidget()),
           backgroundColor: const Color.fromARGB(0, 0, 0, 0),
+          actions: [
+            // Add notification icon with badge
+            Padding(
+              padding: EdgeInsetsDirectional.only(end: 15.0),
+              child: Stack(
+                children: [
+                  IconButton(
+                    icon: UiUtils.getSvg(
+                      AppIcons.notification,
+                      color: context.color.textDefaultColor,
+                    ),
+                    onPressed: () {
+                      UiUtils.checkUser(
+                        onNotGuest: () {
+                          Navigator.pushNamed(context, Routes.notificationPage);
+                        },
+                        context: context,
+                      );
+                    },
+                  ),
+                  // Notification badge - Only show if there are unread notifications
+                  if (HiveUtils.isUserAuthenticated() &&
+                      _hasUnreadNotifications())
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: context.color.territoryColor,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          _getNotificationCount() > 9
+                              ? '9+'
+                              : _getNotificationCount().toString(),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ),
         backgroundColor: context.color.primaryColor,
         body: RefreshIndicator(
@@ -455,6 +541,96 @@ class HomeScreenState extends State<HomeScreen>
         return Container();
       },
     );
+  }
+
+  // Fetch notifications
+  void _fetchNotifications() {
+    if (_isNotificationLoading || !HiveUtils.isUserAuthenticated()) return;
+
+    setState(() {
+      _isNotificationLoading = true;
+    });
+
+    // Use the API to fetch notifications with proper parameters
+    Api.get(
+      url: Api.getNotificationListApi,
+      queryParameters: {
+        "page": 1
+      }, // Add page parameter to ensure proper API call
+    ).then((response) {
+      if (!response[Api.error] && response['data'] != null) {
+        // Check if data exists and is a list
+        if (response['data'] is List) {
+          List list = response['data'];
+          _notifications =
+              list.map((model) => NotificationData.fromJson(model)).toList();
+          log('Fetched ${_notifications.length} notifications');
+        } else if (response['data']['data'] != null &&
+            response['data']['data'] is List) {
+          // Some APIs use a nested data structure
+          List list = response['data']['data'];
+          _notifications =
+              list.map((model) => NotificationData.fromJson(model)).toList();
+          log('Fetched ${_notifications.length} notifications from nested data');
+        } else {
+          log('Notification data format unexpected: ${response['data']}');
+          _notifications = [];
+        }
+      } else {
+        log('No notifications found or error in response');
+        _notifications = [];
+      }
+
+      if (mounted) {
+        setState(() {
+          _isNotificationLoading = false;
+        });
+      }
+    }).catchError((error) {
+      log('Error fetching notifications: $error');
+      if (mounted) {
+        setState(() {
+          _isNotificationLoading = false;
+          _notifications = []; // Clear on error
+        });
+      }
+    });
+  }
+
+  // Check if there are unread notifications
+  bool _hasUnreadNotifications() {
+    if (!HiveUtils.isUserAuthenticated()) return false;
+
+    // A provider should see notifications for their packages and posts
+    final isProvider = HiveUtils.getUserType() == "Expert" ||
+        HiveUtils.getUserType() == "Business";
+
+    if (isProvider) {
+      // Check for provider-specific notifications
+      return _notifications.any((notification) =>
+          notification.isProviderNotification() && !notification.isRead);
+    }
+
+    return false;
+  }
+
+  // Get count of unread notifications
+  int _getNotificationCount() {
+    if (!HiveUtils.isUserAuthenticated()) return 0;
+
+    // A provider should see notifications for their packages and posts
+    final isProvider = HiveUtils.getUserType() == "Expert" ||
+        HiveUtils.getUserType() == "Business";
+
+    if (isProvider) {
+      // Count provider-specific notifications
+      return _notifications
+          .where((notification) =>
+              notification.isProviderNotification() && !notification.isRead)
+          .length;
+    }
+
+    return 0;
   }
 }
 

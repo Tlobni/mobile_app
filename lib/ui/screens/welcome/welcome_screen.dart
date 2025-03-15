@@ -39,6 +39,23 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Check if user is already authenticated, and if so, redirect to main screen
+    if (HiveUtils.isUserAuthenticated()) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        HelperUtils.killPreviousPages(
+          context,
+          Routes.main,
+          {"from": "welcome"},
+        );
+      });
+      // Return a loading placeholder while redirecting
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: buildWelcomeScreen(context),

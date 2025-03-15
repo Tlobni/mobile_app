@@ -110,6 +110,53 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
       }
     });
 
+    // If the controller already has text (from edit mode),
+    // try to find the location in our list and trigger onLocationSelected
+    if (widget.controller.text.isNotEmpty &&
+        widget.onLocationSelected != null) {
+      final String text = widget.controller.text.toLowerCase();
+
+      // First try to find a matching location from our predefined list
+      Map<String, String> matchedLocation = {};
+      try {
+        matchedLocation = _locations.firstWhere(
+          (location) {
+            final String cityCountry =
+                "${location['city']}, ${location['country']}".toLowerCase();
+            final String countryCity =
+                "${location['country']}, ${location['city']}".toLowerCase();
+            return cityCountry.contains(text) || countryCity.contains(text);
+          },
+          orElse: () => <String, String>{},
+        );
+      } catch (e) {
+        print("Error finding location match: $e");
+      }
+
+      // If we found a match, trigger the callbacks with the full data
+      if (matchedLocation.isNotEmpty) {
+        widget.onLocationSelected!(matchedLocation);
+      } else {
+        // If no match in predefined locations, try to extract city/country from the text
+        // Assuming format is "City, Country" or similar
+        final parts = widget.controller.text.split(',');
+        if (parts.length >= 2) {
+          final city = parts[0].trim();
+          final country = parts[1].trim();
+
+          // Create a custom location object for the location that's not in our list
+          final customLocation = {
+            'city': city,
+            'country': country,
+            'state': '',
+          };
+
+          // Call the callback with our extracted data
+          widget.onLocationSelected!(customLocation);
+        }
+      }
+    }
+
     widget.controller.addListener(_onTextChanged);
   }
 

@@ -128,32 +128,17 @@ class SplashScreenState extends State<SplashScreen>
         }
       });
     } else if (HiveUtils.isUserAuthenticated()) {
-      // if ((HiveUtils.getUserDetails().name == null ||
-      //         HiveUtils.getUserDetails().name == "") ||
-      //     (HiveUtils.getUserDetails().email == null ||
-      //         HiveUtils.getUserDetails().email == "")) {
-      //   Future.delayed(
-      //     const Duration(seconds: 1),
-      //     () {
-      //       Navigator.pushReplacementNamed(
-      //         context,
-      //         Routes.completeProfile,
-      //         arguments: {
-      //           "from": "login",
-      //         },
-      //       );
-      //     },
-      //   );
-      // } else {
+      // If user is authenticated, they should go directly to the main screen
+      // regardless of their profile completion status
       Future.delayed(const Duration(seconds: 1), () {
         if (mounted) {
-          //We pass slug only when the user is authenticated otherwise drop the slug
+          // We pass slug only when the user is authenticated otherwise drop the slug
           Navigator.of(context).pushReplacementNamed(Routes.main,
               arguments: {'from': "main", "slug": widget.itemSlug});
         }
       });
-      //}
     } else {
+      // User is not authenticated and not first time
       Future.delayed(const Duration(seconds: 1), () {
         if (mounted) {
           if (HiveUtils.isUserSkip() == true) {

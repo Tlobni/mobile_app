@@ -19,6 +19,12 @@ class CustomFieldText extends CustomField {
       if (parameters['value'] != null) {
         if ((parameters['value'] as List).isNotEmpty) {
           initialValue = parameters['value'][0].toString();
+
+          // Pre-populate the AbstractField.fieldsData for submission
+          AbstractField.fieldsData.addAll({
+            parameters['id'].toString(): [initialValue],
+          });
+
           update(() {});
         }
       }

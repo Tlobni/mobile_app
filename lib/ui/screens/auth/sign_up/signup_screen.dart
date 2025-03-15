@@ -72,6 +72,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
   String _userType = 'Provider'; // 'Provider' or 'Client' (default Provider)
   String _providerType = 'Expert'; // 'Expert' or 'Business' (default Expert)
   bool isObscure = true;
+  bool _isLoading = false; // Loading state for signup process
 
   // Expert fields
   final TextEditingController _expertFullNameController =
@@ -107,6 +108,9 @@ class _SignupScreenState extends CloudState<SignupScreen> {
   // Track which panels are expanded
   List<bool> _expandedPanels = [];
 
+  // Add the _showCategoryError flag to the state class
+  bool _showCategoryError = false;
+
   @override
   void initState() {
     super.initState();
@@ -114,10 +118,14 @@ class _SignupScreenState extends CloudState<SignupScreen> {
     // Set initial user type and provider type based on selection from account type screen
     if (widget.userType != null) {
       _userType = widget.userType!;
-    }
 
-    if (widget.providerType != null) {
-      _providerType = widget.providerType!;
+      // Only set provider type if user type is 'Provider'
+      if (_userType == 'Provider' && widget.providerType != null) {
+        _providerType = widget.providerType!;
+      } else if (_userType == 'Client') {
+        // Clear provider type for Client users
+        _providerType = '';
+      }
     }
 
     // If an email is passed in, pre-populate:
@@ -193,92 +201,130 @@ class _SignupScreenState extends CloudState<SignupScreen> {
   }
 
   void onTapSignup() async {
+    setState(() {
+      _showCategoryError = false; // Reset error state
+    });
+
     if (_formKey.currentState?.validate() ?? false) {
+      // Additional validation for required fields based on account type
+      if (_userType == "Provider" && _selectedCategoryIds.isEmpty) {
+        // Show error for categories field
+        setState(() {
+          _showCategoryError = true;
+        });
+        return;
+      }
+
+      setState(() {
+        _isLoading = true;
+      });
+
       try {
-        final MultiAuthRepository _multiAuthRepository = MultiAuthRepository();
-        final response = await _multiAuthRepository.createUserWithEmail(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-          userType: _userType,
-          providerType: _providerType,
-          fullName: _userType == "Provider" && _providerType == "Expert"
+        // Prepare categories as a string
+        final String categoriesString = _userType == "Provider"
+            ? _selectedCategoryIds.map((id) => id.toString()).join(',')
+            : "";
+
+        log('Categories as string: $categoriesString');
+
+        // Get name based on user type
+        String name = "";
+        if (_userType == "Provider") {
+          name = _providerType == "Expert"
               ? _expertFullNameController.text.trim()
-              : _clientFullNameController.text.trim(),
-          gender: _userType == "Provider" && _providerType == "Expert"
+              : _businessNameController.text.trim();
+        } else {
+          name = _clientFullNameController.text.trim();
+        }
+
+        // Collect all user data
+        final userData = {
+          'email': _emailController.text.trim(),
+          'password': _passwordController.text.trim(),
+          'type': _userType == "Provider"
+              ? (_providerType == "Expert" ? "Expert" : "Business")
+              : "Client",
+          'userType': _userType,
+          'providerType': _userType == "Provider" ? _providerType : null,
+          'fullName': name, // Use name for all user types
+          'name': name, // Add name parameter for API consistency
+          'gender': _userType == "Provider" && _providerType == "Expert"
               ? _expertGender
               : _clientGender,
-          location: _userType == "Provider"
+          'location': _userType == "Provider"
               ? (_providerType == "Expert"
                   ? _expertCountry ?? ""
                   : _businessCountry ?? "")
               : _clientCountry ?? "",
-          businessName: _providerType == "Business"
-              ? _businessNameController.text.trim()
+          'city': _userType == "Provider"
+              ? (_providerType == "Expert"
+                  ? _expertLocationController.text.trim()
+                  : _businessLocationController.text.trim())
+              : _clientLocationController.text.trim(),
+          'categories': categoriesString,
+          'phone': _userType == "Provider"
+              ? (_providerType == "Expert"
+                  ? _expertPhoneController.text.trim()
+                  : _businessPhoneController.text.trim())
               : null,
-          city: _expertLocationController.text.trim(),
-          categories: _selectedCategoryIds.map((id) => id.toString()).toList(),
-          phone: _providerType == "Expert"
-              ? _expertPhoneController.text.trim()
-              : _businessPhoneController.text.trim(),
+          'platform_type': Platform.isAndroid ? "android" : "ios",
+        };
+
+        // Add debug log to show what is being sent to the API
+        log('Signup request data: ${userData.toString()}');
+
+        // Call signup API directly
+        final response = await Api.post(
+          url: Api.loginApi,
+          parameter: userData,
         );
 
-        // Check if signup was successful
-        if (response["success"] == true) {
-          // Get the user credential from the response
-          final UserCredential userCredential = response["firebaseUser"];
-
-          // Get the API response data
-          final apiData = response["data"];
-
-          log('API Response: $apiData');
-
-          // Store token from the API response
-          if (apiData != null && apiData.containsKey("token")) {
-            HiveUtils.setJWT(apiData["token"]);
-            log('Token stored: ${apiData["token"]}');
+        if (response["status"] == true) {
+          // Store token
+          if (response.containsKey("token")) {
+            HiveUtils.setJWT(response["token"]);
           }
 
-          // Get user data from the response
-          final userData = apiData != null && apiData.containsKey("user")
-              ? apiData["user"]
-              : null;
+          // Store user data
+          final userData = response.containsKey("user")
+              ? response["user"]
+              : response["data"];
 
-          // Get user role from the response
-          String userRole = "Client"; // Default role
-          if (userData != null &&
-              userData.containsKey("roles") &&
-              userData["roles"] is List &&
-              userData["roles"].isNotEmpty) {
-            userRole = userData["roles"][0]["name"] ?? "Client";
+          // Determine the correct user type for storage
+          String userTypeForStorage = _userType;
+          if (_userType == "Provider") {
+            userTypeForStorage = _providerType; // Either "Expert" or "Business"
           }
 
-          // Store user data in Hive
+          log("Setting user type to: $userTypeForStorage");
+
+          // Get name consistently based on user type
+          String nameForStorage = name;
+
           HiveUtils.setUserData({
             'id': userData?["id"] != null
                 ? int.parse(userData["id"].toString())
                 : 0,
-            'name': userData?["name"] ??
-                (_userType == "Provider" && _providerType == "Expert"
-                    ? _expertFullNameController.text.trim()
-                    : _clientFullNameController.text.trim()),
+            'name': userData?["name"] ?? nameForStorage,
             'email': userData?["email"] ?? _emailController.text.trim(),
-            'mobile': _providerType == "Expert"
-                ? _expertPhoneController.text.trim()
-                : _businessPhoneController.text.trim(),
+            'mobile': _userType == "Provider"
+                ? (_providerType == "Expert"
+                    ? _expertPhoneController.text.trim()
+                    : _businessPhoneController.text.trim())
+                : null,
             'profile': userData?["profile"] ?? "",
-            'type': userRole,
-            'firebaseId': userCredential.user?.uid ?? "",
-            'fcmId': "",
-            'notification': 1,
-            'address': "",
-            'businessName': _providerType == "Business"
-                ? _businessNameController.text.trim()
-                : "",
-            'categories':
-                _selectedCategoryIds.map((id) => id.toString()).toList(),
-            'phone': _providerType == "Expert"
-                ? _expertPhoneController.text.trim()
-                : _businessPhoneController.text.trim(),
+            'type':
+                userTypeForStorage, // Use our explicit userTypeForStorage instead of roles
+            'firebaseId': userData?["firebase_id"] ?? "",
+            'fcmId': userData?["fcm_id"] ?? "",
+            'notification': userData?["notification"] ?? 1,
+            'address': userData?["address"] ?? "",
+            'categories': categoriesString,
+            'phone': _userType == "Provider"
+                ? (_providerType == "Expert"
+                    ? _expertPhoneController.text.trim()
+                    : _businessPhoneController.text.trim())
+                : null,
             'gender': _userType == "Provider" && _providerType == "Expert"
                 ? _expertGender
                 : _clientGender,
@@ -297,29 +343,67 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           // Set user as authenticated
           HiveUtils.setUserIsAuthenticated(true);
 
-          log('User data stored in Hive after signup');
+          setState(() {
+            _isLoading = false;
+          });
 
-          // Skip email verification and proceed to login
-          final payload = EmailLoginPayload(
-            email: _emailController.text.trim(),
-            password: _passwordController.text.trim(),
-            type: EmailLoginType.login, // Changed from signup to login
-          );
+          // Navigate based on user type
+          final userRole = _userType;
+          log('User type for navigation: $userRole');
 
-          context.read<AuthenticationCubit>().setSignUpSuccess(
-                userCredential,
-                payload,
-              );
+          if (userRole == "Provider") {
+            // Only Providers (Expert or Business) should see subscription packages
+            log('Navigating Provider to main and subscription package');
+            Navigator.pushReplacementNamed(
+              context,
+              Routes.main,
+              arguments: {"from": "signup"},
+            );
+
+            Navigator.pushNamed(context, Routes.subscriptionPackageListRoute);
+          } else {
+            // Client users should just go to the main screen
+            log('Navigating Client to main screen only');
+            Navigator.pushReplacementNamed(
+              context,
+              Routes.main,
+              arguments: {"from": "signup"},
+            );
+          }
         } else {
-          // Show error
+          setState(() {
+            _isLoading = false;
+          });
+
+          // Show error message
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(response["message"])),
+            SnackBar(
+                content: Text(response["message"] ?? "Registration failed")),
           );
         }
       } catch (e) {
+        setState(() {
+          _isLoading = false;
+        });
+
         log('Signup error: $e');
+
+        // Show a more user-friendly error message
+        String errorMessage = 'Signup failed';
+
+        // Extract the error message if it's an API error
+        if (e.toString().contains('The selected type is invalid')) {
+          errorMessage = 'Invalid account type selected. Please try again.';
+        } else if (e.toString().contains('The email has already been taken')) {
+          errorMessage =
+              'This email is already registered. Please use another email or try logging in.';
+        } else {
+          // For other errors, just show the error message as is
+          errorMessage = e.toString();
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
+          SnackBar(content: Text(errorMessage)),
         );
       }
     }
@@ -345,7 +429,9 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                   // Get user role from Hive
                   final userDetails = HiveUtils.getUserDetails();
                   final userRole = userDetails.type ?? "Client";
-                  if (userRole == "Expert" || userRole == "Business") {
+                  if (userRole == "Provider" ||
+                      userRole == "Expert" ||
+                      userRole == "Business") {
                     Navigator.pushReplacementNamed(
                       context,
                       Routes.main,
@@ -355,6 +441,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                     Navigator.pushNamed(Constant.navigatorKey.currentContext!,
                         Routes.subscriptionPackageListRoute);
                   } else {
+                    // Client users should just go to the main screen
                     Navigator.pushReplacementNamed(
                       context,
                       Routes.main,
@@ -445,8 +532,8 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                           isReadOnly: false,
                           fillColor: context.color.secondaryColor,
                           validator: CustomTextFieldValidator.email,
-                          hintText: "emailAddress".translate(context),
-                          borderColor: context.color.borderColor.darken(10),
+                          hintText: "Email Address *".translate(context),
+                          borderColor: context.color.borderColor.darken(50),
                         ),
                         const SizedBox(height: 14),
                         CustomTextFormField(
@@ -467,9 +554,9 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                                   context.color.textColorDark.withOpacity(0.3),
                             ),
                           ),
-                          hintText: "password".translate(context),
+                          hintText: "Password *".translate(context),
                           validator: CustomTextFieldValidator.password,
-                          borderColor: context.color.borderColor.darken(10),
+                          borderColor: context.color.borderColor.darken(50),
                         ),
                         const SizedBox(height: 36),
 
@@ -532,13 +619,9 @@ class _SignupScreenState extends CloudState<SignupScreen> {
         CustomTextFormField(
           controller: _expertFullNameController,
           fillColor: context.color.secondaryColor,
-          hintText: "Full Name",
-          // validator: (val) {
-          //   if ((val ?? '').trim().isEmpty) {
-          //     return "Full Name is required";
-          //   }
-          //   return null;
-          // },
+          hintText: "Full Name *",
+          validator: CustomTextFieldValidator.nullCheck,
+          borderColor: context.color.borderColor.darken(50),
         ),
         const SizedBox(height: 14),
 
@@ -566,6 +649,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           controller: _expertLocationController,
           fillColor: context.color.secondaryColor,
           hintText: "City/Area (optional)",
+          borderColor: context.color.borderColor.darken(50),
         ),
         const SizedBox(height: 14),
 
@@ -577,8 +661,9 @@ class _SignupScreenState extends CloudState<SignupScreen> {
         CustomTextFormField(
           controller: _expertPhoneController,
           fillColor: context.color.secondaryColor,
-          hintText: "Phone",
+          hintText: "Phone *",
           validator: CustomTextFieldValidator.phoneNumber,
+          borderColor: context.color.borderColor.darken(50),
         ),
       ],
     );
@@ -589,17 +674,13 @@ class _SignupScreenState extends CloudState<SignupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Business Name
+        // Business Name - renamed to Name for consistency
         CustomTextFormField(
           controller: _businessNameController,
           fillColor: context.color.secondaryColor,
-          hintText: "Business Name",
-          // validator: (val) {
-          //   if ((val ?? '').trim().isEmpty) {
-          //     return "Business name is required";
-          //   }
-          //   return null;
-          // },
+          hintText: "Name *",
+          validator: CustomTextFieldValidator.nullCheck,
+          borderColor: context.color.borderColor.darken(50),
         ),
         const SizedBox(height: 14),
 
@@ -617,6 +698,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           controller: _businessLocationController,
           fillColor: context.color.secondaryColor,
           hintText: "City/Area (optional)",
+          borderColor: context.color.borderColor.darken(50),
         ),
         const SizedBox(height: 14),
 
@@ -624,12 +706,13 @@ class _SignupScreenState extends CloudState<SignupScreen> {
         _buildCategoryMultiSelect(),
         const SizedBox(height: 14),
 
-        // Phone - required (changed from optional)
+        // Phone - required
         CustomTextFormField(
           controller: _businessPhoneController,
           fillColor: context.color.secondaryColor,
-          hintText: "Phone",
+          hintText: "Phone *",
           validator: CustomTextFieldValidator.phoneNumber,
+          borderColor: context.color.borderColor.darken(50),
         ),
       ],
     );
@@ -644,13 +727,9 @@ class _SignupScreenState extends CloudState<SignupScreen> {
         CustomTextFormField(
           controller: _clientFullNameController,
           fillColor: context.color.secondaryColor,
-          hintText: "Full Name",
-          // validator: (val) {
-          //   if ((val ?? '').trim().isEmpty) {
-          //     return "Full Name is required";
-          //   }
-          //   return null;
-          // },
+          hintText: "Full Name *",
+          validator: CustomTextFieldValidator.nullCheck,
+          borderColor: context.color.borderColor.darken(50),
         ),
         const SizedBox(height: 14),
 
@@ -678,6 +757,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           controller: _clientLocationController,
           fillColor: context.color.secondaryColor,
           hintText: "City/Area (optional)",
+          borderColor: context.color.borderColor.darken(50),
         ),
       ],
     );
@@ -716,6 +796,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
       },
       controller: TextEditingController(text: value),
       suffix: const Icon(Icons.arrow_drop_down),
+      borderColor: context.color.borderColor.darken(50),
     );
   }
 
@@ -728,7 +809,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
   }) {
     return CustomTextFormField(
       fillColor: context.color.secondaryColor,
-      hintText: value ?? label,
+      hintText: value ?? "$label *",
       readOnly: true,
       onTap: () {
         showCountryPicker(
@@ -758,6 +839,9 @@ class _SignupScreenState extends CloudState<SignupScreen> {
         );
       },
       suffix: const Icon(Icons.arrow_drop_down),
+      validator: CustomTextFieldValidator.nullCheck,
+      controller: TextEditingController(text: value),
+      borderColor: context.color.borderColor.darken(50),
     );
   }
 
@@ -766,12 +850,6 @@ class _SignupScreenState extends CloudState<SignupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const CustomText(
-          "Categories (pick at least one)",
-          fontWeight: FontWeight.w600,
-        ),
-        const SizedBox(height: 8),
-
         GestureDetector(
           onTap: () => _showCategorySelectionDialog(),
           child: Container(
@@ -779,20 +857,25 @@ class _SignupScreenState extends CloudState<SignupScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: context.color.secondaryColor,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: context.color.borderColor.darken(10)),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                  width: 1.5,
+                  color: _selectedCategoryIds.isEmpty && _showCategoryError
+                      ? Colors.red
+                      : context.color.borderColor.darken(50)),
             ),
             child: Row(
               children: [
                 Expanded(
                   child: Text(
                     _selectedCategoryIds.isEmpty
-                        ? "Choose Categories"
+                        ? "Choose Categories *"
                         : "${_selectedCategoryIds.length} categories selected",
                     style: TextStyle(
                       color: _selectedCategoryIds.isEmpty
-                          ? context.color.textColorDark.withOpacity(0.5)
-                          : context.color.textColorDark,
+                          ? context.color.textColorDark.withOpacity(0.7)
+                          : context.color.textDefaultColor,
+                      fontSize: context.font.large,
                     ),
                   ),
                 ),
@@ -804,14 +887,15 @@ class _SignupScreenState extends CloudState<SignupScreen> {
             ),
           ),
         ),
-
-        // If none selected, show an inline message
-        if (_selectedCategoryIds.isEmpty)
+        if (_selectedCategoryIds.isEmpty && _showCategoryError)
           Padding(
-            padding: const EdgeInsets.only(top: 4.0),
+            padding: const EdgeInsets.only(top: 8.0, left: 12.0),
             child: Text(
-              "* Required field. Please select at least one category.",
-              style: TextStyle(color: Colors.red.shade600, fontSize: 12),
+              "Field must not be empty",
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: context.font.small,
+              ),
             ),
           ),
       ],
@@ -1031,6 +1115,24 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                                                           _selectedCategoryIds
                                                               .add(subcategory
                                                                   .id!);
+                                                        }
+                                                      }
+                                                    } else {
+                                                      _selectedCategoryIds
+                                                          .remove(category.id!);
+
+                                                      // Also deselect all subcategories
+                                                      if (hasSubcategories) {
+                                                        for (var subcategory
+                                                            in category
+                                                                .children!) {
+                                                          if (subcategory.id !=
+                                                              null) {
+                                                            _selectedCategoryIds
+                                                                .remove(
+                                                                    subcategory
+                                                                        .id!);
+                                                          }
                                                         }
                                                       }
                                                     }

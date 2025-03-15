@@ -294,9 +294,30 @@ class HiveUtils {
 
   static String getUserType() {
     if (!isUserAuthenticated()) {
+      log("getUserType: User not authenticated, returning Client as default");
       return "Client"; // Default to Client for non-authenticated users
     }
-    return Hive.box(HiveKeys.userDetailsBox).get("type") ?? "Client";
+
+    String? type = Hive.box(HiveKeys.userDetailsBox).get("type");
+
+    if (type == null || type.isEmpty) {
+      log("getUserType: No user type found in Hive, defaulting to Client");
+      return "Client"; // Default if no type is set
+    }
+
+    // Convert legacy types to standardized format if needed
+    // if (type == "Provider") {
+    //   // Check if we need to be more specific about the provider type
+    //   String? businessName =
+    //       Hive.box(HiveKeys.userDetailsBox).get("businessName");
+    //   if (businessName != null && businessName.isNotEmpty) {
+    //     log("getUserType: Provider with business name detected, returning Business type");
+    //     return "Business";
+    //   }
+    // }
+
+    log("getUserType: Returning user type: $type");
+    return type;
   }
 
   static bool isProvider() {

@@ -79,7 +79,7 @@ class FavoriteScreenState extends State<FavoriteScreen> {
       color: context.color.territoryColor,
       child: Scaffold(
         appBar: UiUtils.buildAppBar(context,
-            showBackButton: true, title: "favorites".translate(context)),
+            showBackButton: false, title: "favorites".translate(context)),
         body: BlocBuilder<FavoriteCubit, FavoriteState>(
           builder: (context, state) {
             if (state is FavoriteFetchInProgress) {

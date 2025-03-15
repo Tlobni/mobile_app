@@ -1283,7 +1283,26 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                 addCloudData("edit_request", model);
                 addCloudData("edit_from", model.status);
                 Navigator.pushNamed(context, Routes.addItemDetails,
-                    arguments: {"isEdit": true});
+                    arguments: {"isEdit": true}).then((value) {
+                  // When we return from edit screen, refresh the detail view with the latest data
+                  if (value == "refresh" || value == true) {
+                    // Refresh the current screen with updated data
+                    context.read<FetchItemFromSlugCubit>().fetchItemFromSlug(
+                          slug: model.slug ?? "",
+                        );
+
+                    // Update related items cubit if needed
+                    if (model.categoryId != null) {
+                      context.read<FetchRelatedItemsCubit>().fetchRelatedItems(
+                            categoryId: model.categoryId!,
+                            country: model.country,
+                            state: model.state,
+                            city: model.city,
+                            areaId: model.areaId,
+                          );
+                    }
+                  }
+                });
               }, contextColor.secondaryColor, contextColor.territoryColor),
             ),
             SizedBox(width: 10),
@@ -1334,7 +1353,26 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                 addCloudData("edit_request", model);
                 addCloudData("edit_from", model.status);
                 Navigator.pushNamed(context, Routes.addItemDetails,
-                    arguments: {"isEdit": true});
+                    arguments: {"isEdit": true}).then((value) {
+                  // When we return from edit screen, refresh the detail view with the latest data
+                  if (value == "refresh" || value == true) {
+                    // Refresh the current screen with updated data
+                    context.read<FetchItemFromSlugCubit>().fetchItemFromSlug(
+                          slug: model.slug ?? "",
+                        );
+
+                    // Update related items cubit if needed
+                    if (model.categoryId != null) {
+                      context.read<FetchRelatedItemsCubit>().fetchRelatedItems(
+                            categoryId: model.categoryId!,
+                            country: model.country,
+                            state: model.state,
+                            city: model.city,
+                            areaId: model.areaId,
+                          );
+                    }
+                  }
+                });
               }, contextColor.secondaryColor, contextColor.territoryColor),
             ),
             SizedBox(width: 10),

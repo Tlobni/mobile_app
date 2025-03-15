@@ -28,6 +28,22 @@ class _AccountTypeScreenState extends State<AccountTypeScreen> {
   // Selected account type (null by default, meaning no selection)
   String? _selectedAccountType;
 
+  @override
+  void initState() {
+    super.initState();
+
+    // Check if user is already authenticated and redirect to main screen if so
+    if (HiveUtils.isUserAuthenticated()) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        HelperUtils.killPreviousPages(
+          context,
+          Routes.main,
+          {"from": "account_type"},
+        );
+      });
+    }
+  }
+
   void _navigateToSignup() {
     // Only navigate if an account type is selected
     if (_selectedAccountType != null) {

@@ -287,7 +287,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                           SizedBox(
                             width: context.screenWidth * 0.63,
                             child: CustomText(
-                              HiveUtils.getUserDetails().name ?? '',
+                              HiveUtils.isUserAuthenticated()
+                                  ? (HiveUtils.getUserDetails().name ?? '')
+                                  : "anonymous".translate(context),
                               softWrap: true,
                               overflow: TextOverflow.ellipsis,
                               maxLines: 2,
@@ -718,15 +720,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                           context: context);
                     },
                   ),
-                  customTile(
-                    context,
-                    title: "language".translate(context),
-                    svgImagePath: AppIcons.language,
-                    onTap: () {
-                      Navigator.pushNamed(
-                          context, Routes.languageListScreenRoute);
-                    },
-                  ),
+                  // customTile(
+                  //   context,
+                  //   title: "language".translate(context),
+                  //   svgImagePath: AppIcons.language,
+                  //   onTap: () {
+                  //     Navigator.pushNamed(
+                  //         context, Routes.languageListScreenRoute);
+                  //   },
+                  // ),
+
                   ValueListenableBuilder(
                       valueListenable: isDarkTheme,
                       builder: (context, v, c) {
@@ -746,19 +749,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                           onTap: () {},
                         );
                       }),
-                  customTile(
-                    context,
-                    title: "notifications".translate(context),
-                    svgImagePath: AppIcons.notification,
-                    onTap: () {
-                      UiUtils.checkUser(
-                          onNotGuest: () {
-                            Navigator.pushNamed(
-                                context, Routes.notificationPage);
-                          },
-                          context: context);
-                    },
-                  ),
+                  // customTile(
+                  //   context,
+                  //   title: "notifications".translate(context),
+                  //   svgImagePath: AppIcons.notification,
+                  //   onTap: () {
+                  //     UiUtils.checkUser(
+                  //         onNotGuest: () {
+                  //           Navigator.pushNamed(
+                  //               context, Routes.notificationPage);
+                  //         },
+                  //         context: context);
+                  //   },
+                  // ),
                   customTile(
                     context,
                     title: "blogs".translate(context),

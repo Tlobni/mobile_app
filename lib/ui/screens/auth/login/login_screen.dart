@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:eClassify/app/app_theme.dart';
 import 'package:eClassify/app/routes.dart';
-import 'package:eClassify/data/cubits/auth/authentication_cubit.dart';
 import 'package:eClassify/data/cubits/auth/login_cubit.dart';
 import 'package:eClassify/data/cubits/system/app_theme_cubit.dart';
 import 'package:eClassify/data/cubits/system/user_details.dart';
@@ -19,10 +18,7 @@ import 'package:eClassify/utils/custom_text.dart';
 import 'package:eClassify/utils/extensions/extensions.dart';
 import 'package:eClassify/utils/helper_utils.dart';
 import 'package:eClassify/utils/hive_utils.dart';
-import 'package:eClassify/utils/login/lib/login_status.dart';
-import 'package:eClassify/utils/login/lib/payloads.dart';
 import 'package:eClassify/utils/ui_utils.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -63,10 +59,23 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isObscure = true;
   bool isBack = false;
   bool _isButtonEnabled = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
+
+    // Check if user is already authenticated and redirect to main screen if so
+    if (HiveUtils.isUserAuthenticated()) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        HelperUtils.killPreviousPages(
+          context,
+          Routes.main,
+          {"from": "login"},
+        );
+      });
+      return;
+    }
 
     // If needed, read from widget.email
     if (widget.email?.isNotEmpty ?? false) {
@@ -101,16 +110,99 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   /// Handle email login
-  void onTapEmailLogin() {
+  void onTapEmailLogin() async {
     // Basic validation
     if (_formKey.currentState?.validate() ?? false) {
       if (_passwordController.text.trim().isEmpty) {
         HelperUtils.showSnackBarMessage(context, 'Password cannot be empty');
         return;
       }
-      context.read<LoginCubit>().loginEmailAndPassword(
-          email: emailController.text.trim(),
-          password: _passwordController.text.trim());
+
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        // Call backend API directly
+        final response = await Api.post(
+          url: Api.login,
+          parameter: {
+            'email': emailController.text.trim(),
+            'password': _passwordController.text.trim()
+          },
+        );
+
+        // Store token
+        HiveUtils.setJWT(response['token']);
+
+        // Store user data
+        HiveUtils.setUserData({
+          'id': response['user']['id'],
+          'name': response['user']['name'],
+          'email': response['user']['email'],
+          'mobile': response['user']['mobile'] ?? '',
+          'profile': response['user']['profile'] ?? '',
+          'type': response['user']['roles'][0]['name'],
+          'firebaseId': response['user']['firebase_id'] ?? '',
+          'fcmId': response['user']['fcm_id'] ?? '',
+          'notification': response['user']['notification'] ?? 1,
+          'address': response['user']['address'] ?? '',
+          'categories': response['user']['categories'] ?? [],
+          'phone': response['user']['phone'] ?? '',
+          'gender': response['user']['gender'] ?? '',
+          'location': response['user']['location'] ?? '',
+          'countryCode': response['user']['country_code'] ?? '',
+          'isProfileCompleted': response['user']['isProfileCompleted'] ?? true,
+          'showPersonalDetails': response['user']['show_personal_details'] ?? 1,
+          'autoApproveItem': true,
+          'isVerified': true,
+        });
+
+        HiveUtils.setUserIsAuthenticated(true);
+
+        // Navigate based on profile completion
+        final isProfileCompleted =
+            response['user']['isProfileCompleted'] ?? true;
+
+        setState(() {
+          _isLoading = false;
+        });
+
+        if (isProfileCompleted) {
+          Navigator.pushReplacementNamed(context, Routes.main);
+        } else {
+          Navigator.pushNamed(context, Routes.completeProfile);
+        }
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        // Handle specific error cases with more appropriate messages
+        if (e.toString().contains('401') ||
+            e.toString().contains('invalid_credentials')) {
+          // For 401 errors (unauthorized), show a clear message about invalid credentials
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    'Invalid email or password. Please check your credentials.')),
+          );
+        } else if (e.toString().contains('deactivated')) {
+          // If account is actually deactivated (rather than non-existent)
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    'This account has been deactivated. Please contact support.')),
+          );
+        } else {
+          // For other errors
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Login failed: ${e.toString()}')),
+          );
+        }
+
+        // No navigation needed here - we're already on the login screen
+      }
     }
   }
 
@@ -121,7 +213,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Hide phone references, only show email login
     return AnnotatedRegion(
       value: UiUtils.getSystemUiOverlayStyle(
         context: context,
@@ -133,58 +224,17 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Scaffold(
             backgroundColor: context.color.backgroundColor,
             bottomNavigationBar: termAndPolicyTxt(),
-            body: BlocListener<LoginCubit, LoginState>(
-              listener: (context, state) {
-                if (state is LoginInProgress) {
-                  // show loader
-                } else if (state is LoginSuccess) {
-                  // hide loader
-                  // navigate to home, or check if isProfileCompleted
-                  if (state.isProfileCompleted) {
-                    Navigator.pushReplacementNamed(context, Routes.main);
-                  } else {
-                    Navigator.pushNamed(context, Routes.completeProfile);
-                  }
-                } else if (state is LoginFailure) {
-                  // hide loader
-                  // show error
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(state.errorMessage)),
-                  );
-                }
-              },
-              child: BlocConsumer<AuthenticationCubit, AuthenticationState>(
-                listener: (context, authState) async {
-                  if (authState is AuthenticationInProcess) {
-                    Widgets.showLoader(context);
-                  }
-                  if (authState is AuthenticationSuccess) {
-                    Widgets.hideLoder(context);
-                    if (authState.type == AuthenticationType.email) {
-                      final user = authState.credential.user;
-                      // If user email is verified -> proceed to login
-                      if (user?.emailVerified ?? false) {
-                      } else {
-                        // Email not verified
-                        HelperUtils.showSnackBarMessage(
-                            context, "Please verify your email first.");
-                      }
-                    } else {
-                      // Other providers not used in this simplified flow
-                    }
-                  } else if (authState is AuthenticationFail) {
-                    Widgets.hideLoder(context);
-                    HelperUtils.showSnackBarMessage(
-                      context,
-                      authState.error.toString(),
-                      type: MessageType.error,
-                    );
-                  }
-                },
-                builder: (context, authState) {
-                  return buildLoginForm(context);
-                },
-              ),
+            body: Stack(
+              children: [
+                buildLoginForm(context),
+                if (_isLoading)
+                  Container(
+                    color: Colors.black.withOpacity(0.3),
+                    child: const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
@@ -299,10 +349,14 @@ class _LoginScreenState extends State<LoginScreen> {
               /// Sign In Button
               UiUtils.buildButton(
                 context,
-                onPressed: onTapEmailLogin,
+                onPressed: () {
+                  if (!_isLoading) {
+                    onTapEmailLogin();
+                  }
+                },
                 buttonTitle: 'signIn'.translate(context),
                 radius: 10,
-                disabled: !_isButtonEnabled,
+                disabled: !_isButtonEnabled || _isLoading,
                 disabledColor: const Color.fromARGB(255, 104, 102, 106),
               ),
               const SizedBox(height: 20),
@@ -326,83 +380,10 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
 
               const Spacer(),
-
-              /// Google & Apple buttons if needed
-              // if (Constant.googleAuthentication == "1" ||
-              //     (Constant.appleAuthentication == "1" && Platform.isIOS))
-              //   googleAndAppleLogin(),
-
-              /// Terms & Policy
             ],
           ),
         ),
       ),
-    );
-  }
-
-  /// If you still want Google/Apple, keep this. Otherwise remove.
-  Widget googleAndAppleLogin() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const SizedBox(height: 20),
-        if (Constant.googleAuthentication == "1") ...[
-          UiUtils.buildButton(
-            context,
-            prefixWidget: Padding(
-              padding: const EdgeInsetsDirectional.only(end: 10.0),
-              child: UiUtils.getSvg(AppIcons.googleIcon, width: 22, height: 22),
-            ),
-            showElevation: false,
-            buttonColor: secondaryColor_,
-            border:
-                context.watch<AppThemeCubit>().state.appTheme != AppTheme.dark
-                    ? BorderSide(
-                        color: context.color.textDefaultColor.withOpacity(0.3))
-                    : null,
-            textColor: textDarkColor,
-            onPressed: () {
-              context.read<AuthenticationCubit>().setData(
-                    payload: GoogleLoginPayload(),
-                    type: AuthenticationType.google,
-                  );
-              context.read<AuthenticationCubit>().authenticate();
-            },
-            radius: 8,
-            height: 46,
-            buttonTitle: "continueWithGoogle".translate(context),
-          ),
-          const SizedBox(height: 12),
-        ],
-        if (Constant.appleAuthentication == "1" && Platform.isIOS) ...[
-          UiUtils.buildButton(
-            context,
-            prefixWidget: Padding(
-              padding: const EdgeInsetsDirectional.only(end: 10.0),
-              child: UiUtils.getSvg(AppIcons.appleIcon, width: 22, height: 22),
-            ),
-            showElevation: false,
-            buttonColor: secondaryColor_,
-            border:
-                context.watch<AppThemeCubit>().state.appTheme != AppTheme.dark
-                    ? BorderSide(
-                        color: context.color.textDefaultColor.withOpacity(0.3))
-                    : null,
-            textColor: textDarkColor,
-            onPressed: () {
-              context.read<AuthenticationCubit>().setData(
-                    payload: AppleLoginPayload(),
-                    type: AuthenticationType.apple,
-                  );
-              context.read<AuthenticationCubit>().authenticate();
-            },
-            height: 46,
-            radius: 8,
-            buttonTitle: "continueWithApple".translate(context),
-          ),
-          const SizedBox(height: 12),
-        ],
-      ],
     );
   }
 
