@@ -591,5 +591,13 @@
   "loginWithPhoneNumber": "Login with Phone Number",
   "continueWithMobile": "Continue With Mobile",
   "loginWithEmail": "Login with Email",
-  "continueWithEmail": "Continue with Email"
+  "continueWithEmail": "Continue with Email",
+  "writeReview": "Write a Review",
+  "rateService": "Rate Service",
+  "rateExperience": "Rate Experience",
+  "rateProfile": "Rate Profile",
+  "submitReview": "Submit Review",
+  "reviewPlaceholder": "Write your review here...",
+  "reviewSubmitted": "Review submitted successfully",
+  "reviewError": "Error submitting review"
 }

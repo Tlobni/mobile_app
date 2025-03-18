@@ -77,7 +77,15 @@ class FavoriteCubit extends Cubit<FavoriteState> {
             hasMoreFetchError: false,
             hasMore: false));
       } else {
-        emit(FavoriteFetchFailure(e.toString()));
+        // When there's an API error or auth error, return empty favorites list
+        // instead of emitting a failure state that might block the UI
+        emit(FavoriteFetchSuccess(
+            favorite: [],
+            isLoadingMore: false,
+            totalFavoriteCount: 0,
+            page: 1,
+            hasMoreFetchError: false,
+            hasMore: false));
       }
     }
   }

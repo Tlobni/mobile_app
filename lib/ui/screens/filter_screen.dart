@@ -189,6 +189,18 @@ class FilterScreenState extends State<FilterScreen> {
   dynamic longitude = Constant.itemFilter?.longitude ?? null;
   List<CustomFieldBuilder> moreDetailDynamicFields = [];
 
+  // New filter options
+  String? _userType; // 'expert' or 'business'
+  String? _gender; // 'male' or 'female' (for experts)
+  String? _serviceType; // 'service' or 'experience'
+  Map<String, bool> _specialTags = {
+    "exclusive_women":
+        Constant.itemFilter?.specialTags?["exclusive_women"] == "true" || false,
+    "corporate_package":
+        Constant.itemFilter?.specialTags?["corporate_package"] == "true" ||
+            false
+  };
+
   String postedOn =
       Constant.itemFilter?.postedSince ?? Constant.postedSince[0].value;
 
@@ -209,6 +221,21 @@ class FilterScreenState extends State<FilterScreen> {
     setDefaultVal(isRefresh: false);
     //clearFieldData();
     getCustomFieldsData();
+
+    // Initialize new filter values from existing filter if available
+    if (Constant.itemFilter != null) {
+      _userType = Constant.itemFilter?.userType;
+      _gender = Constant.itemFilter?.gender;
+      _serviceType = Constant.itemFilter?.serviceType;
+
+      // Initialize special tags if they exist in the filter
+      if (Constant.itemFilter?.specialTags != null) {
+        _specialTags["exclusive_women"] =
+            Constant.itemFilter?.specialTags?["exclusive_women"] == "true";
+        _specialTags["corporate_package"] =
+            Constant.itemFilter?.specialTags?["corporate_package"] == "true";
+      }
+    }
   }
 
   void setCategories() {
@@ -251,6 +278,12 @@ class FilterScreenState extends State<FilterScreen> {
       selectedCategoryName = "";
       selectedCategory = defaultCategory;
 
+      // Reset new filter options
+      _userType = null;
+      _gender = null;
+      _serviceType = null;
+      _specialTags = {"exclusive_women": false, "corporate_package": false};
+
       minController.clear();
       maxController.clear();
       locationController.clear();
@@ -287,7 +320,12 @@ class FilterScreenState extends State<FilterScreen> {
     if (postedOn != Constant.postedSince[0].value ||
         minController.text.trim().isNotEmpty ||
         maxController.text.trim().isNotEmpty ||
-        selectedCategory != defaultCategory) {
+        selectedCategory != defaultCategory ||
+        _userType != null ||
+        _gender != null ||
+        _serviceType != null ||
+        _specialTags["exclusive_women"] == true ||
+        _specialTags["corporate_package"] == true) {
       return true;
     }
 
@@ -349,6 +387,12 @@ class FilterScreenState extends State<FilterScreen> {
             Map<String, dynamic> customFields =
                 convertToCustomFields(AbstractField.fieldsData);
 
+            // Format special tags as strings
+            Map<String, String> formattedSpecialTags = {};
+            _specialTags.forEach((key, value) {
+              formattedSpecialTags[key] = value.toString();
+            });
+
             Constant.itemFilter = ItemFilterModel(
                 maxPrice: maxController.text,
                 minPrice: minController.text,
@@ -363,6 +407,10 @@ class FilterScreenState extends State<FilterScreen> {
                 country: country,
                 latitude: latitude,
                 longitude: longitude,
+                userType: _userType,
+                gender: _gender,
+                serviceType: _serviceType,
+                specialTags: formattedSpecialTags,
                 customFields: customFields);
 
             widget.update(ItemFilterModel(
@@ -382,6 +430,10 @@ class FilterScreenState extends State<FilterScreen> {
                 longitude: longitude,
                 latitude: latitude,
                 area: area,
+                userType: _userType,
+                gender: _gender,
+                serviceType: _serviceType,
+                specialTags: formattedSpecialTags,
                 customFields: customFields));
 
             Navigator.pop(context, true);
@@ -397,11 +449,50 @@ class FilterScreenState extends State<FilterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
+                // Service Type Filter (Service or Experience)
+                CustomText('Service Type'.translate(context),
+                    color: context.color.textDefaultColor,
+                    fontWeight: FontWeight.w600),
+                const SizedBox(height: 5),
+                _buildServiceTypeFilter(context),
+                const SizedBox(height: 15),
+
+                // User Type Filter (Expert or Business)
+                CustomText('User Type'.translate(context),
+                    color: context.color.textDefaultColor,
+                    fontWeight: FontWeight.w600),
+                const SizedBox(height: 5),
+                _buildUserTypeFilter(context),
+
+                // Gender Filter (only if Expert is selected)
+                if (_userType == 'expert') ...[
+                  const SizedBox(height: 15),
+                  CustomText('Gender'.translate(context),
+                      color: context.color.textDefaultColor,
+                      fontWeight: FontWeight.w600),
+                  const SizedBox(height: 5),
+                  _buildGenderFilter(context),
+                ],
+
+                // Special Tags Filter
+                if (_serviceType != null) ...[
+                  const SizedBox(height: 15),
+                  CustomText('Special Tags'.translate(context),
+                      color: context.color.textDefaultColor,
+                      fontWeight: FontWeight.w600),
+                  const SizedBox(height: 5),
+                  _buildSpecialTagsFilter(context),
+                ],
+
+                // Location Filter
+                const SizedBox(height: 15),
                 CustomText('locationLbl'.translate(context),
                     color: context.color.textDefaultColor,
                     fontWeight: FontWeight.w600),
                 const SizedBox(height: 5),
                 locationWidget(context),
+
+                // Category Filter
                 if (widget.categoryIds == null ||
                     widget.categoryIds!.isEmpty) ...[
                   const SizedBox(height: 15),
@@ -411,20 +502,24 @@ class FilterScreenState extends State<FilterScreen> {
                   categoryWidget(context),
                   const SizedBox(height: 5),
                 ],
-                const SizedBox(
-                  height: 15,
-                ),
+
+                // Budget Filter
+                const SizedBox(height: 15),
                 CustomText('budgetLbl'.translate(context),
                     fontWeight: FontWeight.w600),
                 const SizedBox(height: 15),
                 budgetOption(),
+
+                // Posted Since Filter
                 const SizedBox(height: 15),
                 CustomText('postedSinceLbl'.translate(context),
                     fontWeight: FontWeight.w600),
                 const SizedBox(height: 5),
                 postedSinceOption(context),
+
+                // Custom Fields
                 const SizedBox(height: 15),
-                customFields()
+                _buildCustomFields()
               ],
             ),
           ),
@@ -433,57 +528,187 @@ class FilterScreenState extends State<FilterScreen> {
     );
   }
 
-  Widget customFields() {
-    return BlocConsumer<FetchCustomFieldsCubit, FetchCustomFieldState>(
-      listener: (context, state) {
-        if (state is FetchCustomFieldSuccess) {
-          moreDetailDynamicFields = context
-              .read<FetchCustomFieldsCubit>()
-              .getFields()
-              .where((field) =>
-                  field.type != "fileinput" &&
-                  field.type != "textbox" &&
-                  field.type != "number")
-              .map((field) {
-            Map<String, dynamic> fieldData = field.toMap();
-
-            // Prefill value from Constant.itemFilter!.customFields
-            if (Constant.itemFilter != null &&
-                Constant.itemFilter!.customFields != null) {
-              String customFieldKey = 'custom_fields[${fieldData['id']}]';
-              if (Constant.itemFilter!.customFields!
-                  .containsKey(customFieldKey)) {
-                fieldData['value'] =
-                    Constant.itemFilter!.customFields![customFieldKey];
-                fieldData['isEdit'] = true;
+  // User Type filter (Expert or Business)
+  Widget _buildUserTypeFilter(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      children: [
+        _buildFilterChip(
+          context,
+          label: "Expert",
+          selected: _userType == 'expert',
+          onSelected: (selected) {
+            setState(() {
+              _userType = selected ? 'expert' : null;
+              // Reset gender if user type is not expert
+              if (_userType != 'expert') {
+                _gender = null;
               }
-            }
+            });
+          },
+        ),
+        _buildFilterChip(
+          context,
+          label: "Business",
+          selected: _userType == 'business',
+          onSelected: (selected) {
+            setState(() {
+              _userType = selected ? 'business' : null;
+              // Reset gender when business is selected
+              if (_userType == 'business') {
+                _gender = null;
+              }
+            });
+          },
+        ),
+      ],
+    );
+  }
 
-            CustomFieldBuilder customFieldBuilder =
-                CustomFieldBuilder(fieldData);
-            customFieldBuilder.stateUpdater(setState);
-            customFieldBuilder.init();
-            return customFieldBuilder;
-          }).toList();
-          setState(() {});
-        }
+  // Gender filter (only shown when Expert is selected)
+  Widget _buildGenderFilter(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      children: [
+        _buildFilterChip(
+          context,
+          label: "Male",
+          selected: _gender == 'male',
+          onSelected: (selected) {
+            setState(() {
+              _gender = selected ? 'male' : null;
+            });
+          },
+        ),
+        _buildFilterChip(
+          context,
+          label: "Female",
+          selected: _gender == 'female',
+          onSelected: (selected) {
+            setState(() {
+              _gender = selected ? 'female' : null;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  // Service Type filter (Service or Experience)
+  Widget _buildServiceTypeFilter(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      children: [
+        _buildFilterChip(
+          context,
+          label: "Service",
+          selected: _serviceType == 'service',
+          onSelected: (selected) {
+            setState(() {
+              _serviceType = selected ? 'service' : null;
+            });
+          },
+        ),
+        _buildFilterChip(
+          context,
+          label: "Exclusive Experience",
+          selected: _serviceType == 'experience',
+          onSelected: (selected) {
+            setState(() {
+              _serviceType = selected ? 'experience' : null;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  // Special Tags filter with checkboxes
+  Widget _buildSpecialTagsFilter(BuildContext context) {
+    return Column(
+      children: [
+        _buildCheckboxOption(
+          context,
+          label: "Exclusive for Women",
+          value: _specialTags["exclusive_women"] ?? false,
+          onChanged: (value) {
+            setState(() {
+              _specialTags["exclusive_women"] = value ?? false;
+            });
+          },
+        ),
+        _buildCheckboxOption(
+          context,
+          label: "Corporate Packages",
+          value: _specialTags["corporate_package"] ?? false,
+          onChanged: (value) {
+            setState(() {
+              _specialTags["corporate_package"] = value ?? false;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  // Helper method to build filter chips
+  Widget _buildFilterChip(
+    BuildContext context, {
+    required String label,
+    required bool selected,
+    required Function(bool) onSelected,
+  }) {
+    return FilterChip(
+      label: CustomText(
+        label,
+        color:
+            selected ? context.color.primaryColor : context.color.textColorDark,
+      ),
+      selected: selected,
+      selectedColor: context.color.territoryColor.withOpacity(0.2),
+      checkmarkColor: context.color.territoryColor,
+      backgroundColor: context.color.secondaryColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(
+          color: selected
+              ? context.color.territoryColor
+              : context.color.borderColor,
+        ),
+      ),
+      onSelected: onSelected,
+    );
+  }
+
+  // Helper method to build checkbox options
+  Widget _buildCheckboxOption(
+    BuildContext context, {
+    required String label,
+    required bool value,
+    required Function(bool?) onChanged,
+  }) {
+    return InkWell(
+      onTap: () {
+        onChanged(!value);
       },
-      builder: (context, state) {
-        if (moreDetailDynamicFields.isNotEmpty) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: moreDetailDynamicFields.map((field) {
-              field.stateUpdater(setState);
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 9.0),
-                child: field.build(context),
-              );
-            }).toList(),
-          );
-        } else {
-          return SizedBox();
-        }
-      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Row(
+          children: [
+            Checkbox(
+              value: value,
+              activeColor: context.color.territoryColor,
+              onChanged: onChanged,
+            ),
+            Expanded(
+              child: CustomText(
+                label,
+                color: context.color.textColorDark,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -497,16 +722,21 @@ class FilterScreenState extends State<FilterScreen> {
           // Basic handling when only the string is returned
         },
         onLocationSelected: (Map<String, String> locationData) {
-          setState(() {
-            city = locationData['city'] ?? "";
-            _state = locationData['state'] ?? "";
-            country = locationData['country'] ?? "";
-            area = ""; // Reset area as it's not in the autocomplete data
-            areaId = null; // Reset areaId
-            radius = null; // Reset radius
-            // We don't have lat/lng in the autocomplete data
-            latitude = null;
-            longitude = null;
+          // Use post-frame callback to prevent setState during build
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                city = locationData['city'] ?? "";
+                _state = locationData['state'] ?? "";
+                country = locationData['country'] ?? "";
+                area = ""; // Reset area as it's not in the autocomplete data
+                areaId = null; // Reset areaId
+                radius = null; // Reset radius
+                // We don't have lat/lng in the autocomplete data
+                latitude = null;
+                longitude = null;
+              });
+            }
           });
         },
       ),
@@ -765,6 +995,78 @@ class FilterScreenState extends State<FilterScreen> {
 
     postedOn = val;
     setState(() {});
+  }
+
+  // This method handles the custom field state updates in a safe way
+  void _safeUpdateCustomFieldStates() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      for (var customFieldBuilder in moreDetailDynamicFields) {
+        customFieldBuilder.stateUpdater(setState);
+      }
+    });
+  }
+
+  // Use this method instead of direct calls in build methods
+  Widget _buildCustomFields() {
+    // Don't call _safeUpdateCustomFieldStates() directly during build
+    // Use post-frame callback to schedule it after build completes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _safeUpdateCustomFieldStates();
+    });
+
+    return BlocConsumer<FetchCustomFieldsCubit, FetchCustomFieldState>(
+      listener: (context, state) {
+        if (state is FetchCustomFieldSuccess) {
+          final updatedFields = context
+              .read<FetchCustomFieldsCubit>()
+              .getFields()
+              .where((field) =>
+                  field.type != "fileinput" &&
+                  field.type != "textbox" &&
+                  field.type != "number")
+              .map((field) {
+            Map<String, dynamic> fieldData = field.toMap();
+
+            // Prefill value from Constant.itemFilter!.customFields
+            if (Constant.itemFilter != null &&
+                Constant.itemFilter!.customFields != null) {
+              String customFieldKey = 'custom_fields[${fieldData['id']}]';
+              if (Constant.itemFilter!.customFields!
+                  .containsKey(customFieldKey)) {
+                fieldData['value'] =
+                    Constant.itemFilter!.customFields![customFieldKey];
+                fieldData['isEdit'] = true;
+              }
+            }
+
+            CustomFieldBuilder customFieldBuilder =
+                CustomFieldBuilder(fieldData);
+            // Don't set state updater here
+            customFieldBuilder.init();
+            return customFieldBuilder;
+          }).toList();
+
+          // Update safely outside of build
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              moreDetailDynamicFields = updatedFields;
+              setState(() {});
+            }
+          });
+        }
+      },
+      builder: (context, state) {
+        return Column(
+          children: moreDetailDynamicFields.map((customFieldBuilder) {
+            // Don't update state here - pass the builder directly
+            return Padding(
+              padding: EdgeInsets.only(top: 16),
+              child: customFieldBuilder.build(context),
+            );
+          }).toList(),
+        );
+      },
+    );
   }
 }
 

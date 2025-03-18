@@ -110,11 +110,14 @@ class UserRatings {
   int? sellerId;
   int? buyerId;
   int? itemId;
+  int? serviceId;
+  int? reviewerId;
   String? review;
   double? ratings;
   String? createdAt;
   String? updatedAt;
   Buyer? buyer;
+  Buyer? reviewer;
   bool? isExpanded;
 
   UserRatings({
@@ -122,28 +125,47 @@ class UserRatings {
     this.sellerId,
     this.buyerId,
     this.itemId,
+    this.serviceId,
+    this.reviewerId,
     this.review,
     this.ratings,
     this.createdAt,
     this.updatedAt,
     this.buyer,
+    this.reviewer,
     this.isExpanded = false,
   });
 
   UserRatings.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     sellerId = json['seller_id'];
-    buyerId = json['buyer_id'];
+    buyerId = json['buyer_id'] ?? json['user_id'];
+    reviewerId = json['reviewer_id'];
     itemId = json['item_id'];
+    serviceId = json['service_id'];
     review = json['review'];
     createdAt = json['created_at'];
     updatedAt = json['updated_at'];
-    buyer = json['buyer'] != null ? Buyer.fromJson(json['buyer']) : null;
+
+    if (json['buyer'] != null) {
+      buyer = Buyer.fromJson(json['buyer']);
+    }
+
+    if (json['reviewer'] != null) {
+      reviewer = Buyer.fromJson(json['reviewer']);
+      if (buyer == null) {
+        buyer = reviewer;
+      }
+    }
+
     if (json['ratings'] is int) {
       ratings = (json['ratings'] as int).toDouble();
     } else if (json['ratings'] is double) {
       ratings = json['ratings'];
+    } else if (json['ratings'] is String) {
+      ratings = double.tryParse(json['ratings']) ?? 0.0;
     }
+
     isExpanded = json['is_expanded'] ?? false;
   }
 
@@ -152,14 +174,22 @@ class UserRatings {
     data['id'] = this.id;
     data['seller_id'] = this.sellerId;
     data['buyer_id'] = this.buyerId;
+    data['reviewer_id'] = this.reviewerId;
     data['item_id'] = this.itemId;
+    data['service_id'] = this.serviceId;
     data['review'] = this.review;
     data['ratings'] = this.ratings;
     data['created_at'] = this.createdAt;
     data['updated_at'] = this.updatedAt;
+
     if (this.buyer != null) {
       data['buyer'] = this.buyer!.toJson();
     }
+
+    if (this.reviewer != null) {
+      data['reviewer'] = this.reviewer!.toJson();
+    }
+
     data['is_expanded'] = this.isExpanded;
     return data;
   }
@@ -169,11 +199,14 @@ class UserRatings {
     int? sellerId,
     int? buyerId,
     int? itemId,
+    int? serviceId,
+    int? reviewerId,
     String? review,
     double? ratings,
     String? createdAt,
     String? updatedAt,
     Buyer? buyer,
+    Buyer? reviewer,
     bool? isExpanded,
   }) {
     return UserRatings(
@@ -181,73 +214,18 @@ class UserRatings {
       sellerId: sellerId ?? this.sellerId,
       buyerId: buyerId ?? this.buyerId,
       itemId: itemId ?? this.itemId,
+      serviceId: serviceId ?? this.serviceId,
+      reviewerId: reviewerId ?? this.reviewerId,
       review: review ?? this.review,
       ratings: ratings ?? this.ratings,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       buyer: buyer ?? this.buyer,
+      reviewer: reviewer ?? this.reviewer,
       isExpanded: isExpanded ?? this.isExpanded,
     );
   }
 }
-
-/*class UserRatings {
-  int? id;
-  int? sellerId;
-  int? buyerId;
-  int? itemId;
-  String? review;
-  double? ratings;
-  String? createdAt;
-  String? updatedAt;
-  Buyer? buyer;
-  bool? isExpanded;
-
-  UserRatings({
-    this.id,
-    this.sellerId,
-    this.buyerId,
-    this.itemId,
-    this.review,
-    this.ratings,
-    this.createdAt,
-    this.updatedAt,
-    this.buyer,
-    this.isExpanded = false
-  });
-
-  UserRatings.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    sellerId = json['seller_id'];
-    buyerId = json['buyer_id'];
-    itemId = json['item_id'];
-    review = json['review'];
-    createdAt = json['created_at'];
-    updatedAt = json['updated_at'];
-    buyer = json['buyer'] != null ? Buyer.fromJson(json['buyer']) : null;
-    if (json['ratings'] is int) {
-      ratings = (json['ratings'] as int).toDouble();
-    } else if (json['ratings'] is double) {
-      ratings = json['ratings'];
-    }
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = {};
-    data['id'] = this.id;
-    data['seller_id'] = this.sellerId;
-    data['buyer_id'] = this.buyerId;
-    data['item_id'] = this.itemId;
-    data['review'] = this.review;
-    data['ratings'] = this.ratings;
-    data['created_at'] = this.createdAt;
-    data['updated_at'] = this.updatedAt;
-    if (this.buyer != null) {
-      data['buyer'] = this.buyer!.toJson();
-    }
-    return data;
-  }
-}*/
 
 class Buyer {
   int? id;

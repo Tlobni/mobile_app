@@ -1500,18 +1500,17 @@ class UserProfileScreenState extends State<UserProfileScreen> {
 
       // For all user types, use the appropriate name field but send it as "name"
       if (providerType == "Business") {
-        response = await context.read<AuthCubit>().updateuserdata(
-              context,
-              name: businessNameController.text
-                  .trim(), // Use business name but with the "name" parameter
-              email: emailController.text.trim(),
-              fileUserimg: fileUserimg,
-              address: addressController.text,
-              mobile: phoneController.text,
-              notification: isNotificationsEnabled == true ? "1" : "0",
-              countryCode: countryCode,
-              personalDetail: isPersonalDetailShow == true ? 1 : 0,
-            );
+        response = await context.read<AuthCubit>().updateuserdata(context,
+            name: businessNameController.text.trim(),
+            email: emailController.text.trim(),
+            fileUserimg: fileUserimg,
+            address: addressController.text,
+            mobile: phoneController.text,
+            notification: isNotificationsEnabled == true ? "1" : "0",
+            countryCode: countryCode,
+            personalDetail: isPersonalDetailShow == true ? 1 : 0,
+            country: country,
+            categories: categoriesString);
       } else {
         // For non-business users, use the regular name field
         response = await context.read<AuthCubit>().updateuserdata(
@@ -1524,6 +1523,8 @@ class UserProfileScreenState extends State<UserProfileScreen> {
               notification: isNotificationsEnabled == true ? "1" : "0",
               countryCode: countryCode,
               personalDetail: isPersonalDetailShow == true ? 1 : 0,
+              country: country,
+              categories: categoriesString,
             );
       }
 

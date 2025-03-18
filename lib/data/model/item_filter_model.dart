@@ -14,6 +14,10 @@ class ItemFilterModel {
   final double? latitude;
   final double? longitude;
   final Map<String, dynamic>? customFields;
+  final String? userType;
+  final String? gender;
+  final String? serviceType;
+  final Map<String, String>? specialTags;
 
   ItemFilterModel({
     this.maxPrice,
@@ -29,6 +33,10 @@ class ItemFilterModel {
     this.latitude,
     this.longitude,
     this.customFields = const {},
+    this.userType,
+    this.gender,
+    this.serviceType,
+    this.specialTags,
   });
 
   ItemFilterModel copyWith({
@@ -45,6 +53,10 @@ class ItemFilterModel {
     double? latitude,
     double? longitude,
     Map<String, dynamic>? customFields,
+    String? userType,
+    String? gender,
+    String? serviceType,
+    Map<String, String>? specialTags,
   }) {
     return ItemFilterModel(
       maxPrice: maxPrice ?? this.maxPrice,
@@ -60,6 +72,10 @@ class ItemFilterModel {
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       customFields: customFields ?? this.customFields,
+      userType: userType ?? this.userType,
+      gender: gender ?? this.gender,
+      serviceType: serviceType ?? this.serviceType,
+      specialTags: specialTags ?? this.specialTags,
     );
   }
 
@@ -77,18 +93,22 @@ class ItemFilterModel {
       'area_id': areaId,
       'longitude': longitude,
       'latitude': latitude,
+      'user_type': userType,
+      'gender': gender,
+      'service_type': serviceType,
+      'special_tags': specialTags,
     };
   }
 
   factory ItemFilterModel.fromMap(Map<String, dynamic> map) {
     return ItemFilterModel(
-      city: map['city'].toString(),
-      state: map['state'].toString(),
-      country: map['country'].toString(),
-      maxPrice: map['max_price'].toString(),
-      minPrice: map['min_price'].toString(),
-      categoryId: map['category_id'].toString(),
-      postedSince: map['posted_since'].toString(),
+      city: map['city']?.toString(),
+      state: map['state']?.toString(),
+      country: map['country']?.toString(),
+      maxPrice: map['max_price']?.toString(),
+      minPrice: map['min_price']?.toString(),
+      categoryId: map['category_id']?.toString(),
+      postedSince: map['posted_since']?.toString(),
       area: map['area']?.toString(),
       radius:
           map['radius'] != null ? int.tryParse(map['radius'].toString()) : null,
@@ -98,6 +118,12 @@ class ItemFilterModel {
       latitude: map['latitude'] != null ? map['latitude'] : null,
       longitude: map['longitude'] != null ? map['longitude'] : null,
       customFields: Map<String, dynamic>.from(map['custom_fields'] ?? {}),
+      userType: map['user_type']?.toString(),
+      gender: map['gender']?.toString(),
+      serviceType: map['service_type']?.toString(),
+      specialTags: map['special_tags'] != null
+          ? Map<String, String>.from(map['special_tags'])
+          : null,
     );
   }
 
@@ -108,7 +134,7 @@ class ItemFilterModel {
 
   @override
   String toString() {
-    return 'ItemFilterModel(maxPrice: $maxPrice, minPrice: $minPrice, categoryId: $categoryId, postedSince: $postedSince, city: $city, state: $state, country: $country, area: $area, areaId: $areaId, custom_fields: $customFields,radius:$radius,latitude:$latitude,longitude:$longitude)';
+    return 'ItemFilterModel(maxPrice: $maxPrice, minPrice: $minPrice, categoryId: $categoryId, postedSince: $postedSince, city: $city, state: $state, country: $country, area: $area, areaId: $areaId, custom_fields: $customFields, radius: $radius, latitude: $latitude, longitude: $longitude, userType: $userType, gender: $gender, serviceType: $serviceType, specialTags: $specialTags)';
   }
 
   factory ItemFilterModel.createEmpty() {
@@ -126,6 +152,10 @@ class ItemFilterModel {
       latitude: null,
       longitude: null,
       customFields: {},
+      userType: null,
+      gender: null,
+      serviceType: null,
+      specialTags: {},
     );
   }
 
@@ -145,7 +175,11 @@ class ItemFilterModel {
         other.areaId == areaId &&
         other.latitude == latitude &&
         other.longitude == longitude &&
-        other.customFields == customFields;
+        other.customFields == customFields &&
+        other.userType == userType &&
+        other.gender == gender &&
+        other.serviceType == serviceType &&
+        other.specialTags.toString() == specialTags.toString();
   }
 
   @override
@@ -162,6 +196,10 @@ class ItemFilterModel {
         areaId.hashCode ^
         latitude.hashCode ^
         longitude.hashCode ^
-        customFields.hashCode;
+        customFields.hashCode ^
+        userType.hashCode ^
+        gender.hashCode ^
+        serviceType.hashCode ^
+        specialTags.hashCode;
   }
 }

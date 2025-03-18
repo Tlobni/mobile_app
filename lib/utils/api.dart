@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
@@ -6,6 +8,7 @@ import 'package:eClassify/data/cubits/chat/blocked_users_list_cubit.dart';
 import 'package:eClassify/data/cubits/chat/get_buyer_chat_users_cubit.dart';
 import 'package:eClassify/data/cubits/favorite/favorite_cubit.dart';
 import 'package:eClassify/data/cubits/report/update_report_items_list_cubit.dart';
+import 'package:eClassify/data/cubits/system/app_theme_cubit.dart';
 import 'package:eClassify/data/cubits/system/user_details.dart';
 import 'package:eClassify/utils/constant.dart';
 import 'package:eClassify/utils/error_filter.dart';
@@ -14,6 +17,7 @@ import 'package:eClassify/utils/helper_utils.dart';
 import 'package:eClassify/utils/hive_utils.dart';
 import 'package:eClassify/utils/network_request_interseptor.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../main.dart';
 
 class ApiException implements Exception {
   ApiException(this.errorMessage);
@@ -112,10 +116,14 @@ class Api {
   static String getItemBuyerListApi = "item-buyer-list";
   static String getSellerApi = "get-seller";
   static String addItemReviewApi = "add-item-review";
+  static String addUserReviewApi = "add-user-review";
+  static String addServiceReviewApi = "add-service-review";
+  static String getItemReviewApi = "item-review";
+  static String getUserReviewApi = "user-review";
+  static String getMyReviewApi = "my-review";
   static String getVerificationFieldApi = "verification-fields";
   static String sendVerificationRequestApi = "send-verification-request";
   static String getVerificationRequestApi = "verification-request";
-  static String getMyReviewApi = "my-review";
   static String addReviewReportApi = "add-review-report";
   static String renewItemApi = "renew-item";
 
@@ -298,28 +306,20 @@ class Api {
         ),
       );
 
-      var resp = response.data;
-
-      if (resp['error'] ?? false) {
-        throw ApiException(resp['message'].toString());
+      if (response.data['error'] == true) {
+        throw ApiException(response.data['message'].toString());
       }
-
-      return Map.from(resp);
+      return Map.from(response.data);
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
-        // Check if this is a login attempt by examining the URL
-        if (url == login) {
-          // For login attempts, we should throw an authentication error
-          // rather than assuming the user account is deactivated
-          throw ApiException("invalid_credentials");
-        } else {
-          // For other API calls, the user's session may have expired
+        // Only call userExpired if user is authenticated
+        // This prevents redirection to login when browsing as guest
+        if (HiveUtils.isUserAuthenticated()) {
           userExpired();
+        } else {
+          // For unauthenticated users, simply throw an auth error
+          throw ApiException("authentication-required");
         }
-      }
-
-      if (e.response?.statusCode == 503) {
-        throw "server-not-available";
       }
 
       throw ApiException(
@@ -359,20 +359,23 @@ class Api {
     });
   }
 
-  static Future<Map<String, dynamic>> delete(
-      {required String url,
-      Map<String, dynamic>? queryParameters,
-      bool? useBaseUrl}) async {
+  static Future<Map<String, dynamic>> delete({
+    required String url,
+    dynamic parameter,
+    Options? options,
+    bool? useBaseUrl,
+  }) async {
     try {
-//
       final Dio dio = Dio();
       dio.interceptors.add(NetworkRequestInterceptor());
 
-      final response =
-          await dio.delete(((useBaseUrl ?? true) ? Constant.baseUrl : "") + url,
-              queryParameters: queryParameters,
-              options: /*(useAuthToken ?? true) ?*/
-                  Options(headers: headers()) /* : null*/);
+      final response = await dio.delete(
+        ((useBaseUrl ?? true) ? Constant.baseUrl : "") + url,
+        data: parameter,
+        options: Options(
+          headers: headers(),
+        ),
+      );
 
       if (response.data['error'] == true) {
         throw ApiException(response.data['message'].toString());
@@ -380,26 +383,30 @@ class Api {
       return Map.from(response.data);
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
-        userExpired();
-// throw "auth-expired";
-      }
-      if (e.response?.statusCode == 503) {
-        throw "server-not-available";
+        // Only call userExpired if user is authenticated
+        // This prevents redirection to login when browsing as guest
+        if (HiveUtils.isUserAuthenticated()) {
+          userExpired();
+        } else {
+          // For unauthenticated users, simply throw an auth error
+          throw ApiException("authentication-required");
+        }
       }
 
-      throw ApiException(e.error is SocketException
-          ? "no-internet"
-          : "Something went wrong with error ${e.response?.statusCode}");
+      throw ApiException(
+        e.error is SocketException
+            ? "no-internet"
+            : "Something went wrong with error ${e.response?.statusCode}",
+      );
     } on ApiException catch (e) {
       throw ApiException(e.errorMessage);
-    } catch (e, st) {
-      throw ApiException(st.toString());
+    } catch (e) {
+      throw ApiException(e.toString());
     }
   }
 
   static Future<Map<String, dynamic>> get(
       {required String url,
-/* bool? useAuthToken,*/
       Map<String, dynamic>? queryParameters,
       bool? useBaseUrl}) async {
     try {
@@ -430,7 +437,15 @@ class Api {
 
       if (e.response?.statusCode == 401) {
         log("Authentication error (401): User token expired or invalid");
-        userExpired();
+        // Only call userExpired if user is authenticated
+        // This prevents redirection to login when browsing as guest
+        if (HiveUtils.isUserAuthenticated()) {
+          userExpired();
+        } else {
+          // For unauthenticated users, simply throw an auth error
+          log("User not authenticated, throwing 'authentication-required' error");
+          throw ApiException("authentication-required");
+        }
       }
       if (e.response?.statusCode == 503) {
         log("Server not available (503)");

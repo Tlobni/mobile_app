@@ -30,7 +30,12 @@ class FetchItemFromSlugCubit extends Cubit<FetchItemFromSlugState> {
       emit(FetchItemFromSlugLoading());
 
       final models = await ItemRepository().fetchItemFromItemSlug(slug);
-      emit(FetchItemFromSlugSuccess(item: models.modelList.first));
+
+      if (models.modelList.isNotEmpty) {
+        emit(FetchItemFromSlugSuccess(item: models.modelList.first));
+      } else {
+        emit(FetchItemFromSlugFailure(errorMessage: "Item not found"));
+      }
     } on Exception catch (e, stack) {
       log(e.toString(), name: 'fetchItemFromSlug');
       log('$stack', name: 'fetchItemFromSlug');

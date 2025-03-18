@@ -101,6 +101,7 @@ class _SuccessItemScreenState extends State<SuccessItemScreen>
   }
 
   void _navigateToAdDetailsScreen() {
+    // Navigate to the ad details screen
     Navigator.popUntil(context, (route) => route.isFirst);
     Navigator.pushNamed(
       context,
@@ -116,8 +117,19 @@ class _SuccessItemScreenState extends State<SuccessItemScreen>
       Future.delayed(
         Duration(milliseconds: 500),
         () {
-          if (mounted) Navigator.popUntil(context, (route) => route.isFirst);
-          MainActivity.globalKey.currentState?.onItemTapped(0);
+          if (mounted) {
+            // Navigate back to home
+            Navigator.popUntil(context, (route) => route.isFirst);
+
+            // Navigate to appropriate tab based on edit status
+            if (widget.isEdit) {
+              // Go to My Ads tab for edited items
+              MainActivity.globalKey.currentState?.onItemTapped(2);
+            } else {
+              // Go to Home tab for new items
+              MainActivity.globalKey.currentState?.onItemTapped(0);
+            }
+          }
         },
       );
   }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:eClassify/app/routes.dart';
+import 'package:eClassify/data/cubits/add_user_review_cubit.dart';
 import 'package:eClassify/data/cubits/chat/delete_message_cubit.dart';
 import 'package:eClassify/data/cubits/chat/get_buyer_chat_users_cubit.dart';
 import 'package:eClassify/data/cubits/chat/load_chat_messages.dart';
@@ -25,16 +26,18 @@ import 'package:eClassify/data/cubits/safety_tips_cubit.dart';
 import 'package:eClassify/data/cubits/seller/fetch_seller_ratings_cubit.dart';
 import 'package:eClassify/data/cubits/subscription/fetch_ads_listing_subscription_packages_cubit.dart';
 import 'package:eClassify/data/cubits/subscription/fetch_user_package_limit_cubit.dart';
+import 'package:eClassify/data/cubits/item/fetch_item_reviews_cubit.dart';
 import 'package:eClassify/data/helper/widgets.dart';
-import 'package:eClassify/data/model/chat/chat_user_model.dart';
+import 'package:eClassify/data/model/category_model.dart';
+import 'package:eClassify/data/model/chat/chat_user_model.dart' as chat_models;
 import 'package:eClassify/data/model/item/item_model.dart';
 import 'package:eClassify/data/model/report_item/reason_model.dart';
 import 'package:eClassify/data/model/safety_tips_model.dart';
+import 'package:eClassify/data/model/seller_ratings_model.dart';
 import 'package:eClassify/data/model/subscription_pacakage_model.dart';
 import 'package:eClassify/ui/screens/ad_banner_screen.dart';
 import 'package:eClassify/ui/screens/chat/chat_screen.dart';
 import 'package:eClassify/ui/screens/google_map_screen.dart';
-import 'package:eClassify/ui/screens/home/home_screen.dart';
 import 'package:eClassify/ui/screens/home/widgets/grid_list_adapter.dart';
 import 'package:eClassify/ui/screens/home/widgets/home_sections_adapter.dart';
 import 'package:eClassify/ui/screens/subscription/widget/featured_ads_subscription_plan_item.dart';
@@ -43,6 +46,7 @@ import 'package:eClassify/ui/screens/widgets/blurred_dialoge_box.dart';
 import 'package:eClassify/ui/screens/widgets/errors/no_data_found.dart';
 import 'package:eClassify/ui/screens/widgets/errors/no_internet.dart';
 import 'package:eClassify/ui/screens/widgets/errors/something_went_wrong.dart';
+import 'package:eClassify/ui/screens/widgets/review_dialog.dart';
 import 'package:eClassify/ui/screens/widgets/shimmerLoadingContainer.dart';
 import 'package:eClassify/ui/screens/widgets/video_view_screen.dart';
 import 'package:eClassify/ui/theme/theme.dart';
@@ -65,6 +69,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:video_player/video_player.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:intl/intl.dart';
 
 class AdDetailsScreen extends StatefulWidget {
   final ItemModel? model;
@@ -98,7 +103,8 @@ class AdDetailsScreen extends StatefulWidget {
                 BlocProvider(
                   create: (context) => MakeAnOfferItemCubit(),
                 ),
-                BlocProvider(create: (context) => FetchItemFromSlugCubit())
+                BlocProvider(create: (context) => FetchItemFromSlugCubit()),
+                BlocProvider(create: (context) => FetchItemReviewsCubit()),
               ],
               child: AdDetailsScreen(
                 model: arguments?['model'],
@@ -144,6 +150,15 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
     super.initState();
     if (widget.model != null) {
       initVariables(widget.model!);
+
+      // Immediately try to fetch reviews if the item ID is available
+      if (widget.model!.id != null) {
+        Future.microtask(() {
+          context
+              .read<FetchItemReviewsCubit>()
+              .fetchItemReviews(itemId: widget.model!.id!);
+        });
+      }
     }
     pageController.addListener(() {
       setState(() {
@@ -165,6 +180,13 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
       context.read<FetchSafetyTipsListCubit>().fetchSafetyTips();
       context.read<FetchSellerRatingsCubit>().fetch(
           sellerId: (model.user?.id != null ? model.user!.id! : model.userId!));
+
+      // Fetch reviews specifically for this item
+      if (model.id != null) {
+        context
+            .read<FetchItemReviewsCubit>()
+            .fetchItemReviews(itemId: model.id!);
+      }
     } else {
       context.read<FetchAdsListingSubscriptionPackagesCubit>().fetchPackages();
     }
@@ -343,6 +365,8 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                               context
                                   .read<FetchMyItemsCubit>()
                                   .deleteItem(model);
+
+                              // Return to previous screen with refresh signal
                               Navigator.pop(context, "refresh");
                             } else if (deleteState is DeleteItemFailure) {
                               HelperUtils.showSnackBarMessage(
@@ -502,8 +526,16 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                               context.color.textDefaultColor.withOpacity(0.1)),
                       if (!isAddedByMe && model.user != null)
                         setSellerDetails(),
+
+                      // Show reviews for services and experiences
+                      if ((model.category != null &&
+                          (model.category!.type ==
+                                  CategoryType.serviceExperience ||
+                              model.itemType == "service" ||
+                              model.itemType == "experience")))
+                        buildServiceReviews(),
+
                       //Dynamic Ads here
-                      // setLocation(),
                       if (Constant.isGoogleBannerAdsEnabled == "1") ...[
                         Divider(
                             thickness: 1,
@@ -635,8 +667,8 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
             itemCount: 5,
             shrinkWrap: true,
             padding: const EdgeInsets.symmetric(
-              horizontal: sidePadding,
-            ),
+                // horizontal: sidePadding,
+                ),
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             itemBuilder: (context, index) {
@@ -1467,35 +1499,37 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
       return BlocBuilder<GetBuyerChatListCubit, GetBuyerChatListState>(
         bloc: context.read<GetBuyerChatListCubit>(),
         builder: (context, State) {
-          ChatUser? chatedUser = context.select((GetBuyerChatListCubit cubit) =>
-              cubit.getOfferForItem(model.id!));
+          chat_models.ChatUser? chatedUser = context.select(
+              (GetBuyerChatListCubit cubit) =>
+                  cubit.getOfferForItem(model.id!));
 
           return BlocListener<MakeAnOfferItemCubit, MakeAnOfferItemState>(
             listener: (context, state) {
               if (state is MakeAnOfferItemSuccess) {
                 dynamic data = state.data;
 
-                context.read<GetBuyerChatListCubit>().addOrUpdateChat(ChatUser(
-                    itemId: data['item_id'] is String
-                        ? int.parse(data['item_id'])
-                        : data['item_id'],
-                    amount: data['amount'] != null
-                        ? double.parse(data['amount'].toString())
-                        : null,
-                    buyerId: data['buyer_id'] is String
-                        ? int.parse(data['buyer_id'])
-                        : data['buyer_id'],
-                    createdAt: data['created_at'],
-                    id: data['id'] is String
-                        ? int.parse(data['id'])
-                        : data['id'],
-                    sellerId: data['seller_id'] is String
-                        ? int.parse(data['seller_id'])
-                        : data['seller_id'],
-                    updatedAt: data['updated_at'],
-                    buyer: Buyer.fromJson(data['buyer']),
-                    item: Item.fromJson(data['item']),
-                    seller: Seller.fromJson(data['seller'])));
+                context.read<GetBuyerChatListCubit>().addOrUpdateChat(
+                    chat_models.ChatUser(
+                        itemId: data['item_id'] is String
+                            ? int.parse(data['item_id'])
+                            : data['item_id'],
+                        amount: data['amount'] != null
+                            ? double.parse(data['amount'].toString())
+                            : null,
+                        buyerId: data['buyer_id'] is String
+                            ? int.parse(data['buyer_id'])
+                            : data['buyer_id'],
+                        createdAt: data['created_at'],
+                        id: data['id'] is String
+                            ? int.parse(data['id'])
+                            : data['id'],
+                        sellerId: data['seller_id'] is String
+                            ? int.parse(data['seller_id'])
+                            : data['seller_id'],
+                        updatedAt: data['updated_at'],
+                        buyer: chat_models.Buyer.fromJson(data['buyer']),
+                        item: chat_models.Item.fromJson(data['item']),
+                        seller: chat_models.Seller.fromJson(data['seller'])));
 
                 if (state.from == 'offer') {
                   HelperUtils.showSnackBarMessage(
@@ -2589,138 +2623,207 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
     return InkWell(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Row(children: [
-          SizedBox(
-              height: 60,
-              width: 60,
-              child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: model.user!.profile != null &&
-                          model.user!.profile != ""
-                      ? UiUtils.getImage(model.user!.profile!, fit: BoxFit.fill)
-                      : UiUtils.getSvg(
-                          AppIcons.defaultPersonLogo,
-                          color: context.color.territoryColor,
-                          fit: BoxFit.none,
-                        ))),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (model.user!.isVerified == 1)
-                      Container(
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(5),
-                            color: context.color.forthColor),
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            UiUtils.getSvg(AppIcons.verifiedIcon,
-                                width: 14, height: 14),
-                            SizedBox(
-                              width: 4,
-                            ),
-                            CustomText(
-                              "verifiedLbl".translate(context),
-                              color: context.color.secondaryColor,
-                              fontWeight: FontWeight.w500,
-                            )
-                          ],
-                        ),
-                      ),
-                    CustomText(model.user!.name!,
-                        fontWeight: FontWeight.bold,
-                        fontSize: context.font.large),
-                    if (context.watch<FetchSellerRatingsCubit>().sellerData() !=
-                        null)
-                      if (context
-                              .watch<FetchSellerRatingsCubit>()
-                              .sellerData()!
-                              .averageRating !=
-                          null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 3),
-                          child: RichText(
-                            text: TextSpan(
+        child: Column(
+          children: [
+            Row(children: [
+              SizedBox(
+                  height: 60,
+                  width: 60,
+                  child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: model.user!.profile != null &&
+                              model.user!.profile != ""
+                          ? UiUtils.getImage(model.user!.profile!,
+                              fit: BoxFit.fill)
+                          : UiUtils.getSvg(
+                              AppIcons.defaultPersonLogo,
+                              color: context.color.territoryColor,
+                              fit: BoxFit.none,
+                            ))),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (model.user!.isVerified == 1)
+                          Container(
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(5),
+                                color: context.color.forthColor),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 1),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                WidgetSpan(
-                                  child: Icon(Icons.star_rounded,
-                                      size: 17,
-                                      color: context
-                                          .color.textDefaultColor), // Star icon
+                                UiUtils.getSvg(AppIcons.verifiedIcon,
+                                    width: 14, height: 14),
+                                SizedBox(
+                                  width: 4,
                                 ),
-                                TextSpan(
-                                  text:
-                                      '\t${context.watch<FetchSellerRatingsCubit>().sellerData()!.averageRating!.toStringAsFixed(2).toString()}',
-                                  // Rating value
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: context.color.textDefaultColor,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: '  |  ',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: context.color.textDefaultColor
-                                        .withOpacity(0.3),
-                                  ),
-                                ),
-                                TextSpan(
-                                  text:
-                                      '${context.watch<FetchSellerRatingsCubit>().totalSellerRatings()}\t${"ratings".translate(context)}',
-                                  // Rating count text
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: context.color.textDefaultColor
-                                        .withOpacity(0.3),
-                                  ),
-                                ),
+                                CustomText(
+                                  "verifiedLbl".translate(context),
+                                  color: context.color.secondaryColor,
+                                  fontWeight: FontWeight.w500,
+                                )
                               ],
                             ),
                           ),
-                        ),
-                    if (model.user!.showPersonalDetails == 1)
-                      if (model.user!.email != null || model.user!.email != "")
-                        CustomText(model.user!.email!,
-                            color: context.color.textLightColor,
-                            fontSize: context.font.small),
-                  ]),
+                        CustomText(model.user!.name!,
+                            fontWeight: FontWeight.bold,
+                            fontSize: context.font.large),
+                        if (context
+                                .watch<FetchSellerRatingsCubit>()
+                                .sellerData() !=
+                            null)
+                          if (context
+                                  .watch<FetchSellerRatingsCubit>()
+                                  .sellerData()!
+                                  .averageRating !=
+                              null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 3),
+                              child: RichText(
+                                text: TextSpan(
+                                  children: [
+                                    WidgetSpan(
+                                      child: Icon(Icons.star_rounded,
+                                          size: 17,
+                                          color: context.color
+                                              .textDefaultColor), // Star icon
+                                    ),
+                                    TextSpan(
+                                      text:
+                                          '\t${context.watch<FetchSellerRatingsCubit>().sellerData()!.averageRating!.toStringAsFixed(2).toString()}',
+                                      // Rating value
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: context.color.textDefaultColor,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: '  |  ',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: context.color.textDefaultColor
+                                            .withOpacity(0.3),
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text:
+                                          '${context.watch<FetchSellerRatingsCubit>().totalSellerRatings()}\t${"ratings".translate(context)}',
+                                      // Rating count text
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: context.color.textDefaultColor
+                                            .withOpacity(0.3),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        if (model.user!.showPersonalDetails == 1)
+                          if (model.user!.email != null ||
+                              model.user!.email != "")
+                            CustomText(model.user!.email!,
+                                color: context.color.textLightColor,
+                                fontSize: context.font.small),
+                      ]),
+                ),
+              ),
+              if (model.user!.showPersonalDetails == 1)
+                if (model.user!.mobile != null || model.user!.mobile != "")
+                  setIconButtons(
+                      assetName: AppIcons.message,
+                      onTap: () {
+                        HelperUtils.launchPathURL(
+                            isTelephone: false,
+                            isSMS: true,
+                            isMail: false,
+                            value: formatPhoneNumber(model.user!.mobile!,
+                                Constant.defaultCountryCode),
+                            context: context);
+                      }),
+              SizedBox(width: 10),
+              if (model.user!.showPersonalDetails == 1)
+                if (model.user!.mobile != null || model.user!.mobile != "")
+                  setIconButtons(
+                      assetName: AppIcons.call,
+                      onTap: () {
+                        HelperUtils.launchPathURL(
+                            isTelephone: true,
+                            isSMS: false,
+                            isMail: false,
+                            value: formatPhoneNumber(model.user!.mobile!,
+                                Constant.defaultCountryCode),
+                            context: context);
+                      })
+            ]),
+
+            // View profile and review buttons
+            SizedBox(height: 15),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pushNamed(context, Routes.sellerProfileScreen,
+                          arguments: {
+                            "model": model.user!,
+                            "total": context
+                                    .read<FetchSellerRatingsCubit>()
+                                    .totalSellerRatings() ??
+                                0,
+                            "rating": context
+                                .read<FetchSellerRatingsCubit>()
+                                .sellerData()
+                                ?.averageRating,
+                          });
+                    },
+                    icon: Icon(Icons.person, color: context.color.buttonColor),
+                    label: CustomText(
+                      "View Profile",
+                      color: context.color.buttonColor,
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.color.territoryColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      _showServiceReviewDialog(
+                          serviceId: model.id!,
+                          userId: model.userId!,
+                          name: model.name ?? "Service",
+                          image: model.image,
+                          isExperience: model.itemType == "experience");
+                    },
+                    icon: Icon(Icons.rate_review,
+                        color: context.color.buttonColor),
+                    label: CustomText(
+                      "Write Review",
+                      color: context.color.buttonColor,
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.color.territoryColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-          if (model.user!.showPersonalDetails == 1)
-            if (model.user!.mobile != null || model.user!.mobile != "")
-              setIconButtons(
-                  assetName: AppIcons.message,
-                  onTap: () {
-                    HelperUtils.launchPathURL(
-                        isTelephone: false,
-                        isSMS: true,
-                        isMail: false,
-                        value: formatPhoneNumber(
-                            model.user!.mobile!, Constant.defaultCountryCode),
-                        context: context);
-                  }),
-          SizedBox(width: 10),
-          if (model.user!.showPersonalDetails == 1)
-            if (model.user!.mobile != null || model.user!.mobile != "")
-              setIconButtons(
-                  assetName: AppIcons.call,
-                  onTap: () {
-                    HelperUtils.launchPathURL(
-                        isTelephone: true,
-                        isSMS: false,
-                        isMail: false,
-                        value: formatPhoneNumber(
-                            model.user!.mobile!, Constant.defaultCountryCode),
-                        context: context);
-                  })
-        ]),
+          ],
+        ),
       ),
       onTap: () {
         Navigator.pushNamed(context, Routes.sellerProfileScreen, arguments: {
@@ -2728,13 +2831,726 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
           "total":
               context.read<FetchSellerRatingsCubit>().totalSellerRatings() ?? 0,
           "rating": context
-                  .read<FetchSellerRatingsCubit>()
-                  .sellerData()!
-                  .averageRating ??
-              null
+              .read<FetchSellerRatingsCubit>()
+              .sellerData()!
+              .averageRating,
         });
       },
     );
+  }
+
+  // Show service/experience review dialog
+  void _showServiceReviewDialog({
+    required int serviceId,
+    required int userId,
+    required String name,
+    String? image,
+    bool isExperience = false,
+  }) {
+    // Check if user is authenticated
+    if (!HiveUtils.isUserAuthenticated()) {
+      // Show login required dialog
+      _showLoginRequiredDialog();
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return BlocProvider(
+          create: (context) => AddUserReviewCubit(),
+          child: ReviewDialog(
+            targetId: serviceId,
+            userId: userId,
+            reviewType:
+                isExperience ? ReviewType.experience : ReviewType.service,
+            name: name,
+            image: image,
+          ),
+        );
+      },
+    ).then((value) {
+      if (value == true) {
+        // Refresh reviews after adding a new one
+        if (mounted) {
+          if (model.id != null) {
+            // Refresh the reviews from the API
+            context
+                .read<FetchItemReviewsCubit>()
+                .fetchItemReviews(itemId: model.id!);
+          }
+        }
+      }
+    });
+  }
+
+  // Show login required dialog
+  void _showLoginRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: context.color.secondaryColor,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          title: Center(
+            child: Text(
+              "Login Required",
+              style: TextStyle(
+                fontSize: context.font.larger,
+                fontWeight: FontWeight.bold,
+                color: context.color.textDefaultColor,
+              ),
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.rate_review_outlined,
+                size: 60,
+                color: context.color.territoryColor,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                "You need to be logged in to write a review",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: context.color.textDefaultColor,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text(
+                "Cancel",
+                style: TextStyle(
+                  color: context.color.textColorDark,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.color.territoryColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, Routes.login);
+              },
+              child: Text(
+                "Login",
+                style: TextStyle(
+                  color: context.color.buttonColor,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Display service reviews in the item details
+  Widget buildServiceReviews() {
+    return BlocBuilder<FetchItemReviewsCubit, FetchItemReviewsState>(
+      builder: (context, state) {
+        if (state is FetchItemReviewsInProgress) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CustomText(
+                  "Reviews",
+                  fontWeight: FontWeight.bold,
+                  fontSize: context.font.large,
+                ),
+                SizedBox(height: 10),
+                Center(
+                  child: UiUtils.progress(),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (state is FetchItemReviewsFailure) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CustomText(
+                  "Reviews",
+                  fontWeight: FontWeight.bold,
+                  fontSize: context.font.large,
+                ),
+                SizedBox(height: 10),
+                Center(
+                  child: CustomText(
+                    "Failed to load reviews. Tap to retry.",
+                    color: context.color.textDefaultColor.withOpacity(0.6),
+                  ),
+                ),
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      if (model.id != null) {
+                        context
+                            .read<FetchItemReviewsCubit>()
+                            .fetchItemReviews(itemId: model.id!);
+                      }
+                    },
+                    child: CustomText(
+                      "Retry",
+                      color: context.color.territoryColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (state is FetchItemReviewsSuccess) {
+          if (state.reviews.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CustomText(
+                    "Reviews",
+                    fontWeight: FontWeight.bold,
+                    fontSize: context.font.large,
+                  ),
+                  SizedBox(height: 10),
+                  Center(
+                    child: CustomText(
+                      "No reviews yet. Be the first to write a review!",
+                      color: context.color.textDefaultColor.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // If reviews exist, display them (limited to 3)
+          int displayCount =
+              state.reviews.length > 3 ? 3 : state.reviews.length;
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CustomText(
+                      "Reviews (${state.total})",
+                      fontWeight: FontWeight.bold,
+                      fontSize: context.font.large,
+                    ),
+                    if (state.reviews.length > 3)
+                      GestureDetector(
+                        onTap: () {
+                          // Show all reviews in a modal
+                          _showAllReviews(state.reviews);
+                        },
+                        child: CustomText(
+                          "See All",
+                          color: context.color.territoryColor,
+                          showUnderline: true,
+                        ),
+                      ),
+                  ],
+                ),
+                SizedBox(height: 10),
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  itemCount: displayCount,
+                  itemBuilder: (context, index) {
+                    final review = state.reviews[index];
+
+                    // Use either reviewer or buyer field
+                    final userDetails = review.reviewer ?? review.buyer;
+
+                    final hasProfile = userDetails != null &&
+                        userDetails.profile != null &&
+                        userDetails.profile!.isNotEmpty;
+
+                    final reviewerName =
+                        userDetails != null && userDetails.name != null
+                            ? userDetails.name!
+                            : "Anonymous";
+
+                    // Add a subtle "You" indicator if this is your own review
+                    final isOwnReview = userDetails != null &&
+                        userDetails.id != null &&
+                        userDetails.id.toString() == HiveUtils.getUserId();
+
+                    return Card(
+                      color: context.color.secondaryColor,
+                      margin: EdgeInsets.symmetric(vertical: 5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      elevation: 0,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Reviewer Profile Image
+                            hasProfile
+                                ? CircleAvatar(
+                                    backgroundImage: NetworkImage(
+                                      userDetails!.profile!,
+                                    ),
+                                  )
+                                : CircleAvatar(
+                                    backgroundColor:
+                                        context.color.territoryColor,
+                                    child: Icon(
+                                      Icons.person,
+                                      color: context.color.buttonColor,
+                                    ),
+                                  ),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      CustomText(
+                                        isOwnReview
+                                            ? "$reviewerName (You)"
+                                            : reviewerName,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      if (review.createdAt != null)
+                                        CustomText(
+                                          _formatDate(review.createdAt!),
+                                          fontSize: context.font.small,
+                                          color: context.color.textDefaultColor
+                                              .withOpacity(0.6),
+                                        ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 5),
+                                  Row(
+                                    children: [
+                                      for (int i = 0; i < 5; i++)
+                                        Icon(
+                                          i < (review.ratings ?? 0).floor()
+                                              ? Icons.star
+                                              : Icons.star_border,
+                                          color: Colors.amber,
+                                          size: 16,
+                                        ),
+                                      SizedBox(width: 5),
+                                      CustomText(
+                                        "${review.ratings}",
+                                        fontSize: context.font.small,
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 5),
+                                  CustomText(
+                                    review.review ?? "",
+                                    color: context.color.textDefaultColor,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                // Show loading indicator if more data is being loaded
+                if (state.isLoadingMore)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Center(child: UiUtils.progress()),
+                  ),
+
+                // Show "Load More" button if there are more reviews
+                if (state.hasMoreData && !state.isLoadingMore)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Center(
+                      child: TextButton(
+                        onPressed: () {
+                          if (model.id != null) {
+                            context
+                                .read<FetchItemReviewsCubit>()
+                                .fetchMoreItemReviews(itemId: model.id!);
+                          }
+                        },
+                        child: CustomText(
+                          "Load More",
+                          color: context.color.territoryColor,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }
+
+        // Fallback to using model.review if the FetchItemReviewsCubit hasn't loaded yet
+        if (model.review == null || model.review!.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CustomText(
+                  "Reviews",
+                  fontWeight: FontWeight.bold,
+                  fontSize: context.font.large,
+                ),
+                SizedBox(height: 10),
+                Center(
+                  child: CustomText(
+                    "No reviews yet. Be the first to write a review!",
+                    color: context.color.textDefaultColor.withOpacity(0.6),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // If reviews exist in the model as a fallback
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CustomText(
+                "Reviews (${model.review!.length})",
+                fontWeight: FontWeight.bold,
+                fontSize: context.font.large,
+              ),
+              SizedBox(height: 10),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemCount: model.review!.length,
+                itemBuilder: (context, index) {
+                  final review = model.review![index];
+
+                  // Use either reviewer or buyer field
+                  final userDetails = review.reviewer ?? review.buyer;
+
+                  final hasProfile = userDetails != null &&
+                      userDetails.profile != null &&
+                      userDetails.profile!.isNotEmpty;
+
+                  final reviewerName =
+                      userDetails != null && userDetails.name != null
+                          ? userDetails.name!
+                          : "Anonymous";
+
+                  // Add a subtle "You" indicator if this is your own review
+                  final isOwnReview = userDetails != null &&
+                      userDetails.id != null &&
+                      userDetails.id.toString() == HiveUtils.getUserId();
+
+                  return Card(
+                    color: context.color.secondaryColor,
+                    margin: EdgeInsets.symmetric(vertical: 5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    elevation: 0,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Reviewer Profile Image
+                          hasProfile
+                              ? CircleAvatar(
+                                  backgroundImage: NetworkImage(
+                                    userDetails!.profile!,
+                                  ),
+                                )
+                              : CircleAvatar(
+                                  backgroundColor: context.color.territoryColor,
+                                  child: Icon(
+                                    Icons.person,
+                                    color: context.color.buttonColor,
+                                  ),
+                                ),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    CustomText(
+                                      isOwnReview
+                                          ? "$reviewerName (You)"
+                                          : reviewerName,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    if (review.createdAt != null)
+                                      CustomText(
+                                        _formatDate(review.createdAt!),
+                                        fontSize: context.font.small,
+                                        color: context.color.textDefaultColor
+                                            .withOpacity(0.6),
+                                      ),
+                                  ],
+                                ),
+                                SizedBox(height: 5),
+                                Row(
+                                  children: [
+                                    for (int i = 0; i < 5; i++)
+                                      Icon(
+                                        i < (review.ratings ?? 0).floor()
+                                            ? Icons.star
+                                            : Icons.star_border,
+                                        color: Colors.amber,
+                                        size: 16,
+                                      ),
+                                    SizedBox(width: 5),
+                                    CustomText(
+                                      "${review.ratings}",
+                                      fontSize: context.font.small,
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 5),
+                                CustomText(
+                                  review.review ?? "",
+                                  color: context.color.textDefaultColor,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Show all reviews in a modal
+  void _showAllReviews(List<UserRatings> reviews) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.color.secondaryColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      height: 5,
+                      width: 40,
+                      decoration: BoxDecoration(
+                        color: context.color.borderColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CustomText(
+                        "All Reviews (${reviews.length})",
+                        fontWeight: FontWeight.bold,
+                        fontSize: context.font.larger,
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: reviews.length,
+                      itemBuilder: (context, index) {
+                        final review = reviews[index];
+
+                        // Use either reviewer or buyer field
+                        final userDetails = review.reviewer ?? review.buyer;
+
+                        final hasProfile = userDetails != null &&
+                            userDetails.profile != null &&
+                            userDetails.profile!.isNotEmpty;
+
+                        final reviewerName =
+                            userDetails != null && userDetails.name != null
+                                ? userDetails.name!
+                                : "Anonymous";
+
+                        // Add a subtle "You" indicator if this is your own review
+                        final isOwnReview = userDetails != null &&
+                            userDetails.id != null &&
+                            userDetails.id.toString() == HiveUtils.getUserId();
+
+                        return Card(
+                          color: context.color.secondaryColor,
+                          margin: EdgeInsets.symmetric(vertical: 5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          elevation: 0,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Reviewer Profile Image
+                                hasProfile
+                                    ? CircleAvatar(
+                                        backgroundImage: NetworkImage(
+                                          userDetails!.profile!,
+                                        ),
+                                      )
+                                    : CircleAvatar(
+                                        backgroundColor:
+                                            context.color.territoryColor,
+                                        child: Icon(
+                                          Icons.person,
+                                          color: context.color.buttonColor,
+                                        ),
+                                      ),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          CustomText(
+                                            isOwnReview
+                                                ? "$reviewerName (You)"
+                                                : reviewerName,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          if (review.createdAt != null)
+                                            CustomText(
+                                              _formatDate(review.createdAt!),
+                                              fontSize: context.font.small,
+                                              color: context
+                                                  .color.textDefaultColor
+                                                  .withOpacity(0.6),
+                                            ),
+                                        ],
+                                      ),
+                                      SizedBox(height: 5),
+                                      Row(
+                                        children: [
+                                          for (int i = 0; i < 5; i++)
+                                            Icon(
+                                              i < (review.ratings ?? 0).floor()
+                                                  ? Icons.star
+                                                  : Icons.star_border,
+                                              color: Colors.amber,
+                                              size: 16,
+                                            ),
+                                          SizedBox(width: 5),
+                                          CustomText(
+                                            "${review.ratings}",
+                                            fontSize: context.font.small,
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: 5),
+                                      CustomText(
+                                        review.review ?? "",
+                                        color: context.color.textDefaultColor,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Helper method to format date
+  String _formatDate(String dateString) {
+    try {
+      final DateTime date = DateTime.parse(dateString);
+      final DateTime now = DateTime.now();
+      final Duration difference = now.difference(date);
+
+      if (difference.inDays == 0) {
+        if (difference.inHours == 0) {
+          return '${difference.inMinutes} min ago';
+        }
+        return '${difference.inHours} hours ago';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays} days ago';
+      } else {
+        return DateFormat('MMM d, yyyy').format(date);
+      }
+    } catch (e) {
+      return dateString;
+    }
   }
 
   Widget setIconButtons({

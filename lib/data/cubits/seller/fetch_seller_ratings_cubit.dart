@@ -59,15 +59,22 @@ class FetchSellerRatingsCubit extends Cubit<FetchSellerRatingsState> {
 
   void fetch({required int sellerId}) async {
     try {
+      print(
+          "FetchSellerRatingsCubit: Fetching ratings for seller ID: $sellerId");
       emit(FetchSellerRatingsInProgress());
+
       DataOutput<UserRatings> result = await _sellerRatingsRepository
           .fetchSellerRatingsAllRatings(page: 1, sellerId: sellerId);
+
+      print(
+          "FetchSellerRatingsCubit: Success - Found ${result.modelList.length} ratings with total: ${result.total}");
+      print(
+          "FetchSellerRatingsCubit: Seller data present: ${result.extraData?.data != null}");
 
       emit(
         FetchSellerRatingsSuccess(
           page: 1,
           seller: result.extraData?.data,
-          // Handle nullable seller
           isLoadingMore: false,
           loadingMoreError: false,
           ratings: result.modelList,
@@ -75,6 +82,7 @@ class FetchSellerRatingsCubit extends Cubit<FetchSellerRatingsState> {
         ),
       );
     } catch (e) {
+      print("FetchSellerRatingsCubit: Error fetching ratings - $e");
       emit(FetchSellerRatingsFail(e.toString()));
     }
   }

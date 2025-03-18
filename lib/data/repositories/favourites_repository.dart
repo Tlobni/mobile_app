@@ -1,6 +1,7 @@
 import 'package:eClassify/data/model/data_output.dart';
 import 'package:eClassify/data/model/item/item_model.dart';
 import 'package:eClassify/utils/api.dart';
+import 'package:eClassify/utils/hive_utils.dart';
 
 class FavoriteRepository {
   Future<void> manageFavorites(int id) async {
@@ -16,6 +17,15 @@ class FavoriteRepository {
   }
 
   Future<DataOutput<ItemModel>> fetchFavorites({required int page}) async {
+    // Check if user is authenticated before making the API call
+    if (!HiveUtils.isUserAuthenticated()) {
+      // Return empty result for unauthenticated users
+      return DataOutput<ItemModel>(
+        total: 0,
+        modelList: [],
+      );
+    }
+
     Map<String, dynamic> parameters = {
       Api.page: page,
     };

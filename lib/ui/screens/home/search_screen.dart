@@ -170,35 +170,7 @@ class SearchScreenState extends State<SearchScreen>
                                 borderRadius:
                                     const BorderRadius.all(Radius.circular(10)),
                                 color: context.color.secondaryColor),
-                            child: TextFormField(
-                                autofocus: widget.autoFocus,
-                                controller: searchController,
-                                decoration: InputDecoration(
-                                  border: InputBorder.none,
-                                  //OutlineInputBorder()
-                                  fillColor: Theme.of(context)
-                                      .colorScheme
-                                      .secondaryColor,
-                                  hintText: "searchHintLbl".translate(context),
-                                  prefixIcon: setSearchIcon(),
-                                  prefixIconConstraints: const BoxConstraints(
-                                      minHeight: 5, minWidth: 5),
-                                ),
-                                enableSuggestions: true,
-                                onEditingComplete: () {
-                                  setState(
-                                    () {
-                                      isFocused = false;
-                                    },
-                                  );
-                                  FocusScope.of(context).unfocus();
-                                },
-                                onTap: () {
-                                  //change prefix icon color to primary
-                                  setState(() {
-                                    isFocused = true;
-                                  });
-                                })),
+                            child: buildSearchTextField()),
                         const SizedBox(
                           width: 14,
                         ),
@@ -266,9 +238,6 @@ class SearchScreenState extends State<SearchScreen>
                   ))),
         ),
       ),
-      /*BackButton(
-        color: context.color.textDefaultColor,
-      ),*/
       elevation: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark
           ? 0
           : 6,
@@ -770,9 +739,15 @@ class SearchScreenState extends State<SearchScreen>
     return GestureDetector(
       onTap: () {
         searchController.clear();
-        isFocused = false; //set icon color to black back
+        // Use post-frame callback to prevent setState during build
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              isFocused = false;
+            });
+          }
+        });
         FocusScope.of(context).unfocus(); //dismiss keyboard
-        setState(() {});
       },
       child: Icon(
         Icons.close_rounded,
@@ -780,6 +755,42 @@ class SearchScreenState extends State<SearchScreen>
         size: 30,
       ),
     );
+  }
+
+  Widget buildSearchTextField() {
+    return TextFormField(
+        autofocus: widget.autoFocus,
+        controller: searchController,
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          fillColor: Theme.of(context).colorScheme.secondaryColor,
+          hintText: "searchHintLbl".translate(context),
+          prefixIcon: setSearchIcon(),
+          prefixIconConstraints:
+              const BoxConstraints(minHeight: 5, minWidth: 5),
+        ),
+        enableSuggestions: true,
+        onEditingComplete: () {
+          // Use post-frame callback to prevent setState during build
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                isFocused = false;
+              });
+            }
+          });
+          FocusScope.of(context).unfocus();
+        },
+        onTap: () {
+          // Use post-frame callback to prevent setState during build
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                isFocused = true;
+              });
+            }
+          });
+        });
   }
 
   @override

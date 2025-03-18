@@ -1022,7 +1022,6 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                         ),
                         TextButton(
                           onPressed: () {
-                            // Update the main state with selected categories
                             this.setState(() {});
                             Navigator.of(context).pop();
                           },
@@ -1115,24 +1114,6 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                                                           _selectedCategoryIds
                                                               .add(subcategory
                                                                   .id!);
-                                                        }
-                                                      }
-                                                    } else {
-                                                      _selectedCategoryIds
-                                                          .remove(category.id!);
-
-                                                      // Also deselect all subcategories
-                                                      if (hasSubcategories) {
-                                                        for (var subcategory
-                                                            in category
-                                                                .children!) {
-                                                          if (subcategory.id !=
-                                                              null) {
-                                                            _selectedCategoryIds
-                                                                .remove(
-                                                                    subcategory
-                                                                        .id!);
-                                                          }
                                                         }
                                                       }
                                                     }

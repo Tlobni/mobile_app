@@ -87,6 +87,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
   DateTime? _expirationDate;
   TimeOfDay? _expirationTime;
   AddressComponent? formatedAddress;
+  bool _isSubmitting = false; // Add loading state for submit button
 
   // Add missing controllers
   final TextEditingController cityTextController = TextEditingController();
@@ -380,6 +381,14 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                   child: UiUtils.buildButton(context, onPressed: () async {
+                    // Return early if already submitting to prevent multiple submissions
+                    if (_isSubmitting) return;
+
+                    // Set loading state
+                    setState(() {
+                      _isSubmitting = true;
+                    });
+
                     // Get post type
                     dynamic rawPostType = getCloudData("post_type");
                     PostType? postType =
@@ -387,6 +396,10 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
                     // Validate required fields for both types
                     if (!_validateRequiredFields(postType)) {
+                      // Reset loading state if validation fails
+                      setState(() {
+                        _isSubmitting = false;
+                      });
                       return;
                     }
 
@@ -593,10 +606,18 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         }
                       } catch (e, st) {
                         print("Error submitting form: $e");
+                        // Reset loading state on error
+                        setState(() {
+                          _isSubmitting = false;
+                        });
                         HelperUtils.showSnackBarMessage(
                             context, "An error occurred. Please try again.");
                       }
                     } else {
+                      // Reset loading state when validation fails
+                      setState(() {
+                        _isSubmitting = false;
+                      });
                       HelperUtils.showSnackBarMessage(
                           context, "cityRequired".translate(context));
                       Future.delayed(Duration(seconds: 2), () {
@@ -616,6 +637,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                       radius: 8,
                       disabledColor: const Color.fromARGB(255, 104, 102, 106),
                       disabled: false,
+                      isInProgress: _isSubmitting,
                       width: double.maxFinite,
                       buttonTitle: "postNow".translate(context)),
                 ),

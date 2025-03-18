@@ -27,6 +27,7 @@ import 'package:eClassify/ui/screens/home/widgets/home_search.dart';
 import 'package:eClassify/ui/screens/home/widgets/home_sections_adapter.dart';
 import 'package:eClassify/ui/screens/home/widgets/home_shimmers.dart';
 import 'package:eClassify/ui/screens/home/widgets/location_widget.dart';
+import 'package:eClassify/ui/screens/home/widgets/location_autocomplete_header.dart';
 import 'package:eClassify/ui/screens/widgets/errors/no_internet.dart';
 import 'package:eClassify/ui/screens/widgets/errors/something_went_wrong.dart';
 import 'package:eClassify/ui/screens/widgets/shimmerLoadingContainer.dart';
@@ -188,7 +189,7 @@ class HomeScreenState extends State<HomeScreen>
           leading: Padding(
               padding: EdgeInsetsDirectional.only(
                   start: sidePadding, end: sidePadding),
-              child: const LocationWidget()),
+              child: const LocationAutocompleteHeader()),
           backgroundColor: const Color.fromARGB(0, 0, 0, 0),
           actions: [
             // Add notification icon with badge

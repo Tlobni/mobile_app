@@ -12,6 +12,7 @@ import 'package:eClassify/ui/screens/widgets/shimmerLoadingContainer.dart';
 import 'package:eClassify/ui/theme/theme.dart';
 import 'package:eClassify/utils/api.dart';
 import 'package:eClassify/utils/extensions/extensions.dart';
+import 'package:eClassify/utils/hive_utils.dart';
 import 'package:eClassify/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -80,67 +81,117 @@ class FavoriteScreenState extends State<FavoriteScreen> {
       child: Scaffold(
         appBar: UiUtils.buildAppBar(context,
             showBackButton: false, title: "favorites".translate(context)),
-        body: BlocBuilder<FavoriteCubit, FavoriteState>(
-          builder: (context, state) {
-            if (state is FavoriteFetchInProgress) {
-              return shimmerEffect();
-            } else if (state is FavoriteFetchSuccess) {
-              if (state.favorite.isEmpty) {
-                return Center(
-                  child: NoDataFound(
-                    onTap: getFavorite,
-                  ),
-                );
-              }
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Expanded(
-                    child: ListView.builder(
-                      controller: _controller,
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.all(16.0),
-                      itemCount: state.favorite.length,
-                      shrinkWrap: true,
-                      itemBuilder: (context, index) {
-                        ItemModel item = state.favorite[index];
-                        return InkWell(
-                          onTap: () {
-                            Navigator.pushNamed(
-                              context,
-                              Routes.adDetailsScreen,
-                              arguments: {
-                                'model': item,
-                              },
-                            );
-                          },
-                          child: ItemHorizontalCard(
-                            item: item,
-                            showLikeButton: true,
-                            additionalImageWidth: 8,
+        body: !HiveUtils.isUserAuthenticated()
+            ? _buildLoginRequiredMessage()
+            : BlocBuilder<FavoriteCubit, FavoriteState>(
+                builder: (context, state) {
+                  if (state is FavoriteFetchInProgress) {
+                    return shimmerEffect();
+                  } else if (state is FavoriteFetchSuccess) {
+                    if (state.favorite.isEmpty) {
+                      return Center(
+                        child: NoDataFound(
+                          onTap: getFavorite,
+                        ),
+                      );
+                    }
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Expanded(
+                          child: ListView.builder(
+                            controller: _controller,
+                            physics: const BouncingScrollPhysics(),
+                            padding: const EdgeInsets.all(16.0),
+                            itemCount: state.favorite.length,
+                            shrinkWrap: true,
+                            itemBuilder: (context, index) {
+                              ItemModel item = state.favorite[index];
+                              return InkWell(
+                                onTap: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    Routes.adDetailsScreen,
+                                    arguments: {
+                                      'model': item,
+                                    },
+                                  );
+                                },
+                                child: ItemHorizontalCard(
+                                  item: item,
+                                  showLikeButton: true,
+                                  additionalImageWidth: 8,
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                  if (state.isLoadingMore)
-                    UiUtils.progress(
-                      normalProgressColor: context.color.territoryColor,
-                    )
-                ],
-              );
-            } else if (state is FavoriteFetchFailure) {
-              if (state.errorMessage is ApiException &&
-                  (state.errorMessage as ApiException).errorMessage ==
-                      "no-internet") {
-                return NoInternet(
-                  onRetry: getFavorite,
-                );
-              }
-              return const SomethingWentWrong();
-            }
-            return Container();
-          },
+                        ),
+                        if (state.isLoadingMore)
+                          UiUtils.progress(
+                            normalProgressColor: context.color.territoryColor,
+                          )
+                      ],
+                    );
+                  } else if (state is FavoriteFetchFailure) {
+                    if (state.errorMessage is ApiException &&
+                        (state.errorMessage as ApiException).errorMessage ==
+                            "no-internet") {
+                      return NoInternet(
+                        onRetry: getFavorite,
+                      );
+                    }
+                    return const SomethingWentWrong();
+                  }
+                  return Container();
+                },
+              ),
+      ),
+    );
+  }
+
+  // Widget to show when user is not logged in
+  Widget _buildLoginRequiredMessage() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.favorite_border_rounded,
+              size: 80,
+              color: context.color.territoryColor.withOpacity(0.7),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              "loginIsRequiredForAccessingThisFeatures".translate(context),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: context.color.textDefaultColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              "tapOnLoginToAuthorize".translate(context),
+              style: TextStyle(
+                color: context.color.textDefaultColor.withOpacity(0.7),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 30),
+            UiUtils.buildButton(
+              context,
+              onPressed: () {
+                Navigator.pushNamed(context, Routes.login);
+              },
+              buttonTitle: "loginNow".translate(context),
+              height: 45,
+              fontSize: 16,
+              width: 200,
+            ),
+          ],
         ),
       ),
     );
