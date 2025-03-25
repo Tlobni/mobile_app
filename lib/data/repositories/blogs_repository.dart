@@ -1,6 +1,6 @@
-import 'package:eClassify/data/model/blog_model.dart';
-import 'package:eClassify/data/model/data_output.dart';
-import 'package:eClassify/utils/api.dart';
+import 'package:tlobni/data/model/blog_model.dart';
+import 'package:tlobni/data/model/data_output.dart';
+import 'package:tlobni/utils/api.dart';
 
 class BlogsRepository {
   Future<DataOutput<BlogModel>> fetchBlogs({required int page}) async {

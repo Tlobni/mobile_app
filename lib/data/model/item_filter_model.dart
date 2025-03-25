@@ -80,6 +80,8 @@ class ItemFilterModel {
   }
 
   Map<String, dynamic> toMap() {
+    print("DEBUG: ServiceType value being sent to API: $serviceType");
+    print("DEBUG: Gender value being sent to API: $gender");
     return <String, dynamic>{
       'max_price': maxPrice,
       'min_price': minPrice,
@@ -95,7 +97,7 @@ class ItemFilterModel {
       'latitude': latitude,
       'user_type': userType,
       'gender': gender,
-      'service_type': serviceType,
+      'provider_item_type': serviceType,
       'special_tags': specialTags,
     };
   }
@@ -120,7 +122,7 @@ class ItemFilterModel {
       customFields: Map<String, dynamic>.from(map['custom_fields'] ?? {}),
       userType: map['user_type']?.toString(),
       gender: map['gender']?.toString(),
-      serviceType: map['service_type']?.toString(),
+      serviceType: map['provider_item_type']?.toString(),
       specialTags: map['special_tags'] != null
           ? Map<String, String>.from(map['special_tags'])
           : null,

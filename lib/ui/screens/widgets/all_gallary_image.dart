@@ -1,7 +1,7 @@
-import 'package:eClassify/ui/screens/widgets/video_view_screen.dart';
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/ui_utils.dart';
+import 'package:tlobni/ui/screens/widgets/video_view_screen.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 
 class AllGalleryImages extends StatelessWidget {

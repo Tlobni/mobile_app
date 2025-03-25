@@ -1,4 +1,4 @@
-import 'package:eClassify/utils/custom_text.dart';
+import 'package:tlobni/utils/custom_text.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 

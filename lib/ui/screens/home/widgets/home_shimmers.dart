@@ -1,6 +1,6 @@
-import 'package:eClassify/ui/screens/home/home_screen.dart';
-import 'package:eClassify/ui/screens/widgets/shimmerLoadingContainer.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
+import 'package:tlobni/ui/screens/home/home_screen.dart';
+import 'package:tlobni/ui/screens/widgets/shimmerLoadingContainer.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 
 class SliderShimmer extends StatelessWidget {

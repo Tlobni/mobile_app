@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:eClassify/utils/custom_text.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
 
 class LocationAutocomplete extends StatefulWidget {
   final TextEditingController controller;
@@ -196,6 +196,7 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
   OverlayEntry _createOverlayEntry() {
     final RenderBox renderBox = context.findRenderObject() as RenderBox;
     final size = renderBox.size;
+    final theme = Theme.of(context);
 
     return OverlayEntry(
       builder: (context) => Positioned(
@@ -206,6 +207,8 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
           offset: Offset(0.0, size.height),
           child: Material(
             elevation: 4.0,
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(10),
             child: Container(
               constraints: BoxConstraints(
                 maxHeight: 200,
@@ -215,7 +218,7 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
                       padding: EdgeInsets.all(16),
                       child: CustomText(
                         "No locations found",
-                        color: Colors.grey,
+                        color: theme.hintColor,
                       ),
                     )
                   : ListView.builder(
@@ -228,7 +231,8 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
                             "${location['city']}, ${location['country']}";
 
                         return ListTile(
-                          title: CustomText(displayText),
+                          title: CustomText(displayText,
+                              color: theme.textTheme.bodyMedium?.color),
                           onTap: () {
                             widget.controller.text = displayText;
                             widget.onSelected(displayText);
@@ -262,22 +266,39 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return CompositedTransformTarget(
       link: _layerLink,
       child: TextField(
         controller: widget.controller,
         focusNode: _focusNode,
+        style: TextStyle(
+          color: theme.textTheme.bodyMedium?.color,
+          fontSize: 14,
+        ),
         decoration: InputDecoration(
           hintText: widget.hintText,
-          prefixIcon: Icon(Icons.location_on_outlined),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+          hintStyle: TextStyle(
+            color: theme.hintColor,
+            fontSize: 14,
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.blue),
+          prefixIcon: Container(
+            margin: EdgeInsets.only(left: 10),
+            alignment: Alignment.centerLeft,
+            child: Icon(
+              Icons.location_on_outlined,
+              color: theme.iconTheme.color,
+              size: 18,
+            ),
           ),
+          prefixIconConstraints: BoxConstraints(minWidth: 35, maxWidth: 35),
+          contentPadding: EdgeInsets.only(right: 35),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          fillColor: theme.cardColor,
+          filled: true,
         ),
       ),
     );

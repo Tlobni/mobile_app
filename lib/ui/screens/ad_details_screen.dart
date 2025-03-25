@@ -2,65 +2,65 @@
 import 'dart:async';
 import 'dart:developer';
 
-import 'package:eClassify/app/routes.dart';
-import 'package:eClassify/data/cubits/add_user_review_cubit.dart';
-import 'package:eClassify/data/cubits/chat/delete_message_cubit.dart';
-import 'package:eClassify/data/cubits/chat/get_buyer_chat_users_cubit.dart';
-import 'package:eClassify/data/cubits/chat/load_chat_messages.dart';
-import 'package:eClassify/data/cubits/chat/make_an_offer_item_cubit.dart';
-import 'package:eClassify/data/cubits/chat/send_message.dart';
-import 'package:eClassify/data/cubits/favorite/favorite_cubit.dart';
-import 'package:eClassify/data/cubits/favorite/manage_fav_cubit.dart';
-import 'package:eClassify/data/cubits/item/change_my_items_status_cubit.dart';
-import 'package:eClassify/data/cubits/item/create_featured_ad_cubit.dart';
-import 'package:eClassify/data/cubits/item/delete_item_cubit.dart';
-import 'package:eClassify/data/cubits/item/fetch_item_from_slug_cubit.dart';
-import 'package:eClassify/data/cubits/item/fetch_my_item_cubit.dart';
-import 'package:eClassify/data/cubits/item/item_total_click_cubit.dart';
-import 'package:eClassify/data/cubits/item/related_item_cubit.dart';
-import 'package:eClassify/data/cubits/renew_item_cubit.dart';
-import 'package:eClassify/data/cubits/report/fetch_item_report_reason_list.dart';
-import 'package:eClassify/data/cubits/report/item_report_cubit.dart';
-import 'package:eClassify/data/cubits/report/update_report_items_list_cubit.dart';
-import 'package:eClassify/data/cubits/safety_tips_cubit.dart';
-import 'package:eClassify/data/cubits/seller/fetch_seller_ratings_cubit.dart';
-import 'package:eClassify/data/cubits/subscription/fetch_ads_listing_subscription_packages_cubit.dart';
-import 'package:eClassify/data/cubits/subscription/fetch_user_package_limit_cubit.dart';
-import 'package:eClassify/data/cubits/item/fetch_item_reviews_cubit.dart';
-import 'package:eClassify/data/helper/widgets.dart';
-import 'package:eClassify/data/model/category_model.dart';
-import 'package:eClassify/data/model/chat/chat_user_model.dart' as chat_models;
-import 'package:eClassify/data/model/item/item_model.dart';
-import 'package:eClassify/data/model/report_item/reason_model.dart';
-import 'package:eClassify/data/model/safety_tips_model.dart';
-import 'package:eClassify/data/model/seller_ratings_model.dart';
-import 'package:eClassify/data/model/subscription_pacakage_model.dart';
-import 'package:eClassify/ui/screens/ad_banner_screen.dart';
-import 'package:eClassify/ui/screens/chat/chat_screen.dart';
-import 'package:eClassify/ui/screens/google_map_screen.dart';
-import 'package:eClassify/ui/screens/home/widgets/grid_list_adapter.dart';
-import 'package:eClassify/ui/screens/home/widgets/home_sections_adapter.dart';
-import 'package:eClassify/ui/screens/subscription/widget/featured_ads_subscription_plan_item.dart';
-import 'package:eClassify/ui/screens/widgets/animated_routes/blur_page_route.dart';
-import 'package:eClassify/ui/screens/widgets/blurred_dialoge_box.dart';
-import 'package:eClassify/ui/screens/widgets/errors/no_data_found.dart';
-import 'package:eClassify/ui/screens/widgets/errors/no_internet.dart';
-import 'package:eClassify/ui/screens/widgets/errors/something_went_wrong.dart';
-import 'package:eClassify/ui/screens/widgets/review_dialog.dart';
-import 'package:eClassify/ui/screens/widgets/shimmerLoadingContainer.dart';
-import 'package:eClassify/ui/screens/widgets/video_view_screen.dart';
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/api.dart';
-import 'package:eClassify/utils/app_icon.dart';
-import 'package:eClassify/utils/cloud_state/cloud_state.dart';
-import 'package:eClassify/utils/constant.dart';
-import 'package:eClassify/utils/custom_text.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/extensions/lib/currency_formatter.dart';
-import 'package:eClassify/utils/helper_utils.dart';
-import 'package:eClassify/utils/hive_utils.dart';
-import 'package:eClassify/utils/ui_utils.dart';
-import 'package:eClassify/utils/validator.dart';
+import 'package:tlobni/app/routes.dart';
+import 'package:tlobni/data/cubits/add_user_review_cubit.dart';
+import 'package:tlobni/data/cubits/chat/delete_message_cubit.dart';
+import 'package:tlobni/data/cubits/chat/get_buyer_chat_users_cubit.dart';
+import 'package:tlobni/data/cubits/chat/load_chat_messages.dart';
+import 'package:tlobni/data/cubits/chat/make_an_offer_item_cubit.dart';
+import 'package:tlobni/data/cubits/chat/send_message.dart';
+import 'package:tlobni/data/cubits/favorite/favorite_cubit.dart';
+import 'package:tlobni/data/cubits/favorite/manage_fav_cubit.dart';
+import 'package:tlobni/data/cubits/item/change_my_items_status_cubit.dart';
+import 'package:tlobni/data/cubits/item/create_featured_ad_cubit.dart';
+import 'package:tlobni/data/cubits/item/delete_item_cubit.dart';
+import 'package:tlobni/data/cubits/item/fetch_item_from_slug_cubit.dart';
+import 'package:tlobni/data/cubits/item/fetch_my_item_cubit.dart';
+import 'package:tlobni/data/cubits/item/item_total_click_cubit.dart';
+import 'package:tlobni/data/cubits/item/related_item_cubit.dart';
+import 'package:tlobni/data/cubits/renew_item_cubit.dart';
+import 'package:tlobni/data/cubits/report/fetch_item_report_reason_list.dart';
+import 'package:tlobni/data/cubits/report/item_report_cubit.dart';
+import 'package:tlobni/data/cubits/report/update_report_items_list_cubit.dart';
+import 'package:tlobni/data/cubits/safety_tips_cubit.dart';
+import 'package:tlobni/data/cubits/seller/fetch_seller_ratings_cubit.dart';
+import 'package:tlobni/data/cubits/subscription/fetch_ads_listing_subscription_packages_cubit.dart';
+import 'package:tlobni/data/cubits/subscription/fetch_user_package_limit_cubit.dart';
+import 'package:tlobni/data/cubits/item/fetch_item_reviews_cubit.dart';
+import 'package:tlobni/data/helper/widgets.dart';
+import 'package:tlobni/data/model/category_model.dart';
+import 'package:tlobni/data/model/chat/chat_user_model.dart' as chat_models;
+import 'package:tlobni/data/model/item/item_model.dart';
+import 'package:tlobni/data/model/report_item/reason_model.dart';
+import 'package:tlobni/data/model/safety_tips_model.dart';
+import 'package:tlobni/data/model/seller_ratings_model.dart';
+import 'package:tlobni/data/model/subscription_pacakage_model.dart';
+import 'package:tlobni/ui/screens/ad_banner_screen.dart';
+import 'package:tlobni/ui/screens/chat/chat_screen.dart';
+import 'package:tlobni/ui/screens/google_map_screen.dart';
+import 'package:tlobni/ui/screens/home/widgets/grid_list_adapter.dart';
+import 'package:tlobni/ui/screens/home/widgets/home_sections_adapter.dart';
+import 'package:tlobni/ui/screens/subscription/widget/featured_ads_subscription_plan_item.dart';
+import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
+import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
+import 'package:tlobni/ui/screens/widgets/errors/no_data_found.dart';
+import 'package:tlobni/ui/screens/widgets/errors/no_internet.dart';
+import 'package:tlobni/ui/screens/widgets/errors/something_went_wrong.dart';
+import 'package:tlobni/ui/screens/widgets/review_dialog.dart';
+import 'package:tlobni/ui/screens/widgets/shimmerLoadingContainer.dart';
+import 'package:tlobni/ui/screens/widgets/video_view_screen.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/api.dart';
+import 'package:tlobni/utils/app_icon.dart';
+import 'package:tlobni/utils/cloud_state/cloud_state.dart';
+import 'package:tlobni/utils/constant.dart';
+import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/extensions/lib/currency_formatter.dart';
+import 'package:tlobni/utils/helper_utils.dart';
+import 'package:tlobni/utils/hive_utils.dart';
+import 'package:tlobni/utils/ui_utils.dart';
+import 'package:tlobni/utils/validator.dart';
 import 'package:flick_video_player/flick_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -495,6 +495,8 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                             maxLines: 2,
                           )),
                       setPriceAndStatus(),
+                      if (model.specialTags != null || model.priceType != null)
+                        setSpecialTagsAndPriceType(),
                       if (isAddedByMe) setRejectedReason(),
                       if (model.address != null) setAddress(isDate: true),
                       const SizedBox(
@@ -2847,42 +2849,40 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
     String? image,
     bool isExperience = false,
   }) {
-    // Check if user is authenticated
-    if (!HiveUtils.isUserAuthenticated()) {
-      // Show login required dialog
-      _showLoginRequiredDialog();
-      return;
-    }
-
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (BuildContext context) {
-        return BlocProvider(
-          create: (context) => AddUserReviewCubit(),
-          child: ReviewDialog(
-            targetId: serviceId,
-            userId: userId,
-            reviewType:
-                isExperience ? ReviewType.experience : ReviewType.service,
-            name: name,
-            image: image,
-          ),
-        );
-      },
-    ).then((value) {
-      if (value == true) {
-        // Refresh reviews after adding a new one
-        if (mounted) {
-          if (model.id != null) {
-            // Refresh the reviews from the API
-            context
-                .read<FetchItemReviewsCubit>()
-                .fetchItemReviews(itemId: model.id!);
+    UiUtils.checkUser(
+      onNotGuest: () {
+        showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (BuildContext context) {
+            return BlocProvider(
+              create: (context) => AddUserReviewCubit(),
+              child: ReviewDialog(
+                targetId: serviceId,
+                userId: userId,
+                reviewType:
+                    isExperience ? ReviewType.experience : ReviewType.service,
+                name: name,
+                image: image,
+              ),
+            );
+          },
+        ).then((value) {
+          if (value == true) {
+            // Refresh reviews after adding a new one
+            if (mounted) {
+              if (model.id != null) {
+                // Refresh the reviews from the API
+                context
+                    .read<FetchItemReviewsCubit>()
+                    .fetchItemReviews(itemId: model.id!);
+              }
+            }
           }
-        }
-      }
-    });
+        });
+      },
+      context: context,
+    );
   }
 
   // Show login required dialog
@@ -3673,5 +3673,81 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
         ),
       );
     });
+  }
+
+  Widget setSpecialTagsAndPriceType() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10.0),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          // Price type tag
+          if (model.priceType != null && model.priceType!.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: context.color.territoryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: CustomText(
+                model.priceType!,
+                fontSize: context.font.small,
+                color: context.color.territoryColor,
+              ),
+            ),
+
+          // For women tag
+          if (model.specialTags != null &&
+              model.specialTags!.containsKey('exclusive_women') &&
+              (model.specialTags!['exclusive_women'] == true ||
+                  model.specialTags!['exclusive_women'] == "true"))
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.pink.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.female, size: 16, color: Colors.pink),
+                  const SizedBox(width: 4),
+                  CustomText(
+                    "For women".translate(context),
+                    fontSize: context.font.small,
+                    color: Colors.pink,
+                  ),
+                ],
+              ),
+            ),
+
+          // Corporate tag
+          if (model.specialTags != null &&
+              model.specialTags!.containsKey('corporate_package') &&
+              (model.specialTags!['corporate_package'] == true ||
+                  model.specialTags!['corporate_package'] == "true"))
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.business, size: 16, color: Colors.blue),
+                  const SizedBox(width: 4),
+                  CustomText(
+                    "Corporate".translate(context),
+                    fontSize: context.font.small,
+                    color: Colors.blue,
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }

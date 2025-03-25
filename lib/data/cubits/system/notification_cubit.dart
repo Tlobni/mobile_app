@@ -1,6 +1,6 @@
-import 'package:eClassify/data/helper/custom_exception.dart';
-import 'package:eClassify/data/model/notification_data.dart';
-import 'package:eClassify/utils/api.dart';
+import 'package:tlobni/data/helper/custom_exception.dart';
+import 'package:tlobni/data/model/notification_data.dart';
+import 'package:tlobni/utils/api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

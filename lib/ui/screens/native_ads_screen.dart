@@ -1,8 +1,8 @@
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:eClassify/ui/screens/home/home_screen.dart';
-import 'package:eClassify/utils/constant.dart';
+import 'package:tlobni/ui/screens/home/home_screen.dart';
+import 'package:tlobni/utils/constant.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 

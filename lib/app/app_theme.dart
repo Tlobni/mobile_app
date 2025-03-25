@@ -1,6 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
-import 'package:eClassify/ui/theme/theme.dart';
+import 'package:tlobni/ui/theme/theme.dart';
 import 'package:flutter/material.dart';
 
 enum AppTheme { dark, light }

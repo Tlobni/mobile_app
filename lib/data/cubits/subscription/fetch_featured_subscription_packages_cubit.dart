@@ -1,9 +1,9 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:eClassify/data/repositories/subscription_repository.dart';
-import 'package:eClassify/data/model/data_output.dart';
-import 'package:eClassify/data/model/subscription_pacakage_model.dart';
+import 'package:tlobni/data/repositories/subscription_repository.dart';
+import 'package:tlobni/data/model/data_output.dart';
+import 'package:tlobni/data/model/subscription_pacakage_model.dart';
 
 abstract class FetchFeaturedSubscriptionPackagesState {}
 

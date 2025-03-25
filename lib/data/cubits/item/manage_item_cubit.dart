@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:eClassify/data/repositories/item/item_repository.dart';
-import 'package:eClassify/data/model/item/item_model.dart';
-import 'package:eClassify/data/cubits/item/fetch_my_item_cubit.dart';
+import 'package:tlobni/data/repositories/item/item_repository.dart';
+import 'package:tlobni/data/model/item/item_model.dart';
+import 'package:tlobni/data/cubits/item/fetch_my_item_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

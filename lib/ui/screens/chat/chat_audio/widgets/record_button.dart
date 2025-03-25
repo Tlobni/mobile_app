@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:eClassify/ui/screens/chat/chat_audio/audio_state.dart';
-import 'package:eClassify/ui/screens/chat/chat_audio/globals.dart';
-import 'package:eClassify/ui/screens/chat/chat_audio/widgets/flow_shader.dart';
-import 'package:eClassify/ui/screens/chat/chat_audio/widgets/lottie_animation.dart';
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/custom_text.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
+import 'package:tlobni/ui/screens/chat/chat_audio/audio_state.dart';
+import 'package:tlobni/ui/screens/chat/chat_audio/globals.dart';
+import 'package:tlobni/ui/screens/chat/chat_audio/widgets/flow_shader.dart';
+import 'package:tlobni/ui/screens/chat/chat_audio/widgets/lottie_animation.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';

@@ -1,11 +1,11 @@
-import 'package:eClassify/app/routes.dart';
-import 'package:eClassify/utils/custom_text.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/helper_utils.dart';
-import 'package:eClassify/utils/hive_utils.dart';
-import 'package:eClassify/utils/ui_utils.dart';
+import 'package:tlobni/app/routes.dart';
+import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/helper_utils.dart';
+import 'package:tlobni/utils/hive_utils.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
-import 'package:eClassify/ui/screens/widgets/animated_routes/blur_page_route.dart';
+import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({Key? key}) : super(key: key);
@@ -106,20 +106,21 @@ class WelcomeScreen extends StatelessWidget {
               radius: 4,
               height: 50,
               buttonColor: const Color(0xFF0F2137),
+              textColor: const Color(0xFFE6CBA8),
             ),
 
             const SizedBox(height: 10),
             UiUtils.buildButton(
               context,
               onPressed: () => navigateToSignup(context),
-              buttonTitle: 'New To Tlobni? Create an Account',
+              buttonTitle: 'Create an Account',
               radius: 4,
               height: 50,
               buttonColor: const Color(0xFF0F2137),
+              textColor: const Color(0xFFE6CBA8),
             ),
 
-            const Spacer(flex: 1),
-
+            const SizedBox(height: 10),
             // Skip for later
             TextButton(
               onPressed: () => skipForNow(context),
@@ -130,6 +131,8 @@ class WelcomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
+
+            const Spacer(flex: 1),
           ],
         ),
       ),

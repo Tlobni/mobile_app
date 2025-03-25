@@ -1,4 +1,4 @@
-import 'package:eClassify/data/repositories/in_app_purchase_repository.dart';
+import 'package:tlobni/data/repositories/in_app_purchase_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 abstract class InAppPurchaseState {}

@@ -1,7 +1,7 @@
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/custom_text.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/ui_utils.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 
 class CategoryCard extends StatelessWidget {
@@ -53,17 +53,10 @@ class CategoryCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(18),
                 child: Container(
                   height: MediaQuery.of(context).size.height * 0.11, //94,
+                  width: double.infinity,
                   color: context.color.territoryColor.withOpacity(0.1),
-                  child: Center(
-                    child: SizedBox(
-                      // color: Colors.blue,
-                      width: 48,
-                      height: 48,
-                      child: UiUtils.imageType(url,
-                          fit: BoxFit.cover,
-                          color: context.color.territoryColor),
-                    ),
-                  ),
+                  child: UiUtils.imageType(url,
+                      fit: BoxFit.cover, color: context.color.territoryColor),
                 ),
               ),
             ],

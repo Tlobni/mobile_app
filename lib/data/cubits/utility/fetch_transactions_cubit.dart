@@ -1,6 +1,6 @@
-import 'package:eClassify/data/model/data_output.dart';
-import 'package:eClassify/data/model/transaction_model.dart';
-import 'package:eClassify/data/repositories/transaction.dart';
+import 'package:tlobni/data/model/data_output.dart';
+import 'package:tlobni/data/model/transaction_model.dart';
+import 'package:tlobni/data/repositories/transaction.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 abstract class FetchTransactionsState {}

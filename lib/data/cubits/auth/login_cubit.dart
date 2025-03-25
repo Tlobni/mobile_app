@@ -3,10 +3,10 @@
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:eClassify/data/cubits/auth/authentication_cubit.dart';
-import 'package:eClassify/data/repositories/auth_repository.dart';
-import 'package:eClassify/utils/api.dart';
-import 'package:eClassify/utils/hive_utils.dart';
+import 'package:tlobni/data/cubits/auth/authentication_cubit.dart';
+import 'package:tlobni/data/repositories/auth_repository.dart';
+import 'package:tlobni/utils/api.dart';
+import 'package:tlobni/utils/hive_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

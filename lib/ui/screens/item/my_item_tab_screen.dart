@@ -1,22 +1,22 @@
-import 'package:eClassify/app/routes.dart';
-import 'package:eClassify/data/cubits/item/fetch_my_item_cubit.dart';
-import 'package:eClassify/data/helper/designs.dart';
-import 'package:eClassify/data/model/item/item_model.dart';
-import 'package:eClassify/ui/screens/home/home_screen.dart';
-import 'package:eClassify/ui/screens/widgets/errors/no_data_found.dart';
-import 'package:eClassify/ui/screens/widgets/errors/no_internet.dart';
-import 'package:eClassify/ui/screens/widgets/errors/something_went_wrong.dart';
-import 'package:eClassify/ui/screens/widgets/promoted_widget.dart';
-import 'package:eClassify/ui/screens/widgets/shimmerLoadingContainer.dart';
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/api.dart';
-import 'package:eClassify/utils/app_icon.dart';
-import 'package:eClassify/utils/cloud_state/cloud_state.dart';
-import 'package:eClassify/utils/custom_text.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/extensions/lib/currency_formatter.dart';
-import 'package:eClassify/utils/hive_utils.dart';
-import 'package:eClassify/utils/ui_utils.dart';
+import 'package:tlobni/app/routes.dart';
+import 'package:tlobni/data/cubits/item/fetch_my_item_cubit.dart';
+import 'package:tlobni/data/helper/designs.dart';
+import 'package:tlobni/data/model/item/item_model.dart';
+import 'package:tlobni/ui/screens/home/home_screen.dart';
+import 'package:tlobni/ui/screens/widgets/errors/no_data_found.dart';
+import 'package:tlobni/ui/screens/widgets/errors/no_internet.dart';
+import 'package:tlobni/ui/screens/widgets/errors/something_went_wrong.dart';
+import 'package:tlobni/ui/screens/widgets/promoted_widget.dart';
+import 'package:tlobni/ui/screens/widgets/shimmerLoadingContainer.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/api.dart';
+import 'package:tlobni/utils/app_icon.dart';
+import 'package:tlobni/utils/cloud_state/cloud_state.dart';
+import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/extensions/lib/currency_formatter.dart';
+import 'package:tlobni/utils/hive_utils.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
@@ -39,6 +39,9 @@ class _MyItemTabState extends CloudState<MyItemTab> {
   @override
   void initState() {
     if (HiveUtils.isUserAuthenticated()) {
+      // Print debug information to verify the correct status is being used
+      print("MyItemTab initializing with status: ${widget.getItemsWithStatus}");
+
       context.read<FetchMyItemsCubit>().fetchMyItems(
             getItemsWithStatus: widget.getItemsWithStatus,
           );
@@ -52,6 +55,7 @@ class _MyItemTabState extends CloudState<MyItemTab> {
   void _pageScroll() {
     if (_pageScrollController.isEndReached()) {
       if (context.read<FetchMyItemsCubit>().hasMoreData()) {
+        // Ensure we pass the correct status parameter when loading more items
         context
             .read<FetchMyItemsCubit>()
             .fetchMyMoreItems(getItemsWithStatus: widget.getItemsWithStatus);
@@ -60,8 +64,12 @@ class _MyItemTabState extends CloudState<MyItemTab> {
   }
 
   void setReferenceOfCubit() {
-    myAdsCubitReference[widget.getItemsWithStatus!] =
-        context.read<FetchMyItemsCubit>();
+    // Only register the cubit if we have a status to use as key
+    if (widget.getItemsWithStatus != null &&
+        widget.getItemsWithStatus!.isNotEmpty) {
+      myAdsCubitReference[widget.getItemsWithStatus!] =
+          context.read<FetchMyItemsCubit>();
+    }
   }
 
   ListView shimmerEffect() {

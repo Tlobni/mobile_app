@@ -5,31 +5,31 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:app_links/app_links.dart';
-import 'package:eClassify/app/routes.dart';
-import 'package:eClassify/data/cubits/item/search_item_cubit.dart';
-import 'package:eClassify/data/cubits/subscription/fetch_user_package_limit_cubit.dart';
-import 'package:eClassify/data/cubits/system/fetch_system_settings_cubit.dart';
-import 'package:eClassify/data/model/item/item_model.dart';
-import 'package:eClassify/data/model/system_settings_model.dart';
-import 'package:eClassify/ui/screens/chat/chat_list_screen.dart';
-import 'package:eClassify/ui/screens/favorite_screen.dart';
-import 'package:eClassify/ui/screens/home/home_screen.dart';
-import 'package:eClassify/ui/screens/home/search_screen.dart';
-import 'package:eClassify/ui/screens/item/my_items_screen.dart';
-import 'package:eClassify/ui/screens/user_profile/profile_screen.dart';
-import 'package:eClassify/ui/screens/widgets/animated_routes/blur_page_route.dart';
-import 'package:eClassify/ui/screens/widgets/blurred_dialoge_box.dart';
-import 'package:eClassify/ui/screens/widgets/maintenance_mode.dart';
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/app_icon.dart';
-import 'package:eClassify/utils/constant.dart';
-import 'package:eClassify/utils/custom_text.dart';
-import 'package:eClassify/utils/error_filter.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/helper_utils.dart';
-import 'package:eClassify/utils/hive_utils.dart';
-import 'package:eClassify/utils/svg/svg_edit.dart';
-import 'package:eClassify/utils/ui_utils.dart';
+import 'package:tlobni/app/routes.dart';
+import 'package:tlobni/data/cubits/item/search_item_cubit.dart';
+import 'package:tlobni/data/cubits/subscription/fetch_user_package_limit_cubit.dart';
+import 'package:tlobni/data/cubits/system/fetch_system_settings_cubit.dart';
+import 'package:tlobni/data/model/item/item_model.dart';
+import 'package:tlobni/data/model/system_settings_model.dart';
+import 'package:tlobni/ui/screens/chat/chat_list_screen.dart';
+import 'package:tlobni/ui/screens/favorite_screen.dart';
+import 'package:tlobni/ui/screens/home/home_screen.dart';
+import 'package:tlobni/ui/screens/home/search_screen.dart';
+import 'package:tlobni/ui/screens/item/my_items_screen.dart';
+import 'package:tlobni/ui/screens/user_profile/profile_screen.dart';
+import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
+import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
+import 'package:tlobni/ui/screens/widgets/maintenance_mode.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/app_icon.dart';
+import 'package:tlobni/utils/constant.dart';
+import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/utils/error_filter.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/helper_utils.dart';
+import 'package:tlobni/utils/hive_utils.dart';
+import 'package:tlobni/utils/svg/svg_edit.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -431,12 +431,11 @@ class MainActivityState extends State<MainActivity>
     return BottomAppBar(
       color: context.color.secondaryColor,
       shape: const CircularNotchedRectangle(),
+      height: isProvider ? 70 : 60, // Consistent height
       child: Container(
         color: context.color.secondaryColor,
-        // Add padding to the top when not logged in or not a provider
-        padding: (!isLoggedIn || !isProvider)
-            ? const EdgeInsets.only(top: 8.0)
-            : EdgeInsets.zero,
+        // Consistent padding for all users
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
         child: Row(
             mainAxisSize: MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -530,7 +529,7 @@ class MainActivityState extends State<MainActivity>
                         ),
                       ),
                     )
-                  : SizedBox(), // Empty box if not a provider
+                  : SizedBox(width: 10), // Fixed spacing when not a provider
               buildBottomNavigationbarItem(
                   2,
                   isClient ? AppIcons.favoriteNav : AppIcons.myAdsNav,
@@ -553,6 +552,9 @@ class MainActivityState extends State<MainActivity>
     String activeSvg,
     String title,
   ) {
+    // Define a consistent size for all icons
+    const double iconSize = 24.0;
+
     return Expanded(
       child: Material(
         type: MaterialType.transparency,
@@ -564,20 +566,43 @@ class MainActivityState extends State<MainActivity>
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              if (currentTab == index) ...{
-                UiUtils.getSvg(
-                  activeSvg,
-                  color: context.color.territoryColor,
+              if (index == 0)
+                // Home icon - use the PNG logo
+                SizedBox(
+                  width: iconSize,
+                  height: iconSize,
+                  child: Image.asset(
+                    'assets/images/letter-logo.png',
+                    width: iconSize,
+                    height: iconSize,
+                    color: currentTab == index
+                        ? context.color.territoryColor
+                        : context.color.textLightColor.darken(30),
+                  ),
+                )
+              else if (currentTab == index)
+                SizedBox(
+                  width: iconSize,
+                  height: iconSize,
+                  child: UiUtils.getSvg(
+                    activeSvg,
+                    color: context.color.territoryColor,
+                  ),
+                )
+              else
+                SizedBox(
+                  width: iconSize,
+                  height: iconSize,
+                  child: UiUtils.getSvg(
+                    svgImage,
+                    color: context.color.textLightColor.darken(30),
+                  ),
                 ),
-              } else ...{
-                UiUtils.getSvg(
-                  svgImage,
-                  color: context.color.textLightColor.darken(30),
-                ),
-              },
+              const SizedBox(height: 4),
               CustomText(
                 title,
                 textAlign: TextAlign.center,
+                fontSize: context.font.smaller,
                 color: currentTab == index
                     ? context.color.textDefaultColor
                     : context.color.textLightColor.darken(30),

@@ -1,13 +1,13 @@
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:eClassify/utils/login/apple_login/apple_login.dart';
-import 'package:eClassify/utils/login/email_login/email_login.dart';
-import 'package:eClassify/utils/login/google_login/google_login.dart';
-import 'package:eClassify/utils/login/lib/login_status.dart';
-import 'package:eClassify/utils/login/lib/login_system.dart';
-import 'package:eClassify/utils/login/lib/payloads.dart';
-import 'package:eClassify/utils/login/phone_login/phone_login.dart';
+import 'package:tlobni/utils/login/apple_login/apple_login.dart';
+import 'package:tlobni/utils/login/email_login/email_login.dart';
+import 'package:tlobni/utils/login/google_login/google_login.dart';
+import 'package:tlobni/utils/login/lib/login_status.dart';
+import 'package:tlobni/utils/login/lib/login_system.dart';
+import 'package:tlobni/utils/login/lib/payloads.dart';
+import 'package:tlobni/utils/login/phone_login/phone_login.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

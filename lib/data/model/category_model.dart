@@ -1,6 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
-import 'package:eClassify/utils/api.dart';
+import 'package:tlobni/utils/api.dart';
 
 class Type {
   String? id;

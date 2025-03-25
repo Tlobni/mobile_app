@@ -1,9 +1,9 @@
 import 'dart:developer';
 
-import 'package:eClassify/data/model/chat/chat_user_model.dart';
-import 'package:eClassify/data/model/data_output.dart';
-import 'package:eClassify/data/model/seller_ratings_model.dart';
-import 'package:eClassify/data/repositories/chat_repository.dart';
+import 'package:tlobni/data/model/chat/chat_user_model.dart';
+import 'package:tlobni/data/model/data_output.dart';
+import 'package:tlobni/data/model/seller_ratings_model.dart';
+import 'package:tlobni/data/repositories/chat_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 abstract class GetBuyerChatListState {}

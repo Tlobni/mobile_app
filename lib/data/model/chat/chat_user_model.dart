@@ -1,6 +1,6 @@
-//import 'package:eClassify/data/model/item/item_model.dart';
+//import 'package:tlobni/data/model/item/item_model.dart';
 
-import 'package:eClassify/data/model/seller_ratings_model.dart';
+import 'package:tlobni/data/model/seller_ratings_model.dart';
 
 class ChatUser {
   int? id;

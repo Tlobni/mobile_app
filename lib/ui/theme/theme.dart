@@ -1,5 +1,5 @@
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/ui_utils.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 
 ///Light Theme Colors

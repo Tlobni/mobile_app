@@ -1,7 +1,7 @@
-import 'package:eClassify/data/model/home/home_screen_section.dart';
-import 'package:eClassify/utils/api.dart';
-import 'package:eClassify/data/model/data_output.dart';
-import 'package:eClassify/data/model/item/item_model.dart';
+import 'package:tlobni/data/model/home/home_screen_section.dart';
+import 'package:tlobni/utils/api.dart';
+import 'package:tlobni/data/model/data_output.dart';
+import 'package:tlobni/data/model/item/item_model.dart';
 
 class HomeRepository {
   Future<List<HomeScreenSection>> fetchHome(

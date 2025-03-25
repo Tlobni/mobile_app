@@ -1,8 +1,8 @@
 import 'dart:developer';
 
-import 'package:eClassify/data/model/data_output.dart';
-import 'package:eClassify/data/model/notification_data.dart';
-import 'package:eClassify/utils/api.dart';
+import 'package:tlobni/data/model/data_output.dart';
+import 'package:tlobni/data/model/notification_data.dart';
+import 'package:tlobni/utils/api.dart';
 
 class NotificationsRepository {
   Future<DataOutput<NotificationData>> fetchNotifications(

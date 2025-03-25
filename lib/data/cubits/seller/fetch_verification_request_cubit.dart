@@ -1,5 +1,5 @@
-﻿import 'package:eClassify/data/model/verification_request_model.dart';
-import 'package:eClassify/data/repositories/seller/seller_verification_field_repository.dart';
+﻿import 'package:tlobni/data/model/verification_request_model.dart';
+import 'package:tlobni/data/repositories/seller/seller_verification_field_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 abstract class FetchVerificationRequestState {}

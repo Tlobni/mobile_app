@@ -2,8 +2,8 @@
 
 import 'package:bloc/bloc.dart';
 
-import 'package:eClassify/app/app_theme.dart';
-import 'package:eClassify/utils/hive_utils.dart';
+import 'package:tlobni/app/app_theme.dart';
+import 'package:tlobni/utils/hive_utils.dart';
 
 class AppThemeCubit extends Cubit<ThemeState> {
   AppThemeCubit() : super(ThemeState(AppTheme.light));

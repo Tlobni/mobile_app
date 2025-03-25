@@ -1,20 +1,20 @@
-import 'package:eClassify/ui/screens/widgets/errors/something_went_wrong.dart';
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/ui_utils.dart';
+import 'package:tlobni/ui/screens/widgets/errors/something_went_wrong.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:eClassify/utils/api.dart';
-import 'package:eClassify/utils/hive_utils.dart';
-import 'package:eClassify/app/routes.dart';
-import 'package:eClassify/data/cubits/home/fetch_section_items_cubit.dart';
-import 'package:eClassify/data/helper/designs.dart';
-import 'package:eClassify/data/model/item/item_model.dart';
-import 'package:eClassify/ui/screens/home/widgets/item_horizontal_card.dart';
-import 'package:eClassify/ui/screens/widgets/animated_routes/blur_page_route.dart';
-import 'package:eClassify/ui/screens/widgets/errors/no_data_found.dart';
-import 'package:eClassify/ui/screens/widgets/errors/no_internet.dart';
-import 'package:eClassify/ui/screens/widgets/shimmerLoadingContainer.dart';
+import 'package:tlobni/utils/api.dart';
+import 'package:tlobni/utils/hive_utils.dart';
+import 'package:tlobni/app/routes.dart';
+import 'package:tlobni/data/cubits/home/fetch_section_items_cubit.dart';
+import 'package:tlobni/data/helper/designs.dart';
+import 'package:tlobni/data/model/item/item_model.dart';
+import 'package:tlobni/ui/screens/home/widgets/item_horizontal_card.dart';
+import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
+import 'package:tlobni/ui/screens/widgets/errors/no_data_found.dart';
+import 'package:tlobni/ui/screens/widgets/errors/no_internet.dart';
+import 'package:tlobni/ui/screens/widgets/shimmerLoadingContainer.dart';
 
 class SectionItemsScreen extends StatefulWidget {
   final String title;

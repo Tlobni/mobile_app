@@ -1,5 +1,5 @@
-import 'package:eClassify/utils/login/lib/login_status.dart';
-import 'package:eClassify/utils/login/lib/payloads.dart';
+import 'package:tlobni/utils/login/lib/login_status.dart';
+import 'package:tlobni/utils/login/lib/payloads.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 int? forceResendingToken;

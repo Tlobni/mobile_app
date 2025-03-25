@@ -1,15 +1,15 @@
-import 'package:eClassify/app/routes.dart';
-import 'package:eClassify/data/cubits/category/fetch_category_cubit.dart';
-import 'package:eClassify/data/model/category_model.dart';
-import 'package:eClassify/ui/screens/home/home_screen.dart';
-import 'package:eClassify/ui/screens/home/widgets/category_home_card.dart';
-import 'package:eClassify/ui/screens/main_activity.dart';
-import 'package:eClassify/ui/screens/widgets/errors/no_data_found.dart';
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/app_icon.dart';
-import 'package:eClassify/utils/custom_text.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/ui_utils.dart';
+import 'package:tlobni/app/routes.dart';
+import 'package:tlobni/data/cubits/category/fetch_category_cubit.dart';
+import 'package:tlobni/data/model/category_model.dart';
+import 'package:tlobni/ui/screens/home/home_screen.dart';
+import 'package:tlobni/ui/screens/home/widgets/category_home_card.dart';
+import 'package:tlobni/ui/screens/main_activity.dart';
+import 'package:tlobni/ui/screens/widgets/errors/no_data_found.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/app_icon.dart';
+import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -125,49 +125,36 @@ class CategoryWidgetHome extends StatelessWidget {
             },
           );
         },
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: Column(
-            children: [
-              Container(
-                clipBehavior: Clip.antiAlias,
-                height: 70,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                      color: context.color.borderColor.darken(60), width: 1),
-                  color: context.color.secondaryColor,
-                ),
-                child: Center(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: SizedBox(
-                      // color: Colors.blue,
-                      width: 48,
-                      height: 48,
-                      child: Center(
-                        child: RotatedBox(
-                            quarterTurns: 1,
-                            child: UiUtils.getSvg(AppIcons.more,
-                                color: context.color.territoryColor)),
-                      ),
-                    ),
-                  ),
+        child: Column(
+          children: [
+            Container(
+              height: 70,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                    color: context.color.borderColor.darken(60), width: 1),
+                color: context.color.secondaryColor,
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Center(
+                child: RotatedBox(
+                  quarterTurns: 1,
+                  child: UiUtils.getSvg(AppIcons.more,
+                      color: context.color.territoryColor),
                 ),
               ),
-              Expanded(
-                  child: Padding(
-                      padding: const EdgeInsets.all(0.0),
-                      child: CustomText(
-                        "more".translate(context),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        softWrap: true,
-                        color: context.color.textDefaultColor,
-                      )))
-            ],
-          ),
+            ),
+            Expanded(
+                child: CustomText(
+              "more".translate(context),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              softWrap: true,
+              color: context.color.textDefaultColor,
+            ))
+          ],
         ),
       ),
     );

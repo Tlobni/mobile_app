@@ -1,8 +1,8 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
-import 'package:eClassify/data/model/data_output.dart';
-import 'package:eClassify/data/repositories/chat_repository.dart';
-import 'package:eClassify/ui/screens/chat/chat_audio/widgets/chat_widget.dart';
+import 'package:tlobni/data/model/data_output.dart';
+import 'package:tlobni/data/repositories/chat_repository.dart';
+import 'package:tlobni/ui/screens/chat/chat_audio/widgets/chat_widget.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class LoadChatMessagesState {}

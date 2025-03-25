@@ -1,12 +1,12 @@
-import 'package:eClassify/app/routes.dart';
-import 'package:eClassify/data/model/category_model.dart';
-import 'package:eClassify/ui/screens/item/add_item_screen/models/post_type.dart';
-import 'package:eClassify/ui/screens/widgets/animated_routes/blur_page_route.dart';
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/cloud_state/cloud_state.dart';
-import 'package:eClassify/utils/custom_text.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/ui_utils.dart';
+import 'package:tlobni/app/routes.dart';
+import 'package:tlobni/data/model/category_model.dart';
+import 'package:tlobni/ui/screens/item/add_item_screen/models/post_type.dart';
+import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/cloud_state/cloud_state.dart';
+import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 
 class SelectPostTypeScreen extends StatefulWidget {

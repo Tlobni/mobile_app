@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:eClassify/data/model/item/item_model.dart';
-import 'package:eClassify/settings.dart';
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/app_icon.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/ui_utils.dart';
+import 'package:tlobni/data/model/item/item_model.dart';
+import 'package:tlobni/settings.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/app_icon.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 import 'package:flutter/foundation.dart' as f;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';

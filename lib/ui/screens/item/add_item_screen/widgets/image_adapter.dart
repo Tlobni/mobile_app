@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:eClassify/utils/ui_utils.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 
 class ImageAdapter extends StatelessWidget {

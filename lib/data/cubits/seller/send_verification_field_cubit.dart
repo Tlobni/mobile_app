@@ -1,4 +1,4 @@
-import 'package:eClassify/data/repositories/seller/seller_verification_field_repository.dart';
+import 'package:tlobni/data/repositories/seller/seller_verification_field_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 abstract class SendVerificationFieldState {}

@@ -1,4 +1,4 @@
-import 'package:eClassify/utils/api.dart';
+import 'package:tlobni/utils/api.dart';
 
 class ItemReviewsRepository {
   // Fetch reviews for a specific item

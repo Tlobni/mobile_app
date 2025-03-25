@@ -1,6 +1,6 @@
-import 'package:eClassify/data/model/category_model.dart';
-import 'package:eClassify/data/model/custom_field/custom_field_model.dart';
-import 'package:eClassify/data/model/seller_ratings_model.dart';
+import 'package:tlobni/data/model/category_model.dart';
+import 'package:tlobni/data/model/custom_field/custom_field_model.dart';
+import 'package:tlobni/data/model/seller_ratings_model.dart';
 import 'dart:convert';
 
 class ItemModel {
@@ -268,7 +268,7 @@ class ItemModel {
     longitude = json['longitude'];
     address = json['address'];
     contact = json['contact'];
-    type = json['type'];
+    type = json['provider_item_type'];
     status = json['status'];
     active = json['active'] == 0 ? false : true;
     videoLink = json['video_link'];

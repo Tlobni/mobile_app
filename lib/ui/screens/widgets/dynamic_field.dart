@@ -5,7 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:eClassify/ui/screens/widgets/custom_text_form_field.dart';
+import 'package:tlobni/ui/screens/widgets/custom_text_form_field.dart';
 
 /// Note: Here i have used abstract factory pattern and builder pattern
 /// You can learn design patterns from internet

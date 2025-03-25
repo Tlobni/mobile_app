@@ -1,11 +1,11 @@
 import 'dart:developer';
 
-import 'package:eClassify/app/app_theme.dart';
-import 'package:eClassify/app/routes.dart';
-import 'package:eClassify/data/model/user_model.dart';
-import 'package:eClassify/utils/constant.dart';
-import 'package:eClassify/utils/helper_utils.dart';
-import 'package:eClassify/utils/hive_keys.dart';
+import 'package:tlobni/app/app_theme.dart';
+import 'package:tlobni/app/routes.dart';
+import 'package:tlobni/data/model/user_model.dart';
+import 'package:tlobni/utils/constant.dart';
+import 'package:tlobni/utils/helper_utils.dart';
+import 'package:tlobni/utils/hive_keys.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
@@ -329,5 +329,17 @@ class HiveUtils {
     await Hive.box(HiveKeys.historyBox).clear();
     HiveUtils.setUserIsAuthenticated(false);
     //GuestChecker.set(isGuest: true);
+  }
+
+  static void setFcmToken(String token) async {
+    await Hive.box(HiveKeys.userDetailsBox).put('fcm_token', token);
+  }
+
+  static String? getFcmToken() {
+    return Hive.box(HiveKeys.userDetailsBox).get('fcm_token');
+  }
+
+  static String getJwtToken() {
+    return getJWT();
   }
 }

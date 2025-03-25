@@ -105,14 +105,14 @@ class ExamplePaymentQueueDelegate implements SKPaymentQueueDelegateWrapper {
 
 import 'dart:async';
 
-import 'package:eClassify/data/cubits/subscription/in_app_purchase_cubit.dart';
-import 'package:eClassify/ui/screens/widgets/blurred_dialoge_box.dart';
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/constant.dart';
-import 'package:eClassify/utils/custom_text.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/helper_utils.dart';
-import 'package:eClassify/utils/ui_utils.dart';
+import 'package:tlobni/data/cubits/subscription/in_app_purchase_cubit.dart';
+import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/constant.dart';
+import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/helper_utils.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';

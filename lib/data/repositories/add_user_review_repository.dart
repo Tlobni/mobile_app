@@ -1,4 +1,4 @@
-import 'package:eClassify/utils/api.dart';
+import 'package:tlobni/utils/api.dart';
 
 class AddUserReviewRepository {
   // For adding reviews to expert/business profiles

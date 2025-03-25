@@ -1,5 +1,5 @@
-import 'package:eClassify/data/model/seller_ratings_model.dart';
-import 'package:eClassify/data/repositories/item_reviews_repository.dart';
+import 'package:tlobni/data/model/seller_ratings_model.dart';
+import 'package:tlobni/data/repositories/item_reviews_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 abstract class FetchItemReviewsState {}

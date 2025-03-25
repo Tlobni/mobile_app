@@ -1,7 +1,7 @@
-import 'package:eClassify/utils/helper_utils.dart';
+import 'package:tlobni/utils/helper_utils.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-///eClassify configuration file
+///tlobni configuration file
 /// Configure your app from here
 /// Most of basic configuration will be from here
 /// For theme colors go to [lib/Ui/Theme/theme.dart]
@@ -30,8 +30,8 @@ class AppSettings {
   static const String androidPackageName = 'com.tlobni.app';
   static const String shareAppText = "Share this App";
 
-  static const String demoUrl = "http://127.0.0.1:8000";
-  // static const String demoUrl = "https://dashboard.tlobni.com";
+  // static const String demoUrl = "http://127.0.0.1:8000";
+  static const String demoUrl = "https://dashboard.tlobni.com";
 
   ///API Setting
 
@@ -55,7 +55,7 @@ it will call API in background without showing the process and when data availab
 
   ///Native deep link
   //TODO: Change to Demo Url when releasing
-  static const String shareNavigationWebUrl = "eclassify.wrteam.me";
+  static const String shareNavigationWebUrl = "dashboard.tlobni.com";
 
   static const MapType googleMapType =
       MapType.normal; //none , normal , satellite , terrain , hybrid

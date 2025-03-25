@@ -3,7 +3,7 @@
 import 'dart:developer';
 
 import 'package:dio/dio.dart';
-import 'package:eClassify/data/repositories/chat_repository.dart';
+import 'package:tlobni/data/repositories/chat_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http_parser/http_parser.dart';
 

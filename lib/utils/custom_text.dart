@@ -1,6 +1,6 @@
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/helper_utils.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/helper_utils.dart';
 import 'package:flutter/material.dart';
 
 class CustomText extends StatelessWidget {

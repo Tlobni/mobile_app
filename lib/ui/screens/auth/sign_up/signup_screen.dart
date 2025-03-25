@@ -3,27 +3,27 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:country_picker/country_picker.dart';
-import 'package:eClassify/app/app_theme.dart';
-import 'package:eClassify/app/routes.dart';
-import 'package:eClassify/data/cubits/auth/authentication_cubit.dart';
-import 'package:eClassify/data/cubits/system/app_theme_cubit.dart';
-import 'package:eClassify/data/repositories/auth_repository.dart';
-import 'package:eClassify/data/repositories/category_repository.dart';
-import 'package:eClassify/data/model/category_model.dart';
-import 'package:eClassify/ui/screens/auth/sign_up/email_verification_screen.dart';
-import 'package:eClassify/ui/screens/widgets/animated_routes/blur_page_route.dart';
-import 'package:eClassify/ui/screens/widgets/custom_text_form_field.dart';
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/api.dart';
-import 'package:eClassify/utils/app_icon.dart';
-import 'package:eClassify/utils/cloud_state/cloud_state.dart';
-import 'package:eClassify/utils/constant.dart';
-import 'package:eClassify/utils/custom_text.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/helper_utils.dart';
-import 'package:eClassify/utils/hive_utils.dart';
-import 'package:eClassify/utils/login/lib/payloads.dart';
-import 'package:eClassify/utils/ui_utils.dart';
+import 'package:tlobni/app/app_theme.dart';
+import 'package:tlobni/app/routes.dart';
+import 'package:tlobni/data/cubits/auth/authentication_cubit.dart';
+import 'package:tlobni/data/cubits/system/app_theme_cubit.dart';
+import 'package:tlobni/data/repositories/auth_repository.dart';
+import 'package:tlobni/data/repositories/category_repository.dart';
+import 'package:tlobni/data/model/category_model.dart';
+import 'package:tlobni/ui/screens/auth/sign_up/email_verification_screen.dart';
+import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
+import 'package:tlobni/ui/screens/widgets/custom_text_form_field.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/api.dart';
+import 'package:tlobni/utils/app_icon.dart';
+import 'package:tlobni/utils/cloud_state/cloud_state.dart';
+import 'package:tlobni/utils/constant.dart';
+import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/helper_utils.dart';
+import 'package:tlobni/utils/hive_utils.dart';
+import 'package:tlobni/utils/login/lib/payloads.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -570,6 +570,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                           height: 46,
                           disabledColor:
                               const Color.fromARGB(255, 104, 102, 106),
+                          textColor: const Color(0xFFE6CBA8),
                         ),
                         const SizedBox(height: 36),
 
@@ -626,21 +627,71 @@ class _SignupScreenState extends CloudState<SignupScreen> {
         const SizedBox(height: 14),
 
         // Gender
-        _buildGenderDropdown(
-          context,
-          value: _expertGender,
-          onChanged: (val) => setState(() => _expertGender = val),
-          label: "Gender",
-          requiredMsg: "Please select gender",
+        CustomTextFormField(
+          fillColor: context.color.secondaryColor,
+          hintText: _expertGender ?? "Gender *",
+          readOnly: true,
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              builder: (context) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: ["Male", "Female"]
+                    .map((gender) => ListTile(
+                          title: Text(gender),
+                          onTap: () {
+                            setState(() => _expertGender = gender);
+                            Navigator.pop(context);
+                          },
+                          selected: gender == _expertGender,
+                        ))
+                    .toList(),
+              ),
+            );
+          },
+          suffix: const Icon(Icons.arrow_drop_down),
+          validator: CustomTextFieldValidator.nullCheck,
+          controller: TextEditingController(text: _expertGender),
+          borderColor: context.color.borderColor.darken(50),
         ),
         const SizedBox(height: 14),
 
         // Country Selection
-        _buildCountrySelector(
-          context,
-          value: _expertCountry,
-          onChanged: (val) => setState(() => _expertCountry = val),
-          label: "Country",
+        CustomTextFormField(
+          fillColor: context.color.secondaryColor,
+          hintText: _expertCountry ?? "Country *",
+          readOnly: true,
+          onTap: () {
+            showCountryPicker(
+              context: context,
+              showPhoneCode: false,
+              countryListTheme: CountryListThemeData(
+                borderRadius: BorderRadius.circular(11),
+                searchTextStyle: TextStyle(
+                  color: context.color.textColorDark,
+                  fontSize: 16,
+                ),
+              ),
+              countryFilter: [
+                'SA',
+                'AE',
+                'QA',
+                'OM',
+                'KW',
+                'LB',
+                'EG',
+                'JO',
+                'IQ',
+              ],
+              onSelect: (Country country) {
+                setState(() => _expertCountry = country.name);
+              },
+            );
+          },
+          suffix: const Icon(Icons.arrow_drop_down),
+          validator: CustomTextFieldValidator.nullCheck,
+          controller: TextEditingController(text: _expertCountry),
+          borderColor: context.color.borderColor.darken(50),
         ),
         const SizedBox(height: 14),
 
@@ -663,6 +714,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           fillColor: context.color.secondaryColor,
           hintText: "Phone *",
           validator: CustomTextFieldValidator.phoneNumber,
+          keyboard: TextInputType.phone,
           borderColor: context.color.borderColor.darken(50),
         ),
       ],
@@ -685,11 +737,41 @@ class _SignupScreenState extends CloudState<SignupScreen> {
         const SizedBox(height: 14),
 
         // Country Selection
-        _buildCountrySelector(
-          context,
-          value: _businessCountry,
-          onChanged: (val) => setState(() => _businessCountry = val),
-          label: "Country",
+        CustomTextFormField(
+          fillColor: context.color.secondaryColor,
+          hintText: _businessCountry ?? "Country *",
+          readOnly: true,
+          onTap: () {
+            showCountryPicker(
+              context: context,
+              showPhoneCode: false,
+              countryListTheme: CountryListThemeData(
+                borderRadius: BorderRadius.circular(11),
+                searchTextStyle: TextStyle(
+                  color: context.color.textColorDark,
+                  fontSize: 16,
+                ),
+              ),
+              countryFilter: [
+                'SA',
+                'AE',
+                'QA',
+                'OM',
+                'KW',
+                'LB',
+                'EG',
+                'JO',
+                'IQ',
+              ],
+              onSelect: (Country country) {
+                setState(() => _businessCountry = country.name);
+              },
+            );
+          },
+          suffix: const Icon(Icons.arrow_drop_down),
+          validator: CustomTextFieldValidator.nullCheck,
+          controller: TextEditingController(text: _businessCountry),
+          borderColor: context.color.borderColor.darken(50),
         ),
         const SizedBox(height: 14),
 
@@ -712,6 +794,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           fillColor: context.color.secondaryColor,
           hintText: "Phone *",
           validator: CustomTextFieldValidator.phoneNumber,
+          keyboard: TextInputType.phone,
           borderColor: context.color.borderColor.darken(50),
         ),
       ],
@@ -734,21 +817,71 @@ class _SignupScreenState extends CloudState<SignupScreen> {
         const SizedBox(height: 14),
 
         // Gender
-        _buildGenderDropdown(
-          context,
-          value: _clientGender,
-          onChanged: (val) => setState(() => _clientGender = val),
-          label: "Gender",
-          requiredMsg: "Please select gender",
+        CustomTextFormField(
+          fillColor: context.color.secondaryColor,
+          hintText: _clientGender ?? "Gender *",
+          readOnly: true,
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              builder: (context) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: ["Male", "Female"]
+                    .map((gender) => ListTile(
+                          title: Text(gender),
+                          onTap: () {
+                            setState(() => _clientGender = gender);
+                            Navigator.pop(context);
+                          },
+                          selected: gender == _clientGender,
+                        ))
+                    .toList(),
+              ),
+            );
+          },
+          suffix: const Icon(Icons.arrow_drop_down),
+          validator: CustomTextFieldValidator.nullCheck,
+          controller: TextEditingController(text: _clientGender),
+          borderColor: context.color.borderColor.darken(50),
         ),
         const SizedBox(height: 14),
 
         // Country Selection
-        _buildCountrySelector(
-          context,
-          value: _clientCountry,
-          onChanged: (val) => setState(() => _clientCountry = val),
-          label: "Country",
+        CustomTextFormField(
+          fillColor: context.color.secondaryColor,
+          hintText: _clientCountry ?? "Country *",
+          readOnly: true,
+          onTap: () {
+            showCountryPicker(
+              context: context,
+              showPhoneCode: false,
+              countryListTheme: CountryListThemeData(
+                borderRadius: BorderRadius.circular(11),
+                searchTextStyle: TextStyle(
+                  color: context.color.textColorDark,
+                  fontSize: 16,
+                ),
+              ),
+              countryFilter: [
+                'SA',
+                'AE',
+                'QA',
+                'OM',
+                'KW',
+                'LB',
+                'EG',
+                'JO',
+                'IQ',
+              ],
+              onSelect: (Country country) {
+                setState(() => _clientCountry = country.name);
+              },
+            );
+          },
+          suffix: const Icon(Icons.arrow_drop_down),
+          validator: CustomTextFieldValidator.nullCheck,
+          controller: TextEditingController(text: _clientCountry),
+          borderColor: context.color.borderColor.darken(50),
         ),
         const SizedBox(height: 14),
 
@@ -763,88 +896,6 @@ class _SignupScreenState extends CloudState<SignupScreen> {
     );
   }
 
-  // --- Updated gender dropdown to match other fields ---
-  Widget _buildGenderDropdown(
-    BuildContext context, {
-    required String? value,
-    required Function(String?) onChanged,
-    required String label,
-    String? requiredMsg,
-  }) {
-    final items = <String>["Male", "Female"];
-    return CustomTextFormField(
-      fillColor: context.color.secondaryColor,
-      hintText: label,
-      readOnly: true,
-      onTap: () {
-        showModalBottomSheet(
-          context: context,
-          builder: (context) => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: items
-                .map((gender) => ListTile(
-                      title: Text(gender),
-                      onTap: () {
-                        onChanged(gender);
-                        Navigator.pop(context);
-                      },
-                      selected: gender == value,
-                    ))
-                .toList(),
-          ),
-        );
-      },
-      controller: TextEditingController(text: value),
-      suffix: const Icon(Icons.arrow_drop_down),
-      borderColor: context.color.borderColor.darken(50),
-    );
-  }
-
-  // --- Country selector widget ---
-  Widget _buildCountrySelector(
-    BuildContext context, {
-    required String? value,
-    required Function(String?) onChanged,
-    required String label,
-  }) {
-    return CustomTextFormField(
-      fillColor: context.color.secondaryColor,
-      hintText: value ?? "$label *",
-      readOnly: true,
-      onTap: () {
-        showCountryPicker(
-          context: context,
-          showPhoneCode: false,
-          countryListTheme: CountryListThemeData(
-            borderRadius: BorderRadius.circular(11),
-            searchTextStyle: TextStyle(
-              color: context.color.textColorDark,
-              fontSize: 16,
-            ),
-          ),
-          countryFilter: [
-            'SA', // Saudi Arabia
-            'AE', // United Arab Emirates
-            'QA', // Qatar
-            'OM', // Oman
-            'KW', // Kuwait
-            'LB', // Lebanon
-            'EG', // Egypt
-            'JO', // Jordan
-            'IQ', // Iraq
-          ],
-          onSelect: (Country country) {
-            onChanged(country.name);
-          },
-        );
-      },
-      suffix: const Icon(Icons.arrow_drop_down),
-      validator: CustomTextFieldValidator.nullCheck,
-      controller: TextEditingController(text: value),
-      borderColor: context.color.borderColor.darken(50),
-    );
-  }
-
   // --- Categories multi-select (common for Expert & Business) ---
   Widget _buildCategoryMultiSelect() {
     return Column(
@@ -854,15 +905,13 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           onTap: () => _showCategorySelectionDialog(),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
             decoration: BoxDecoration(
               color: context.color.secondaryColor,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                  width: 1.5,
-                  color: _selectedCategoryIds.isEmpty && _showCategoryError
-                      ? Colors.red
-                      : context.color.borderColor.darken(50)),
+              borderRadius: BorderRadius.circular(8),
+              // border: Border.all(
+              //   color: context.color.borderColor.darken(50),
+              // ),
             ),
             child: Row(
               children: [
@@ -872,16 +921,14 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                         ? "Choose Categories *"
                         : "${_selectedCategoryIds.length} categories selected",
                     style: TextStyle(
-                      color: _selectedCategoryIds.isEmpty
-                          ? context.color.textColorDark.withOpacity(0.7)
-                          : context.color.textDefaultColor,
+                      color: context.color.textColorDark.withOpacity(0.7),
                       fontSize: context.font.large,
                     ),
                   ),
                 ),
                 Icon(
                   Icons.arrow_drop_down,
-                  color: context.color.textColorDark,
+                  color: context.color.textColorDark.withOpacity(0.3),
                 ),
               ],
             ),

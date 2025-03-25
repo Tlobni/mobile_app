@@ -1,5 +1,5 @@
-import 'package:eClassify/data/model/custom_field/custom_field_model.dart';
-import 'package:eClassify/utils/api.dart';
+import 'package:tlobni/data/model/custom_field/custom_field_model.dart';
+import 'package:tlobni/utils/api.dart';
 
 class CustomFieldRepository {
   Future<List<CustomFieldModel>> getCustomFields(String categoryIds) async {

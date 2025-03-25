@@ -1,11 +1,11 @@
-import 'package:eClassify/app/routes.dart';
-import 'package:eClassify/data/model/item/item_model.dart';
-import 'package:eClassify/ui/screens/main_activity.dart';
-import 'package:eClassify/ui/screens/widgets/animated_routes/blur_page_route.dart';
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/constant.dart';
-import 'package:eClassify/utils/custom_text.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
+import 'package:tlobni/app/routes.dart';
+import 'package:tlobni/data/model/item/item_model.dart';
+import 'package:tlobni/ui/screens/main_activity.dart';
+import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/constant.dart';
+import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 

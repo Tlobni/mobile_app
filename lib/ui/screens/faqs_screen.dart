@@ -1,15 +1,15 @@
-import 'package:eClassify/data/cubits/fetch_faqs_cubit.dart';
-import 'package:eClassify/ui/screens/widgets/animated_routes/blur_page_route.dart';
-import 'package:eClassify/ui/screens/widgets/errors/no_data_found.dart';
-import 'package:eClassify/ui/screens/widgets/errors/no_internet.dart';
-import 'package:eClassify/ui/screens/widgets/errors/something_went_wrong.dart';
-import 'package:eClassify/ui/screens/widgets/intertitial_ads_screen.dart';
-import 'package:eClassify/ui/screens/widgets/shimmerLoadingContainer.dart';
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/api.dart';
-import 'package:eClassify/utils/custom_text.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/ui_utils.dart';
+import 'package:tlobni/data/cubits/fetch_faqs_cubit.dart';
+import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
+import 'package:tlobni/ui/screens/widgets/errors/no_data_found.dart';
+import 'package:tlobni/ui/screens/widgets/errors/no_internet.dart';
+import 'package:tlobni/ui/screens/widgets/errors/something_went_wrong.dart';
+import 'package:tlobni/ui/screens/widgets/intertitial_ads_screen.dart';
+import 'package:tlobni/ui/screens/widgets/shimmerLoadingContainer.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/api.dart';
+import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

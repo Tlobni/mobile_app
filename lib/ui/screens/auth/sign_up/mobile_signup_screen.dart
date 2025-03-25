@@ -3,23 +3,23 @@ import 'dart:io';
 
 import 'package:country_picker/country_picker.dart';
 import 'package:device_region/device_region.dart';
-import 'package:eClassify/app/app_theme.dart';
-import 'package:eClassify/app/routes.dart';
-import 'package:eClassify/data/cubits/auth/authentication_cubit.dart';
-import 'package:eClassify/data/cubits/system/app_theme_cubit.dart';
-import 'package:eClassify/data/helper/widgets.dart';
-import 'package:eClassify/ui/screens/home/home_screen.dart';
-import 'package:eClassify/ui/screens/widgets/animated_routes/blur_page_route.dart';
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/api.dart';
-import 'package:eClassify/utils/app_icon.dart';
-import 'package:eClassify/utils/constant.dart';
-import 'package:eClassify/utils/custom_text.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/helper_utils.dart';
-import 'package:eClassify/utils/login/lib/login_status.dart';
-import 'package:eClassify/utils/login/lib/payloads.dart';
-import 'package:eClassify/utils/ui_utils.dart';
+import 'package:tlobni/app/app_theme.dart';
+import 'package:tlobni/app/routes.dart';
+import 'package:tlobni/data/cubits/auth/authentication_cubit.dart';
+import 'package:tlobni/data/cubits/system/app_theme_cubit.dart';
+import 'package:tlobni/data/helper/widgets.dart';
+import 'package:tlobni/ui/screens/home/home_screen.dart';
+import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/api.dart';
+import 'package:tlobni/utils/app_icon.dart';
+import 'package:tlobni/utils/constant.dart';
+import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/helper_utils.dart';
+import 'package:tlobni/utils/login/lib/login_status.dart';
+import 'package:tlobni/utils/login/lib/payloads.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -289,7 +289,7 @@ class MobileSignUpScreenState extends State<MobileSignUpScreen> {
                 height: 8,
               ),
               CustomText(
-                "signUpToeClassify".translate(context),
+                "signUpTotlobni".translate(context),
                 fontSize: context.font.large,
                 color: context.color.textColorDark,
               ),

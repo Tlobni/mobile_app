@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:eClassify/utils/hive_keys.dart';
+import 'package:tlobni/utils/hive_keys.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hive/hive.dart';

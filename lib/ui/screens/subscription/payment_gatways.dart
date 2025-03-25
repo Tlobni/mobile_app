@@ -1,12 +1,12 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:io';
 
-import 'package:eClassify/settings.dart';
-import 'package:eClassify/utils/constant.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/helper_utils.dart';
-import 'package:eClassify/utils/hive_utils.dart';
-import 'package:eClassify/utils/payment/gateaways/stripe_service.dart';
+import 'package:tlobni/settings.dart';
+import 'package:tlobni/utils/constant.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/helper_utils.dart';
+import 'package:tlobni/utils/hive_utils.dart';
+import 'package:tlobni/utils/payment/gateaways/stripe_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';

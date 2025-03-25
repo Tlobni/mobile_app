@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:eClassify/utils/api.dart';
-import 'package:eClassify/utils/constant.dart';
+import 'package:tlobni/utils/api.dart';
+import 'package:tlobni/utils/constant.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthRepository {

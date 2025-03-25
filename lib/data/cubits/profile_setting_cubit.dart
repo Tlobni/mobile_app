@@ -1,7 +1,7 @@
-import 'package:eClassify/data/helper/custom_exception.dart';
-import 'package:eClassify/settings.dart';
-import 'package:eClassify/utils/api.dart';
-import 'package:eClassify/utils/constant.dart';
+import 'package:tlobni/data/helper/custom_exception.dart';
+import 'package:tlobni/settings.dart';
+import 'package:tlobni/utils/api.dart';
+import 'package:tlobni/utils/constant.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

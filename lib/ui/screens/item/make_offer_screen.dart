@@ -1,11 +1,11 @@
 /*
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/helper_utils.dart';
-import 'package:eClassify/utils/responsiveSize.dart';
-import 'package:eClassify/utils/ui_utils.dart';
-import 'package:eClassify/data/cubits/chat/get_buyer_chat_users_cubit.dart';
-import 'package:eClassify/data/cubits/chat/make_an_offer_item_cubit.dart';
-import 'package:eClassify/data/model/item/item_model.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/helper_utils.dart';
+import 'package:tlobni/utils/responsiveSize.dart';
+import 'package:tlobni/utils/ui_utils.dart';
+import 'package:tlobni/data/cubits/chat/get_buyer_chat_users_cubit.dart';
+import 'package:tlobni/data/cubits/chat/make_an_offer_item_cubit.dart';
+import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

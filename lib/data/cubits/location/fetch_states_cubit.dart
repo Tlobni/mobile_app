@@ -1,6 +1,6 @@
-import 'package:eClassify/data/model/data_output.dart';
-import 'package:eClassify/data/model/location/states_model.dart';
-import 'package:eClassify/data/repositories/location/states_repository.dart';
+import 'package:tlobni/data/model/data_output.dart';
+import 'package:tlobni/data/model/location/states_model.dart';
+import 'package:tlobni/data/repositories/location/states_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 abstract class FetchStatesState {}

@@ -1,15 +1,16 @@
 import 'package:device_preview/device_preview.dart';
-import 'package:eClassify/app/app.dart';
-import 'package:eClassify/app/app_localization.dart';
-import 'package:eClassify/app/app_theme.dart';
-import 'package:eClassify/app/register_cubits.dart';
-import 'package:eClassify/app/routes.dart';
-import 'package:eClassify/data/cubits/system/app_theme_cubit.dart';
-import 'package:eClassify/data/cubits/system/language_cubit.dart';
-import 'package:eClassify/ui/screens/chat/chat_audio/globals.dart';
-import 'package:eClassify/utils/constant.dart';
-import 'package:eClassify/utils/hive_utils.dart';
-import 'package:eClassify/utils/notification/notification_service.dart';
+import 'package:tlobni/app/app.dart';
+import 'package:tlobni/app/app_localization.dart';
+import 'package:tlobni/app/app_theme.dart';
+import 'package:tlobni/app/register_cubits.dart';
+import 'package:tlobni/app/routes.dart';
+import 'package:tlobni/data/cubits/system/app_theme_cubit.dart';
+import 'package:tlobni/data/cubits/system/language_cubit.dart';
+import 'package:tlobni/ui/screens/chat/chat_audio/globals.dart';
+import 'package:tlobni/utils/constant.dart';
+import 'package:tlobni/utils/hive_utils.dart';
+import 'package:tlobni/utils/notification/firebase_messaging_service.dart';
+import 'package:tlobni/utils/notification/notification_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,9 +35,13 @@ class EntryPointState extends State<EntryPoint> {
   @override
   void initState() {
     super.initState();
-    FirebaseMessaging.onBackgroundMessage(
-        NotificationService.onBackgroundMessageHandler);
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     ChatGlobals.init();
+    _initializeFirebaseMessaging();
+  }
+
+  Future<void> _initializeFirebaseMessaging() async {
+    await FirebaseMessagingService().initialize();
   }
 
   @override
@@ -47,6 +52,12 @@ class EntryPointState extends State<EntryPoint> {
           return const App();
         }));
   }
+}
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Initialize Firebase for background handling if needed
+  await NotificationService.onBackgroundMessageHandler(message);
 }
 
 class App extends StatefulWidget {

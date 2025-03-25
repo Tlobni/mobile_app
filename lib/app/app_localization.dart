@@ -2,7 +2,7 @@
 
 import 'dart:convert';
 
-import 'package:eClassify/utils/hive_utils.dart';
+import 'package:tlobni/utils/hive_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

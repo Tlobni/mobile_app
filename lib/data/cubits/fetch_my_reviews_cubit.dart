@@ -1,6 +1,6 @@
-import 'package:eClassify/data/model/data_output.dart';
-import 'package:eClassify/data/model/my_review_model.dart';
-import 'package:eClassify/data/repositories/my_ratings_repository.dart';
+import 'package:tlobni/data/model/data_output.dart';
+import 'package:tlobni/data/model/my_review_model.dart';
+import 'package:tlobni/data/repositories/my_ratings_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 abstract class FetchMyRatingsState {}

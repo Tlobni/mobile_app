@@ -1,6 +1,6 @@
 // ignore_for_file: file_names
 
-import 'package:eClassify/data/repositories/auth_repository.dart';
+import 'package:tlobni/data/repositories/auth_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 abstract class DeleteUserState {}

@@ -1,4 +1,4 @@
-import 'package:eClassify/ui/screens/item/add_item_screen/custom_filed_structure/register.dart';
+import 'package:tlobni/ui/screens/item/add_item_screen/custom_filed_structure/register.dart';
 import 'package:flutter/material.dart';
 
 ///Structure

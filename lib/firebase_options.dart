@@ -49,24 +49,20 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyApCJcVfUTKAdfiNB2vZ399YgJEFy_d-vk',
-    appId: '1:6343732161:android:be9cbc67ef8a19792b5d40',
-    messagingSenderId: '6343732161',
-    projectId: 'eclassify-wrteam',
-    storageBucket: 'eclassify-wrteam.appspot.com',
+   static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyC91Z4hu5WvkYiJYS_Ahk0MO1gqAs42qiI',
+    appId: '1:484917210911:android:59e0954f721ffd51db4a2a',
+    messagingSenderId: '484917210911',
+    projectId: 'tlobni',
+    storageBucket: 'tlobni.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBgKBEjpogvomINJ6uutsUQrHntz4g4PUQ',
-    appId: '1:6343732161:ios:5cc58a2dcfbbb66b2b5d40',
-    messagingSenderId: '6343732161',
-    projectId: 'eclassify-wrteam',
-    storageBucket: 'eclassify-wrteam.appspot.com',
-    androidClientId:
-        '6343732161-dhn3si4lpio5bhr32iu9u6j6d8ja0npr.apps.googleusercontent.com',
-    iosClientId:
-        '6343732161-tutdvlsj06eis0n3eli5c4985fi0lkht.apps.googleusercontent.com',
-    iosBundleId: 'com.eclassify.wrteam',
+    apiKey: 'AIzaSyBFXmgO8bGENLMUUNNSr-jXZHaJSQcNsEA',
+    appId: '1:484917210911:ios:c603d53f5349e5eedb4a2a',
+    messagingSenderId: '484917210911',
+    projectId: 'tlobni',
+    storageBucket: 'tlobni.firebasestorage.app',
+    iosBundleId: 'com.tlobni.app',
   );
 }

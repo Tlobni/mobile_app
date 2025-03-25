@@ -2,13 +2,13 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/helper_utils.dart';
-import 'package:eClassify/utils/responsiveSize.dart';
-import 'package:eClassify/utils/ui_utils.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/helper_utils.dart';
+import 'package:tlobni/utils/responsiveSize.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 
-import 'package:eClassify/data/helper/widgets.dart';
-import 'package:eClassify/data/model/data_output.dart';
+import 'package:tlobni/data/helper/widgets.dart';
+import 'package:tlobni/data/model/data_output.dart';
 
 
 import 'package:flutter/material.dart';

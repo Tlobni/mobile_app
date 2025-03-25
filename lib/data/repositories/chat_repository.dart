@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:eClassify/data/model/chat/chat_user_model.dart';
-import 'package:eClassify/data/model/data_output.dart';
-import 'package:eClassify/ui/screens/chat/chat_audio/widgets/chat_widget.dart';
-import 'package:eClassify/utils/api.dart';
+import 'package:tlobni/data/model/chat/chat_user_model.dart';
+import 'package:tlobni/data/model/data_output.dart';
+import 'package:tlobni/ui/screens/chat/chat_audio/widgets/chat_widget.dart';
+import 'package:tlobni/utils/api.dart';
 import 'package:flutter/material.dart';
 
 class ChatRepository {

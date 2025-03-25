@@ -1,8 +1,8 @@
-import 'package:eClassify/data/model/system_settings_model.dart';
-import 'package:eClassify/data/repositories/system_repository.dart';
-import 'package:eClassify/settings.dart';
-import 'package:eClassify/utils/constant.dart';
-import 'package:eClassify/utils/network/network_availability.dart';
+import 'package:tlobni/data/model/system_settings_model.dart';
+import 'package:tlobni/data/repositories/system_repository.dart';
+import 'package:tlobni/settings.dart';
+import 'package:tlobni/utils/constant.dart';
+import 'package:tlobni/utils/network/network_availability.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 abstract class FetchSystemSettingsState {}

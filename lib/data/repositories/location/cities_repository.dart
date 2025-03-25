@@ -1,6 +1,6 @@
-import 'package:eClassify/data/model/data_output.dart';
-import 'package:eClassify/data/model/location/city_model.dart';
-import 'package:eClassify/utils/api.dart';
+import 'package:tlobni/data/model/data_output.dart';
+import 'package:tlobni/data/model/location/city_model.dart';
+import 'package:tlobni/utils/api.dart';
 
 class CitiesRepository {
   Future<DataOutput<CityModel>> fetchCities(

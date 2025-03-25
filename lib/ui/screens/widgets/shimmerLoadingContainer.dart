@@ -1,6 +1,6 @@
 // ignore_for_file: file_names
 
-import 'package:eClassify/ui/theme/theme.dart';
+import 'package:tlobni/ui/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 

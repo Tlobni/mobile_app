@@ -1,10 +1,10 @@
-import 'package:eClassify/data/cubits/item/fetch_my_item_cubit.dart';
-import 'package:eClassify/ui/screens/item/my_item_tab_screen.dart';
-import 'package:eClassify/ui/screens/widgets/animated_routes/blur_page_route.dart';
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/custom_text.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/ui_utils.dart';
+import 'package:tlobni/data/cubits/item/fetch_my_item_cubit.dart';
+import 'package:tlobni/ui/screens/item/my_item_tab_screen.dart';
+import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -26,6 +26,7 @@ class MyItemState extends State<ItemsScreen> with TickerProviderStateMixin {
   int selectTab = 0;
   final PageController _pageController = PageController();
   List<Map> sections = [];
+  final Map<String, FetchMyItemsCubit> myAdsCubitReference = {};
 
   @override
   void initState() {
@@ -107,28 +108,42 @@ class MyItemState extends State<ItemsScreen> with TickerProviderStateMixin {
         ),
         body: ScrollConfiguration(
           behavior: RemoveGlow(),
-          child: PageView(
+          child: PageView.builder(
             physics: const NeverScrollableScrollPhysics(),
             onPageChanged: (value) {
-              //itemScreenCurrentPage = value;
               selectTab = value;
               setState(() {});
             },
             controller: _pageController,
-            children: List.generate(sections.length, (index) {
+            itemCount: sections.length,
+            itemBuilder: (context, index) {
               Map section = sections[index];
 
-              ///Here we pass both but logic will be in the cubit
-              return BlocProvider(
-                create: (context) => FetchMyItemsCubit(),
-                child: Builder(builder: (context) {
-                  return MyItemTab(
-                    //getActiveItems: section['active'],
-                    getItemsWithStatus: section['status'],
-                  );
-                }),
+              // Create a new BlocProvider for each tab to avoid state sharing issues
+              return MultiBlocProvider(
+                providers: [
+                  BlocProvider(
+                    create: (context) {
+                      final cubit = FetchMyItemsCubit();
+
+                      // Immediately fetch data with the correct status
+                      // Wrap in a post-frame callback to ensure proper context
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        print(
+                            "Initializing tab ${section['title']} with status: ${section['status']}");
+                        cubit.fetchMyItems(
+                            getItemsWithStatus: section['status']);
+                      });
+
+                      return cubit;
+                    },
+                  ),
+                ],
+                child: MyItemTab(
+                  getItemsWithStatus: section['status'],
+                ),
               );
-            }),
+            },
           ),
         ),
       ),

@@ -1,15 +1,15 @@
-import 'package:eClassify/data/cubits/category/fetch_category_cubit.dart';
-import 'package:eClassify/data/cubits/system/fetch_language_cubit.dart';
-import 'package:eClassify/data/cubits/system/fetch_system_settings_cubit.dart';
-import 'package:eClassify/data/cubits/system/language_cubit.dart';
-import 'package:eClassify/data/helper/widgets.dart';
-import 'package:eClassify/data/model/system_settings_model.dart';
-import 'package:eClassify/ui/screens/widgets/animated_routes/blur_page_route.dart';
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/custom_text.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/hive_utils.dart';
-import 'package:eClassify/utils/ui_utils.dart';
+import 'package:tlobni/data/cubits/category/fetch_category_cubit.dart';
+import 'package:tlobni/data/cubits/system/fetch_language_cubit.dart';
+import 'package:tlobni/data/cubits/system/fetch_system_settings_cubit.dart';
+import 'package:tlobni/data/cubits/system/language_cubit.dart';
+import 'package:tlobni/data/helper/widgets.dart';
+import 'package:tlobni/data/model/system_settings_model.dart';
+import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/hive_utils.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

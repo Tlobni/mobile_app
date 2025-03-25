@@ -2,32 +2,32 @@ import 'dart:io';
 import 'dart:convert';
 
 import 'package:dotted_border/dotted_border.dart';
-import 'package:eClassify/app/routes.dart';
-import 'package:eClassify/data/cubits/custom_field/fetch_custom_fields_cubit.dart';
-import 'package:eClassify/data/cubits/item/manage_item_cubit.dart';
-import 'package:eClassify/data/cubits/item/fetch_my_item_cubit.dart';
-import 'package:eClassify/data/model/category_model.dart';
-import 'package:eClassify/data/model/item/item_model.dart';
-import 'package:eClassify/ui/screens/item/add_item_screen/confirm_location_screen.dart';
-import 'package:eClassify/ui/screens/item/add_item_screen/models/post_type.dart';
-import 'package:eClassify/ui/screens/item/add_item_screen/select_category.dart';
-import 'package:eClassify/ui/screens/item/add_item_screen/widgets/image_adapter.dart';
-import 'package:eClassify/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
-import 'package:eClassify/ui/screens/item/my_item_tab_screen.dart';
-import 'package:eClassify/ui/screens/widgets/animated_routes/blur_page_route.dart';
-import 'package:eClassify/ui/screens/widgets/blurred_dialoge_box.dart';
-import 'package:eClassify/ui/screens/widgets/custom_text_form_field.dart';
-import 'package:eClassify/ui/screens/widgets/dynamic_field.dart';
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/cloud_state/cloud_state.dart';
-import 'package:eClassify/utils/constant.dart';
-import 'package:eClassify/utils/custom_text.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/helper_utils.dart';
-import 'package:eClassify/utils/hive_utils.dart';
-import 'package:eClassify/utils/image_picker.dart';
-import 'package:eClassify/utils/ui_utils.dart';
-import 'package:eClassify/utils/validator.dart';
+import 'package:tlobni/app/routes.dart';
+import 'package:tlobni/data/cubits/custom_field/fetch_custom_fields_cubit.dart';
+import 'package:tlobni/data/cubits/item/manage_item_cubit.dart';
+import 'package:tlobni/data/cubits/item/fetch_my_item_cubit.dart';
+import 'package:tlobni/data/model/category_model.dart';
+import 'package:tlobni/data/model/item/item_model.dart';
+import 'package:tlobni/ui/screens/item/add_item_screen/confirm_location_screen.dart';
+import 'package:tlobni/ui/screens/item/add_item_screen/models/post_type.dart';
+import 'package:tlobni/ui/screens/item/add_item_screen/select_category.dart';
+import 'package:tlobni/ui/screens/item/add_item_screen/widgets/image_adapter.dart';
+import 'package:tlobni/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
+import 'package:tlobni/ui/screens/item/my_item_tab_screen.dart';
+import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
+import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
+import 'package:tlobni/ui/screens/widgets/custom_text_form_field.dart';
+import 'package:tlobni/ui/screens/widgets/dynamic_field.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/cloud_state/cloud_state.dart';
+import 'package:tlobni/utils/constant.dart';
+import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/helper_utils.dart';
+import 'package:tlobni/utils/hive_utils.dart';
+import 'package:tlobni/utils/image_picker.dart';
+import 'package:tlobni/utils/ui_utils.dart';
+import 'package:tlobni/utils/validator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -348,15 +348,22 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
               context,
               widget.isEdit == true
                   ? "Item updated successfully"
-                  : "Item posted successfully");
+                  : "Waiting for review");
 
-          // Navigate back with a result
+          // Navigate based on edit or new item
           if (widget.isEdit == true) {
             // Pop with true value to indicate successful edit
             Navigator.of(context).pop(true);
           } else {
-            // For new item, just navigate to home
-            Navigator.of(context).popUntil((route) => route.isFirst);
+            // For new item, navigate to the service details page
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.of(context).popUntil((route) => route.isFirst);
+
+              // Navigate to the details page of the newly created service
+              Navigator.pushNamed(context, Routes.adDetailsScreen, arguments: {
+                'model': updatedItem,
+              });
+            });
           }
         } else if (state is ManageItemFail) {
           // Show error message
@@ -743,7 +750,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                           height: 15,
                         ),
 
-                        // Special Tags Section (for both Service and Experience)
+                        // Special Tags Section - Changed to use switches
                         _buildSpecialTagsSection(context),
 
                         // Price Type Section (for both Service and Experience)
@@ -1321,7 +1328,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     );
   }
 
-  // Special Tags Section - Changed to use checkboxes
+  // Special Tags Section - Changed to use switches
   Widget _buildSpecialTagsSection(BuildContext context) {
     // Check if we're in service or experience mode
     dynamic rawPostType = getCloudData("post_type");
@@ -1339,49 +1346,60 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            CustomText(
-              "Special Tags".translate(context),
-              fontSize: context.font.large,
-              fontWeight: FontWeight.w500,
-            ),
-            SizedBox(width: 5),
-            CustomText(
-              "(optional)".translate(context),
-              fontSize: context.font.small,
-              color: context.color.textLightColor,
-              fontStyle: FontStyle.italic,
-            ),
-          ],
+        SizedBox(height: 15),
+        _buildSwitchOption(
+          context,
+          title: "Exclusive for Women",
+          value: _specialTags["exclusive_women"] ?? false,
+          onChanged: (value) {
+            setState(() {
+              _specialTags["exclusive_women"] = value;
+            });
+          },
         ),
-        SizedBox(height: 10),
-        Column(
-          children: [
-            _buildCheckboxOption(
-              context,
-              title: "Exclusive for Women",
-              value: _specialTags["exclusive_women"] ?? false,
-              onChanged: (value) {
-                setState(() {
-                  _specialTags["exclusive_women"] = value ?? false;
-                });
-              },
-            ),
-            _buildCheckboxOption(
-              context,
-              title: "Corporate Package",
-              value: _specialTags["corporate_package"] ?? false,
-              onChanged: (value) {
-                setState(() {
-                  _specialTags["corporate_package"] = value ?? false;
-                });
-              },
-            ),
-          ],
+        _buildSwitchOption(
+          context,
+          title: "Corporate Package",
+          value: _specialTags["corporate_package"] ?? false,
+          onChanged: (value) {
+            setState(() {
+              _specialTags["corporate_package"] = value;
+            });
+          },
         ),
         SizedBox(height: 15),
       ],
+    );
+  }
+
+  // Helper widget for switch options
+  Widget _buildSwitchOption(
+    BuildContext context, {
+    required String title,
+    required bool value,
+    required Function(bool) onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: CustomText(
+              title.translate(context),
+              color: value
+                  ? context.color.textColorDark
+                  : context.color.textColorDark,
+              fontWeight: value ? FontWeight.w500 : FontWeight.normal,
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: context.color.territoryColor,
+          ),
+        ],
+      ),
     );
   }
 

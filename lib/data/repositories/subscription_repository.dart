@@ -1,8 +1,8 @@
 import 'dart:io';
 
-import 'package:eClassify/data/model/data_output.dart';
-import 'package:eClassify/data/model/subscription_pacakage_model.dart';
-import 'package:eClassify/utils/api.dart';
+import 'package:tlobni/data/model/data_output.dart';
+import 'package:tlobni/data/model/subscription_pacakage_model.dart';
+import 'package:tlobni/utils/api.dart';
 
 class SubscriptionRepository {
   Future<DataOutput<SubscriptionPackageModel>> getSubscriptionPacakges(

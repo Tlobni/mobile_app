@@ -112,14 +112,14 @@ class AppIcons {
       _svgPath("Illustrators/user_verification");
 
   ///Bottom nav icons
-  static String homeNav = _svgPath("bottomnav/home");
-  static String homeNavActive = _svgPath("bottomnav/home_active");
+  static String homeNav = _svgPath("Logo/homelogo");
+  static String homeNavActive = _svgPath("Logo/homelogo");
   static String chatNav = _svgPath("bottomnav/chat");
   static String chatNavActive = _svgPath("bottomnav/chat_active");
   static String myAdsNav = _svgPath("bottomnav/myads");
   static String myAdsNavActive = _svgPath("bottomnav/myads_active");
-  static String favoriteNav = _svgPath("bottomnav/myads");
-  static String favoriteNavActive = _svgPath("bottomnav/myads_active");
+  static String favoriteNav = _svgPath("like_fill");
+  static String favoriteNavActive = _svgPath("like_fill");
   static String profileNav = _svgPath("bottomnav/profile");
   static String profileNavActive = _svgPath("bottomnav/profile_active");
 

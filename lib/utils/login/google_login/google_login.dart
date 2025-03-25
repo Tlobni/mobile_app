@@ -1,5 +1,5 @@
-import 'package:eClassify/utils/login/lib/login_status.dart';
-import 'package:eClassify/utils/login/lib/login_system.dart';
+import 'package:tlobni/utils/login/lib/login_status.dart';
+import 'package:tlobni/utils/login/lib/login_system.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';

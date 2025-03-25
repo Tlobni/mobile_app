@@ -1,6 +1,6 @@
-import 'package:eClassify/data/model/data_output.dart';
-import 'package:eClassify/data/model/safety_tips_model.dart';
-import 'package:eClassify/utils/api.dart';
+import 'package:tlobni/data/model/data_output.dart';
+import 'package:tlobni/data/model/safety_tips_model.dart';
+import 'package:tlobni/utils/api.dart';
 
 class SafetyTipsRepository {
   Future<DataOutput<SafetyTipsModel>> fetchTipsList() async {

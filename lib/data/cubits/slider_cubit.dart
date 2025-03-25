@@ -1,11 +1,11 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
-import 'package:eClassify/data/helper/custom_exception.dart';
-import 'package:eClassify/data/model/home_slider.dart';
-import 'package:eClassify/settings.dart';
-import 'package:eClassify/utils/api.dart';
-import 'package:eClassify/utils/network/network_availability.dart';
+import 'package:tlobni/data/helper/custom_exception.dart';
+import 'package:tlobni/data/model/home_slider.dart';
+import 'package:tlobni/settings.dart';
+import 'package:tlobni/utils/api.dart';
+import 'package:tlobni/utils/network/network_availability.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

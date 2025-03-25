@@ -2,27 +2,28 @@
 
 import 'dart:developer';
 
-import 'package:eClassify/app/routes.dart';
-import 'package:eClassify/data/cubits/category/fetch_category_cubit.dart';
-import 'package:eClassify/data/cubits/custom_field/fetch_custom_fields_cubit.dart';
-import 'package:eClassify/data/model/category_model.dart';
-import 'package:eClassify/data/model/item_filter_model.dart';
-import 'package:eClassify/ui/screens/item/add_item_screen/custom_filed_structure/custom_field.dart';
-import 'package:eClassify/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
-import 'package:eClassify/ui/screens/main_activity.dart';
-import 'package:eClassify/ui/screens/widgets/animated_routes/blur_page_route.dart';
-import 'package:eClassify/ui/screens/widgets/dynamic_field.dart';
-import 'package:eClassify/ui/theme/theme.dart';
-import 'package:eClassify/utils/api.dart';
-import 'package:eClassify/utils/app_icon.dart';
-import 'package:eClassify/utils/constant.dart';
-import 'package:eClassify/utils/custom_text.dart';
-import 'package:eClassify/utils/extensions/extensions.dart';
-import 'package:eClassify/utils/hive_utils.dart';
-import 'package:eClassify/utils/ui_utils.dart';
+import 'package:tlobni/app/routes.dart';
+import 'package:tlobni/data/cubits/category/fetch_category_cubit.dart';
+import 'package:tlobni/data/cubits/custom_field/fetch_custom_fields_cubit.dart';
+import 'package:tlobni/data/model/category_model.dart';
+import 'package:tlobni/data/model/item_filter_model.dart';
+import 'package:tlobni/ui/screens/item/add_item_screen/custom_filed_structure/custom_field.dart';
+import 'package:tlobni/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
+import 'package:tlobni/ui/screens/main_activity.dart';
+import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
+import 'package:tlobni/ui/screens/widgets/dynamic_field.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/api.dart';
+import 'package:tlobni/utils/app_icon.dart';
+import 'package:tlobni/utils/constant.dart';
+import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/hive_utils.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tlobni/ui/screens/item/add_item_screen/models/post_type.dart';
 
 // Custom category filter screen that works with our filter page
 class FilterCategoryScreen extends StatefulWidget {
@@ -393,6 +394,9 @@ class FilterScreenState extends State<FilterScreen> {
               formattedSpecialTags[key] = value.toString();
             });
 
+            print("DEBUG FILTER APPLY: Service type being set: $_serviceType");
+            print("DEBUG FILTER APPLY: Gender being set: $_gender");
+
             Constant.itemFilter = ItemFilterModel(
                 maxPrice: maxController.text,
                 minPrice: minController.text,
@@ -596,6 +600,13 @@ class FilterScreenState extends State<FilterScreen> {
 
   // Service Type filter (Service or Experience)
   Widget _buildServiceTypeFilter(BuildContext context) {
+    // Debug: What do PostType values look like
+    print(
+        "DEBUG: PostType.service.toString() = '${PostType.service.toString()}'");
+    print(
+        "DEBUG: PostType.experience.toString() = '${PostType.experience.toString()}'");
+    print("DEBUG: Current _serviceType = '$_serviceType'");
+
     return Wrap(
       spacing: 10,
       children: [
@@ -606,6 +617,7 @@ class FilterScreenState extends State<FilterScreen> {
           onSelected: (selected) {
             setState(() {
               _serviceType = selected ? 'service' : null;
+              print("DEBUG: Selected Service, _serviceType = '$_serviceType'");
             });
           },
         ),
@@ -616,6 +628,8 @@ class FilterScreenState extends State<FilterScreen> {
           onSelected: (selected) {
             setState(() {
               _serviceType = selected ? 'experience' : null;
+              print(
+                  "DEBUG: Selected Experience, _serviceType = '$_serviceType'");
             });
           },
         ),
@@ -712,33 +726,61 @@ class FilterScreenState extends State<FilterScreen> {
     );
   }
 
+  // Custom LocationAutocomplete with styling to match filter inputs
   Widget locationWidget(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 10.0),
-      child: LocationAutocomplete(
-        controller: locationController,
-        hintText: "allCities".translate(context),
-        onSelected: (String location) {
-          // Basic handling when only the string is returned
-        },
-        onLocationSelected: (Map<String, String> locationData) {
-          // Use post-frame callback to prevent setState during build
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              setState(() {
-                city = locationData['city'] ?? "";
-                _state = locationData['state'] ?? "";
-                country = locationData['country'] ?? "";
-                area = ""; // Reset area as it's not in the autocomplete data
-                areaId = null; // Reset areaId
-                radius = null; // Reset radius
-                // We don't have lat/lng in the autocomplete data
-                latitude = null;
-                longitude = null;
-              });
-            }
-          });
-        },
+      child: Container(
+        height: 55,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: context.color.secondaryColor,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: context.color.borderColor.darken(30),
+            width: 1,
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(9),
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              inputDecorationTheme: InputDecorationTheme(
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+              ),
+              iconTheme: IconThemeData(
+                color: context.color.textDefaultColor,
+                size: 20,
+              ),
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 9),
+              child: LocationAutocomplete(
+                controller: locationController,
+                hintText: "allCities".translate(context),
+                onSelected: (String location) {
+                  // Basic handling when only the string is returned
+                },
+                onLocationSelected: (Map<String, String> locationData) {
+                  setState(() {
+                    city = locationData['city'] ?? "";
+                    _state = locationData['state'] ?? "";
+                    country = locationData['country'] ?? "";
+                    area =
+                        ""; // Reset area as it's not in the autocomplete data
+                    areaId = null; // Reset areaId
+                    radius = null; // Reset radius
+                    // We don't have lat/lng in the autocomplete data
+                    latitude = null;
+                    longitude = null;
+                  });
+                },
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

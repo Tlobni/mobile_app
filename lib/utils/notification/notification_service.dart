@@ -2,24 +2,24 @@
 
 import 'dart:async';
 
-import 'package:eClassify/app/routes.dart';
-import 'package:eClassify/data/cubits/chat/get_buyer_chat_users_cubit.dart';
-import 'package:eClassify/data/cubits/chat/get_seller_chat_users_cubit.dart';
-import 'package:eClassify/data/cubits/chat/load_chat_messages.dart';
-import 'package:eClassify/data/cubits/chat/send_message.dart';
-import 'package:eClassify/data/model/chat/chat_message_modal.dart';
-import 'package:eClassify/data/model/chat/chat_user_model.dart';
-import 'package:eClassify/data/model/data_output.dart';
-import 'package:eClassify/data/model/item/item_model.dart';
-import 'package:eClassify/data/repositories/item/item_repository.dart';
-import 'package:eClassify/ui/screens/chat/chat_audio/widgets/chat_widget.dart';
-import 'package:eClassify/ui/screens/chat/chat_screen.dart';
-import 'package:eClassify/ui/screens/main_activity.dart';
-import 'package:eClassify/utils/constant.dart';
-import 'package:eClassify/utils/helper_utils.dart';
-import 'package:eClassify/utils/hive_utils.dart';
-import 'package:eClassify/utils/notification/awsome_notification.dart';
-import 'package:eClassify/utils/notification/chat_message_handler.dart';
+import 'package:tlobni/app/routes.dart';
+import 'package:tlobni/data/cubits/chat/get_buyer_chat_users_cubit.dart';
+import 'package:tlobni/data/cubits/chat/get_seller_chat_users_cubit.dart';
+import 'package:tlobni/data/cubits/chat/load_chat_messages.dart';
+import 'package:tlobni/data/cubits/chat/send_message.dart';
+import 'package:tlobni/data/model/chat/chat_message_modal.dart';
+import 'package:tlobni/data/model/chat/chat_user_model.dart';
+import 'package:tlobni/data/model/data_output.dart';
+import 'package:tlobni/data/model/item/item_model.dart';
+import 'package:tlobni/data/repositories/item/item_repository.dart';
+import 'package:tlobni/ui/screens/chat/chat_audio/widgets/chat_widget.dart';
+import 'package:tlobni/ui/screens/chat/chat_screen.dart';
+import 'package:tlobni/ui/screens/main_activity.dart';
+import 'package:tlobni/utils/constant.dart';
+import 'package:tlobni/utils/helper_utils.dart';
+import 'package:tlobni/utils/hive_utils.dart';
+import 'package:tlobni/utils/notification/awsome_notification.dart';
+import 'package:tlobni/utils/notification/chat_message_handler.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -356,5 +356,17 @@ class NotificationService {
   static void disposeListeners() {
     onMessageOpen.cancel();
     foregroundStream.cancel();
+  }
+
+  // Method to manually send FCM token to backend
+  static Future<void> registerDeviceForPushNotifications() async {
+    if (HiveUtils.isUserAuthenticated()) {
+      String? token = HiveUtils.getFcmToken();
+      if (token != null) {
+        print("Registering device with FCM token: $token");
+        // Add the API call to your backend to register the token
+        // This could be implemented in firebase_messaging_service.dart
+      }
+    }
   }
 }

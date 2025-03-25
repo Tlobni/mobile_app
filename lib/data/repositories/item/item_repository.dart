@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:eClassify/data/model/data_output.dart';
-import 'package:eClassify/data/model/item/item_model.dart';
-import 'package:eClassify/data/model/item_filter_model.dart';
-import 'package:eClassify/utils/api.dart';
+import 'package:tlobni/data/model/data_output.dart';
+import 'package:tlobni/data/model/item/item_model.dart';
+import 'package:tlobni/data/model/item_filter_model.dart';
+import 'package:tlobni/utils/api.dart';
 import 'package:path/path.dart' as path;
 
 class ItemRepository {
@@ -161,7 +161,28 @@ class ItemRepository {
     };
 
     if (filter != null) {
-      parameters.addAll(filter.toMap());
+      var filterMap = filter.toMap();
+      print("DEBUG: Filter map before adding to parameters: $filterMap");
+      print("DEBUG: Service type in filter: ${filter.serviceType}");
+      print("DEBUG: Gender in filter: ${filter.gender}");
+
+      // Check if serviceType is present and not null
+      if (filter.serviceType != null) {
+        // Ensure provider_item_type is explicitly set in parameters
+        parameters['provider_item_type'] = filter.serviceType;
+        print(
+            "DEBUG: Explicitly set provider_item_type to ${filter.serviceType}");
+      }
+
+      // Check if gender is present and not null
+      if (filter.gender != null) {
+        // Ensure gender is explicitly set in parameters
+        parameters['gender'] = filter.gender;
+        print("DEBUG: Explicitly set gender to ${filter.gender}");
+      }
+
+      parameters.addAll(filterMap);
+      print("DEBUG: Final parameters being sent to API: $parameters");
 
       // If radius is present, include latitude and longitude
       // and remove location-related fields
@@ -352,10 +373,31 @@ class ItemRepository {
     Map<String, dynamic> parameters = {
       Api.search: query,
       Api.page: page,
-      if (filter != null) ...filter.toMap(),
     };
 
     if (filter != null) {
+      print("DEBUG SEARCH: Filter service type: ${filter.serviceType}");
+      print("DEBUG SEARCH: Filter gender: ${filter.gender}");
+      var filterMap = filter.toMap();
+      print("DEBUG SEARCH: Filter map: $filterMap");
+
+      // Check if serviceType is present and not null
+      if (filter.serviceType != null) {
+        // Ensure provider_item_type is explicitly set in parameters
+        parameters['provider_item_type'] = filter.serviceType;
+        print(
+            "DEBUG SEARCH: Explicitly set provider_item_type to ${filter.serviceType}");
+      }
+
+      // Check if gender is present and not null
+      if (filter.gender != null) {
+        // Ensure gender is explicitly set in parameters
+        parameters['gender'] = filter.gender;
+        print("DEBUG SEARCH: Explicitly set gender to ${filter.gender}");
+      }
+
+      parameters.addAll(filterMap);
+
       if (filter.areaId == null) {
         parameters.remove('area_id');
       }
@@ -363,6 +405,8 @@ class ItemRepository {
       if (filter.customFields != null) {
         parameters.addAll(filter.customFields!);
       }
+
+      print("DEBUG SEARCH: Final parameters: $parameters");
     }
 
     Map<String, dynamic> response =

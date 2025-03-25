@@ -1,6 +1,6 @@
 import 'dart:developer';
-import 'package:eClassify/utils/api.dart';
-import 'package:eClassify/settings.dart';
+import 'package:tlobni/utils/api.dart';
+import 'package:tlobni/settings.dart';
 
 class SystemRepository {
   Future<Map> fetchSystemSettings() async {
