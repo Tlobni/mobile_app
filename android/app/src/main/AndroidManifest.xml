@@ -49,7 +49,7 @@
         android:name="${applicationName}"
         android:allowBackup="false"
         android:fullBackupOnly="false"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/launcher_icon"
         android:label="Tlobni"
         android:largeHeap="true"
         android:requestLegacyExternalStorage="true"
@@ -126,7 +126,7 @@
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@mipmap/ic_notification" />
+            android:resource="@mipmap/ic_launcher" />
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"

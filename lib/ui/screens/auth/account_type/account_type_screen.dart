@@ -141,7 +141,7 @@ class _AccountTypeScreenState extends State<AccountTypeScreen> {
                 height: 50,
                 width: MediaQuery.of(context).size.width * 0.9,
                 buttonColor: const Color(0xFF0F2137),
-                disabled: _selectedAccountType == null,
+                disabled: false,
                 disabledColor: const Color.fromARGB(255, 104, 102, 106),
                 textColor: const Color(0xFFE6CBA8),
               ),

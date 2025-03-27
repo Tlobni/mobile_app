@@ -158,7 +158,7 @@ class _SubscriptionPackageListScreenState
                   child: TabBar(
                     controller: _tabController!,
                     tabs: [
-                      Tab(text: "adsListing".translate(context)),
+                      Tab(text: "Early Adopters Package".translate(context)),
                       // Tab(text: "featuredAdsLbl".translate(context)),
                     ],
 

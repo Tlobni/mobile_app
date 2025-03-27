@@ -531,14 +531,13 @@ class MainActivityState extends State<MainActivity>
                     )
                   : SizedBox(width: 10), // Fixed spacing when not a provider
               buildBottomNavigationbarItem(
-                  2,
-                  isClient ? AppIcons.favoriteNav : AppIcons.myAdsNav,
-                  isClient
-                      ? AppIcons.favoriteNavActive
-                      : AppIcons.myAdsNavActive,
-                  isClient
-                      ? "favorites".translate(context)
-                      : "myAdsTab".translate(context)),
+                2,
+                isClient ? AppIcons.favoriteNav : AppIcons.myAdsNav,
+                isClient ? AppIcons.favoriteNavActive : AppIcons.myAdsNavActive,
+                isClient
+                    ? "favorites".translate(context)
+                    : "myAdsTab".translate(context),
+              ),
               buildBottomNavigationbarItem(3, AppIcons.profileNav,
                   AppIcons.profileNavActive, "profileTab".translate(context))
             ]),

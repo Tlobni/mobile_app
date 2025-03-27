@@ -111,6 +111,46 @@ class _SignupScreenState extends CloudState<SignupScreen> {
   // Add the _showCategoryError flag to the state class
   bool _showCategoryError = false;
 
+  // Add these new methods to the class
+  // Track expanded subcategories
+  final Set<int> _expandedSubcategories = {};
+
+  bool _isSubcategoryExpanded(int subcategoryId) {
+    return _expandedSubcategories.contains(subcategoryId);
+  }
+
+  void _toggleSubcategoryExpansion(int subcategoryId) {
+    setState(() {
+      if (_isSubcategoryExpanded(subcategoryId)) {
+        _expandedSubcategories.remove(subcategoryId);
+      } else {
+        _expandedSubcategories.add(subcategoryId);
+      }
+    });
+  }
+
+  void _selectAllNestedSubcategories(CategoryModel category) {
+    if (category.children != null) {
+      for (var subcategory in category.children!) {
+        if (subcategory.id != null) {
+          _selectedCategoryIds.add(subcategory.id!);
+          _selectAllNestedSubcategories(subcategory);
+        }
+      }
+    }
+  }
+
+  void _deselectAllNestedSubcategories(CategoryModel category) {
+    if (category.children != null) {
+      for (var subcategory in category.children!) {
+        if (subcategory.id != null) {
+          _selectedCategoryIds.remove(subcategory.id!);
+          _deselectAllNestedSubcategories(subcategory);
+        }
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -148,6 +188,8 @@ class _SignupScreenState extends CloudState<SignupScreen> {
       // Fetch only provider categories for sign up page
       final result = await categoryRepository.fetchCategories(
           page: 1, type: CategoryType.providers);
+
+      log(result.toString());
 
       setState(() {
         // Only store categories with type 'providers'
@@ -360,7 +402,8 @@ class _SignupScreenState extends CloudState<SignupScreen> {
               arguments: {"from": "signup"},
             );
 
-            Navigator.pushNamed(context, Routes.subscriptionPackageListRoute);
+            Navigator.pushNamed(Constant.navigatorKey.currentContext!,
+                Routes.subscriptionPackageListRoute);
           } else {
             // Client users should just go to the main screen
             log('Navigating Client to main screen only');
@@ -566,7 +609,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                           onPressed: onTapSignup,
                           buttonTitle: "signUp".translate(context),
                           radius: 10,
-                          disabled: false,
+                          disabled: _isLoading,
                           height: 46,
                           disabledColor:
                               const Color.fromARGB(255, 104, 102, 106),
@@ -1236,41 +1279,147 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                                                 }
                                               }
 
-                                              return Padding(
-                                                padding: const EdgeInsets.only(
-                                                    left: 20.0),
-                                                child: ListTile(
-                                                  title: Text(
-                                                      subcategory.name ??
-                                                          "Unknown"),
-                                                  leading: Checkbox(
-                                                    value: _isCategorySelected(
-                                                        subcategory.id ?? 0),
-                                                    onChanged: (bool? value) {
-                                                      if (subcategory.id !=
-                                                          null) {
-                                                        setState(() {
-                                                          if (value == true) {
-                                                            if (!_selectedCategoryIds
-                                                                .contains(
-                                                                    subcategory
-                                                                        .id!)) {
-                                                              _selectedCategoryIds
-                                                                  .add(
+                                              final hasNestedSubcategories =
+                                                  subcategory.children !=
+                                                          null &&
+                                                      subcategory
+                                                          .children!.isNotEmpty;
+
+                                              return Column(
+                                                children: [
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            left: 20.0),
+                                                    child: ListTile(
+                                                      title: Text(
+                                                          subcategory.name ??
+                                                              "Unknown"),
+                                                      leading: Checkbox(
+                                                        value:
+                                                            _isCategorySelected(
+                                                                subcategory
+                                                                        .id ??
+                                                                    0),
+                                                        onChanged:
+                                                            (bool? value) {
+                                                          if (subcategory.id !=
+                                                              null) {
+                                                            setState(() {
+                                                              if (value ==
+                                                                  true) {
+                                                                if (!_selectedCategoryIds
+                                                                    .contains(
+                                                                        subcategory
+                                                                            .id!)) {
+                                                                  _selectedCategoryIds.add(
                                                                       subcategory
                                                                           .id!);
-                                                            }
-                                                          } else {
-                                                            _selectedCategoryIds
-                                                                .remove(
-                                                                    subcategory
-                                                                        .id!);
+                                                                }
+                                                                // Also select all nested subcategories
+                                                                if (hasNestedSubcategories) {
+                                                                  _selectAllNestedSubcategories(
+                                                                      subcategory);
+                                                                }
+                                                              } else {
+                                                                _selectedCategoryIds
+                                                                    .remove(
+                                                                        subcategory
+                                                                            .id!);
+                                                                // Also deselect all nested subcategories
+                                                                if (hasNestedSubcategories) {
+                                                                  _deselectAllNestedSubcategories(
+                                                                      subcategory);
+                                                                }
+                                                              }
+                                                            });
                                                           }
-                                                        });
-                                                      }
-                                                    },
+                                                        },
+                                                      ),
+                                                      trailing:
+                                                          hasNestedSubcategories
+                                                              ? Icon(
+                                                                  _isSubcategoryExpanded(
+                                                                          subcategory.id ??
+                                                                              0)
+                                                                      ? Icons
+                                                                          .keyboard_arrow_up
+                                                                      : Icons
+                                                                          .keyboard_arrow_down,
+                                                                  color: context
+                                                                      .color
+                                                                      .textColorDark,
+                                                                )
+                                                              : null,
+                                                      onTap:
+                                                          hasNestedSubcategories
+                                                              ? () {
+                                                                  setState(() {
+                                                                    _toggleSubcategoryExpansion(
+                                                                        subcategory.id ??
+                                                                            0);
+                                                                  });
+                                                                }
+                                                              : null,
+                                                    ),
                                                   ),
-                                                ),
+                                                  // Nested subcategories
+                                                  if (hasNestedSubcategories &&
+                                                      _isSubcategoryExpanded(
+                                                          subcategory.id ?? 0))
+                                                    Container(
+                                                      color: context
+                                                          .color.secondaryColor
+                                                          .withOpacity(0.3),
+                                                      child: Column(
+                                                        children: subcategory
+                                                            .children!
+                                                            .map(
+                                                                (nestedSubcategory) {
+                                                          return Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .only(
+                                                                    left: 40.0),
+                                                            child: ListTile(
+                                                              title: Text(
+                                                                  nestedSubcategory
+                                                                          .name ??
+                                                                      "Unknown"),
+                                                              leading: Checkbox(
+                                                                value: _isCategorySelected(
+                                                                    nestedSubcategory
+                                                                            .id ??
+                                                                        0),
+                                                                onChanged:
+                                                                    (bool?
+                                                                        value) {
+                                                                  if (nestedSubcategory
+                                                                          .id !=
+                                                                      null) {
+                                                                    setState(
+                                                                        () {
+                                                                      if (value ==
+                                                                          true) {
+                                                                        if (!_selectedCategoryIds
+                                                                            .contains(nestedSubcategory.id!)) {
+                                                                          _selectedCategoryIds
+                                                                              .add(nestedSubcategory.id!);
+                                                                        }
+                                                                      } else {
+                                                                        _selectedCategoryIds
+                                                                            .remove(nestedSubcategory.id!);
+                                                                      }
+                                                                    });
+                                                                  }
+                                                                },
+                                                              ),
+                                                            ),
+                                                          );
+                                                        }).toList(),
+                                                      ),
+                                                    ),
+                                                ],
                                               );
                                             }).toList(),
                                           ),

@@ -19,6 +19,7 @@ import 'package:tlobni/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:video_player/video_player.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({this.itemSlug, super.key});
@@ -38,11 +39,14 @@ class SplashScreenState extends State<SplashScreen>
   bool isLanguageLoaded = false;
   late StreamSubscription<List<ConnectivityResult>> subscription;
   bool hasInternet = true;
+  late VideoPlayerController _controller;
+  bool _isVideoInitialized = false;
 
   @override
   void initState() {
     //locationPermission();
     super.initState();
+    _initializeVideo();
 
     // Check initial connectivity state
     Connectivity().checkConnectivity().then((result) {
@@ -74,6 +78,7 @@ class SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
+    _controller.dispose();
     subscription.cancel();
     super.dispose();
   }
@@ -103,6 +108,20 @@ class SplashScreenState extends State<SplashScreen>
       isTimerCompleted = true;
       if (mounted) setState(() {});
     });
+  }
+
+  Future<void> _initializeVideo() async {
+    _controller = VideoPlayerController.asset('assets/videos/splashscreen.mp4');
+    try {
+      await _controller.initialize();
+      await _controller.setLooping(true);
+      await _controller.play();
+      setState(() {
+        _isVideoInitialized = true;
+      });
+    } catch (e) {
+      log("Error initializing video: $e");
+    }
   }
 
   void navigateCheck() {
@@ -205,52 +224,52 @@ class SplashScreenState extends State<SplashScreen>
                 ),
                 child: Scaffold(
                   backgroundColor: context.color.primaryColor,
-                  bottomNavigationBar: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10.0),
-                    child: Center(
-                      child: Image.asset(
-                        "assets/images/tlobni-logo.png",
-                        width: 250,
-                        height: 250,
-                      ),
-                    ),
-                    // child: UiUtils.getSvg(AppIcons.companyLogo),
-                  ),
-                  body: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  body: Stack(
                     children: [
-                      Align(
-                        alignment: AlignmentDirectional.center,
-                        child: Padding(
-                          padding: EdgeInsets.only(top: 10.0),
-                          child: SizedBox(
-                            width: 150,
-                            height: 150,
-                            // child: UiUtils.getSvg(AppIcons.splashLogo),
+                      if (_isVideoInitialized)
+                        Center(
+                          child: AspectRatio(
+                            aspectRatio: _controller.value.aspectRatio,
+                            child: VideoPlayer(_controller),
                           ),
                         ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(top: 10.0),
-                        child: Column(
-                          children: [
-                            // CustomText(
-                            //   AppSettings.applicationName,
-                            //   fontSize: context.font.xxLarge,
-                            //   color: context.color.secondaryColor,
-                            //   textAlign: TextAlign.center,
-                            //   fontWeight: FontWeight.w600,
-                            // ),
-                            // CustomText(
-                            //   "\"${"buyAndSellAnything".translate(context)}\"",
-                            //   fontSize: context.font.smaller,
-                            //   color: context.color.secondaryColor,
-                            //   textAlign: TextAlign.center,
-                            // )
-                          ],
-                        ),
-                      ),
+                      // Column(
+                      //   crossAxisAlignment: CrossAxisAlignment.center,
+                      //   mainAxisAlignment: MainAxisAlignment.center,
+                      //   children: [
+                      //     Align(
+                      //       alignment: AlignmentDirectional.center,
+                      //       child: Padding(
+                      //         padding: EdgeInsets.only(top: 10.0),
+                      //         child: SizedBox(
+                      //           width: 150,
+                      //           height: 150,
+                      //         ),
+                      //       ),
+                      //     ),
+                      //     Padding(
+                      //       padding: EdgeInsets.only(top: 10.0),
+                      //       child: Column(
+                      //         children: [
+                      //           CustomText(
+                      //             AppSettings.applicationName,
+                      //             fontSize: context.font.xxLarge,
+                      //             color: context.color.secondaryColor,
+                      //             textAlign: TextAlign.center,
+                      //             fontWeight: FontWeight.w600,
+                      //           ),
+                      //           CustomText(
+                      //             "\"${"buyAndSellAnything".translate(context)}\"",
+                      //             fontSize: context.font.smaller,
+                      //             color: context.color.secondaryColor,
+                      //             textAlign: TextAlign.center,
+                      //           )
+                      //         ],
+                      //       ),
+                      //     ),
+                      //   ],
+                      // ),
+                   
                     ],
                   ),
                 ),

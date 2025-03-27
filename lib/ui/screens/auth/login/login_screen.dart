@@ -356,8 +356,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
                 buttonTitle: 'signIn'.translate(context),
                 radius: 10,
-                disabled: !_isButtonEnabled || _isLoading,
+                disabled: _isLoading,
                 disabledColor: const Color.fromARGB(255, 104, 102, 106),
+                textColor: const Color(0xFFE6CBA8),
               ),
               const SizedBox(height: 20),
 

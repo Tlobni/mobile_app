@@ -352,8 +352,11 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
           // Navigate based on edit or new item
           if (widget.isEdit == true) {
-            // Pop with true value to indicate successful edit
-            Navigator.of(context).pop(true);
+            // Just show success message without navigation for edit mode
+            setState(() {
+              _isSubmitting = false;
+            });
+            // Don't navigate - just stay on this screen
           } else {
             // For new item, navigate to the service details page
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -366,9 +369,17 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
             });
           }
         } else if (state is ManageItemFail) {
-          // Show error message
-          HelperUtils.showSnackBarMessage(
-              context, "Failed to process request: ${state.error}");
+          // Show error message with more detail
+          String errorMessage = "Failed to process request: ${state.error}";
+          print("Error updating/adding item: ${state.error}");
+
+          // Reset the submitting state
+          setState(() {
+            _isSubmitting = false;
+          });
+
+          // Show error message to user
+          HelperUtils.showSnackBarMessage(context, errorMessage);
         }
       },
       child: AnnotatedRegion(
@@ -464,8 +475,24 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         cloudData['description'] = adDescriptionController.text;
                         cloudData['price'] = adPriceController.text;
                         cloudData['contact'] = adPhoneNumberController.text;
-                        cloudData['video_link'] =
-                            adAdditionalDetailsController.text;
+
+                        // Handle the video link - validate URL format or set to empty
+                        String videoLink =
+                            adAdditionalDetailsController.text.trim();
+                        if (videoLink.isEmpty) {
+                          cloudData['video_link'] = '';
+                        } else if (videoLink.startsWith('http://') ||
+                            videoLink.startsWith('https://')) {
+                          cloudData['video_link'] = videoLink;
+                        } else {
+                          // Show error for invalid URL and return
+                          setState(() {
+                            _isSubmitting = false;
+                          });
+                          HelperUtils.showSnackBarMessage(context,
+                              "Please enter a valid URL starting with http:// or https://");
+                          return;
+                        }
 
                         // Add category_id - critical for API request
                         if (widget.isEdit == true) {
@@ -646,7 +673,10 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                       disabled: false,
                       isInProgress: _isSubmitting,
                       width: double.maxFinite,
-                      buttonTitle: "postNow".translate(context)),
+                      buttonTitle: widget.isEdit == true
+                          ? "Update Post".translate(context)
+                          : "postNow".translate(context),
+                      textColor: const Color(0xFFE6CBA8)),
                 ),
               ),
               body: Form(
@@ -867,7 +897,8 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         ),
                         CustomTextFormField(
                           controller: adAdditionalDetailsController,
-                          validator: CustomTextFieldValidator.url,
+                          validator:
+                              null, // Use null validator (no validation at form level)
                           hintText: "http://example.com/video.mp4",
                           hintTextStyle: TextStyle(
                               color: context.color.textDefaultColor
@@ -1092,17 +1123,18 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
           onTap: () {
             UiUtils.showFullScreenImage(context, provider: FileImage(file));
           },
-          child: Column(
-            children: [
-              Container(
-                width: 100,
-                height: 100,
-                margin: const EdgeInsets.all(5),
-                clipBehavior: Clip.antiAlias,
-                decoration:
-                    BoxDecoration(borderRadius: BorderRadius.circular(10)),
-              ),
-            ],
+          child: Container(
+            width: 100,
+            height: 100,
+            margin: const EdgeInsets.all(5),
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Image.file(
+              file,
+              fit: BoxFit.cover,
+            ),
           ),
         );
       }
@@ -1396,7 +1428,16 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: context.color.territoryColor,
+            inactiveTrackColor: const Color(0xFF0F2137),
+            activeColor: const Color(0xFF0F2137),
+            activeTrackColor: const Color(0xFF0F2137).withOpacity(0.5),
+            thumbIcon: WidgetStateProperty.resolveWith<Icon?>(
+                (Set<WidgetState> states) {
+              if (states.contains(WidgetState.selected)) {
+                return const Icon(Icons.check, color: Colors.white, size: 16);
+              }
+              return null;
+            }),
           ),
         ],
       ),
@@ -1793,11 +1834,11 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? context.color.textColorDark : Colors.transparent,
+          color: isSelected ? const Color(0xFF0F2137) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected
-                ? context.color.primaryColor
+                ? const Color(0xFF0F2137)
                 : context.color.borderColor,
             width: isSelected ? 1.5 : 1.0,
           ),
@@ -1813,7 +1854,14 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                 value: value,
                 groupValue: groupValue,
                 onChanged: onChanged,
-                activeColor: context.color.primaryColor,
+                activeColor: Colors.white,
+                fillColor: MaterialStateProperty.resolveWith<Color>(
+                    (Set<MaterialState> states) {
+                  if (states.contains(MaterialState.selected)) {
+                    return Colors.white;
+                  }
+                  return context.color.borderColor;
+                }),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ),
@@ -1860,7 +1908,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                   print("Checkbox changed via checkbox: $title - to $newValue");
                   onChanged(newValue);
                 },
-                activeColor: context.color.textColorDark,
+                activeColor: const Color(0xFF0F2137),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ),

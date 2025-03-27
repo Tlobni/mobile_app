@@ -1,6 +1,8 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:async';
 import 'dart:developer';
+import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/add_user_review_cubit.dart';
@@ -70,6 +72,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:video_player/video_player.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class AdDetailsScreen extends StatefulWidget {
   final ItemModel? model;
@@ -3717,6 +3720,33 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                     "For women".translate(context),
                     fontSize: context.font.small,
                     color: Colors.pink,
+                  ),
+                ],
+              ),
+            ),
+
+          // Category tag
+          if (model.category != null &&
+              model.category!.name != null &&
+              model.category!.name!.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: context.color.territoryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  UiUtils.getSvg(AppIcons.categoryIcon,
+                      width: 16,
+                      height: 16,
+                      color: context.color.territoryColor),
+                  const SizedBox(width: 4),
+                  CustomText(
+                    model.category!.name!,
+                    fontSize: context.font.small,
+                    color: context.color.territoryColor,
                   ),
                 ],
               ),

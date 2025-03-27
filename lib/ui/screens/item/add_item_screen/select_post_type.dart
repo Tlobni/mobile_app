@@ -71,6 +71,7 @@ class _SelectPostTypeScreenState extends CloudState<SelectPostTypeScreen> {
                 height: 48,
                 fontSize: context.font.large,
                 buttonTitle: "Next".translate(context),
+                textColor: const Color(0xFFE6CBA8),
               ),
             ),
           ),

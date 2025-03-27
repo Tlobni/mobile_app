@@ -10,6 +10,7 @@ import 'package:tlobni/data/cubits/system/user_details.dart';
 import 'package:tlobni/data/model/user_model.dart';
 import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/repositories/category_repository.dart';
+import 'package:tlobni/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/custom_text_form_field.dart';
 import 'package:tlobni/ui/screens/widgets/image_cropper.dart';
@@ -96,6 +97,9 @@ class UserProfileScreenState extends State<UserProfileScreen> {
   List<int> _selectedCategoryIds = [];
   List<bool> _expandedPanels = [];
   String? _selectedCategories = "";
+
+  // Track expanded subcategories
+  final Set<int> _expandedSubcategories = {};
 
   @override
   void initState() {
@@ -991,41 +995,111 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                                                 }
                                               }
 
-                                              return Padding(
-                                                padding: const EdgeInsets.only(
-                                                    left: 20.0),
-                                                child: ListTile(
-                                                  title: Text(
-                                                      subcategory.name ??
-                                                          "Unknown"),
-                                                  leading: Checkbox(
-                                                    value: _isCategorySelected(
-                                                        subcategory.id ?? 0),
-                                                    onChanged: (bool? value) {
-                                                      if (subcategory.id !=
-                                                          null) {
-                                                        setState(() {
-                                                          if (value == true) {
-                                                            if (!_selectedCategoryIds
-                                                                .contains(
-                                                                    subcategory
-                                                                        .id!)) {
-                                                              _selectedCategoryIds
-                                                                  .add(
+                                              final hasNestedSubcategories =
+                                                  subcategory.children !=
+                                                          null &&
+                                                      subcategory
+                                                          .children!.isNotEmpty;
+
+                                              return Column(
+                                                children: [
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            left: 20.0),
+                                                    child: ListTile(
+                                                      title: Text(
+                                                          subcategory.name ??
+                                                              "Unknown"),
+                                                      leading: Checkbox(
+                                                        value:
+                                                            _isCategorySelected(
+                                                                subcategory
+                                                                        .id ??
+                                                                    0),
+                                                        onChanged:
+                                                            (bool? value) {
+                                                          if (subcategory.id !=
+                                                              null) {
+                                                            setState(() {
+                                                              if (value ==
+                                                                  true) {
+                                                                if (!_selectedCategoryIds
+                                                                    .contains(
+                                                                        subcategory
+                                                                            .id!)) {
+                                                                  _selectedCategoryIds.add(
                                                                       subcategory
                                                                           .id!);
-                                                            }
-                                                          } else {
-                                                            _selectedCategoryIds
-                                                                .remove(
-                                                                    subcategory
-                                                                        .id!);
+                                                                }
+                                                              } else {
+                                                                _selectedCategoryIds
+                                                                    .remove(
+                                                                        subcategory
+                                                                            .id!);
+                                                              }
+                                                            });
                                                           }
-                                                        });
-                                                      }
-                                                    },
+                                                        },
+                                                      ),
+                                                    ),
                                                   ),
-                                                ),
+                                                  // Nested subcategories
+                                                  if (hasNestedSubcategories &&
+                                                      _isSubcategoryExpanded(
+                                                          subcategory.id ?? 0))
+                                                    Container(
+                                                      color: context
+                                                          .color.secondaryColor
+                                                          .withOpacity(0.3),
+                                                      child: Column(
+                                                        children: subcategory
+                                                            .children!
+                                                            .map((subcategory) {
+                                                          return Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .only(
+                                                                    left: 40.0),
+                                                            child: ListTile(
+                                                              title: Text(
+                                                                  subcategory
+                                                                          .name ??
+                                                                      "Unknown"),
+                                                              leading: Checkbox(
+                                                                value: _isCategorySelected(
+                                                                    subcategory
+                                                                            .id ??
+                                                                        0),
+                                                                onChanged:
+                                                                    (bool?
+                                                                        value) {
+                                                                  if (subcategory
+                                                                          .id !=
+                                                                      null) {
+                                                                    setState(
+                                                                        () {
+                                                                      if (value ==
+                                                                          true) {
+                                                                        if (!_selectedCategoryIds
+                                                                            .contains(subcategory.id!)) {
+                                                                          _selectedCategoryIds
+                                                                              .add(subcategory.id!);
+                                                                        }
+                                                                      } else {
+                                                                        _selectedCategoryIds
+                                                                            .remove(subcategory.id!);
+                                                                      }
+                                                                    });
+                                                                  }
+                                                                },
+                                                              ),
+                                                            ),
+                                                          );
+                                                        }).toList(),
+                                                      ),
+                                                    ),
+                                                ],
                                               );
                                             }).toList(),
                                           ),
@@ -1265,12 +1339,25 @@ class UserProfileScreenState extends State<UserProfileScreen> {
         SizedBox(
           height: 10,
         ),
-        CustomTextFormField(
+        LocationAutocomplete(
           controller: controller,
-          maxLine: 5,
-          action: TextInputAction.newline,
-          isReadOnly: readOnly,
-          fillColor: context.color.secondaryColor,
+          hintText: "enterLocation".translate(context),
+          onSelected: (value) {
+            // Do nothing here, since the controller is updated by the widget
+          },
+          onLocationSelected: (locationData) {
+            // Use post-frame callback to avoid setState during build
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              setState(() {
+                city = locationData['city'];
+                _state = locationData['state'];
+                country = locationData['country'];
+
+                print("Location updated to: ${controller.text}");
+                print("City: $city, State: $_state, Country: $country");
+              });
+            });
+          },
         ),
       ],
     );
@@ -1626,6 +1713,43 @@ class UserProfileScreenState extends State<UserProfileScreen> {
         });
         HelperUtils.showSnackBarMessage(context, e.toString());
       });
+    }
+  }
+
+  // Track expanded subcategories
+  bool _isSubcategoryExpanded(int subcategoryId) {
+    return _expandedSubcategories.contains(subcategoryId);
+  }
+
+  void _toggleSubcategoryExpansion(int subcategoryId) {
+    setState(() {
+      if (_isSubcategoryExpanded(subcategoryId)) {
+        _expandedSubcategories.remove(subcategoryId);
+      } else {
+        _expandedSubcategories.add(subcategoryId);
+      }
+    });
+  }
+
+  void _selectAllNestedSubcategories(CategoryModel category) {
+    if (category.children != null) {
+      for (var subcategory in category.children!) {
+        if (subcategory.id != null) {
+          _selectedCategoryIds.add(subcategory.id!);
+          _selectAllNestedSubcategories(subcategory);
+        }
+      }
+    }
+  }
+
+  void _deselectAllNestedSubcategories(CategoryModel category) {
+    if (category.children != null) {
+      for (var subcategory in category.children!) {
+        if (subcategory.id != null) {
+          _selectedCategoryIds.remove(subcategory.id!);
+          _deselectAllNestedSubcategories(subcategory);
+        }
+      }
     }
   }
 }
