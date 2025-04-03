@@ -25,7 +25,7 @@ class CategoryHomeCard extends StatelessWidget {
     } else {
       isFullImage = true;
     }
-    return SizedBox(
+    return Container(
       width: 70,
       child: GestureDetector(
         onTap: onTap,
@@ -37,7 +37,7 @@ class CategoryHomeCard extends StatelessWidget {
                 width: double.infinity,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(18),
-                  color: context.color.secondaryColor,
+                  color: const Color(0xFFE6CBA8),
                   border: Border.all(
                       color: context.color.borderColor.darken(60), width: 1),
                 ),
@@ -52,7 +52,7 @@ class CategoryHomeCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
                       color: context.color.borderColor.darken(60), width: 1),
-                  color: context.color.secondaryColor,
+                  color: const Color(0xFFE6CBA8),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: UiUtils.imageType(url, fit: BoxFit.contain),

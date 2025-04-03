@@ -227,102 +227,169 @@ class _SliderWidgetState extends State<SliderWidget>
 
     return BlocConsumer<SliderCubit, SliderState>(
       listener: (context, state) {
-        // Handle state changes if needed
+        if ((state is SliderFetchFailure && !state.isUserDeactivated) ||
+            state is SliderFetchSuccess) {
+          // context.read<SliderCubit>().fetchSlider(context);
+        }
       },
       builder: (context, SliderState state) {
-        if (state is SliderFetchSuccess && state.sliderlist.isNotEmpty) {
-          bannersLength = state.sliderlist.length; // Update bannersLength
-          return SizedBox(
-            height: 170,
-            child: PageView.builder(
-              itemCount: bannersLength,
-              controller: _pageController,
+        if (state is SliderFetchInProgress) {
+          return Container();
+        }
+        // Custom exclusive experiences slider for the design in the image
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+          child: SizedBox(
+            height: 190,
+            child: ListView.builder(
+              itemCount: 1, // Just one featured item as shown in the image
+              shrinkWrap: true,
               physics: const BouncingScrollPhysics(),
               scrollDirection: Axis.horizontal,
-              onPageChanged: (index) {
-                _bannerIndex.value =
-                    index; // Update bannerIndex when page changes manually
-              },
-              itemBuilder: (context, index) {
-                return InkWell(
-                  onTap: () async {
-                    if (state.sliderlist[index].thirdPartyLink != "") {
-                      await urllauncher.launchUrl(
-                          Uri.parse(state.sliderlist[index].thirdPartyLink!),
-                          mode: LaunchMode.externalApplication);
-                    } else if (state.sliderlist[index].modelType!
-                        .contains("Category")) {
-                      if (state.sliderlist[index].model!.subCategoriesCount! >
-                          0) {
-                        Navigator.pushNamed(context, Routes.subCategoryScreen,
-                            arguments: {
-                              "categoryList": <CategoryModel>[],
-                              "catName": state.sliderlist[index].model!.name,
-                              "catId": state.sliderlist[index].modelId,
-                              "categoryIds": [
-                                state.sliderlist[index].model!.parentCategoryId
-                                    .toString(),
-                                state.sliderlist[index].modelId.toString()
-                              ]
-                            });
-                      } else {
-                        Navigator.pushNamed(context, Routes.itemsList,
-                            arguments: {
-                              'catID':
-                                  state.sliderlist[index].modelId.toString(),
-                              'catName': state.sliderlist[index].model!.name,
-                              "categoryIds": [
-                                state.sliderlist[index].modelId.toString()
-                              ]
-                            });
-                      }
-                    } else {
-                      try {
-                        ItemRepository fetch = ItemRepository();
-
-                        Widgets.showLoader(context);
-
-                        DataOutput<ItemModel> dataOutput =
-                            await fetch.fetchItemFromItemId(
-                                state.sliderlist[index].modelId!);
-
-                        Future.delayed(
-                          Duration.zero,
-                          () {
-                            Widgets.hideLoder(context);
-                            Navigator.pushNamed(context, Routes.adDetailsScreen,
-                                arguments: {
-                                  "model": dataOutput.modelList[0],
-                                });
-                          },
-                        );
-                      } catch (e) {
-                        Widgets.hideLoder(context);
-                        HelperUtils.showSnackBarMessage(context, e.toString());
-                      }
-                    }
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: sidePadding),
-                    width: MediaQuery.of(context).size.width - 16,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.grey.shade200,
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: UiUtils.getImage(
-                          state.sliderlist[index].image ?? "",
-                          fit: BoxFit.fill),
-                    ),
+              itemBuilder: (context, int index) {
+                return Container(
+                  margin: const EdgeInsets.only(right: 15),
+                  width: MediaQuery.of(context).size.width - (sidePadding * 2),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: const Color(0xFFFAF6E9), // Light beige background
+                  ),
+                  child: Stack(
+                    children: [
+                      // Content of the card
+                      Padding(
+                        padding: const EdgeInsets.all(15),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Top "A ONCE IN A LIFETIME EXPERIENCE" Text
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              child: Text(
+                                "A ONCE IN A LIFETIME EXPERIENCE",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                            // Middle Row with "COFFEE WITH A BUSINESS TYCOON" text
+                            const Spacer(),
+                            Text(
+                              "COFFEE WITH",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            Text(
+                              "A BUSINESS TYCOON",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            const SizedBox(height: 15),
+                            // Bottom "BOOK NOW" Button
+                            SizedBox(
+                              width: 120,
+                              height: 40,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  // Handle booking
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      const Color(0xFF152238), // Dark blue
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(5),
+                                  ),
+                                ),
+                                child: Text(
+                                  "BOOK NOW",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Business person image
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 120,
+                          height: 140,
+                          alignment: Alignment.center,
+                          child: Icon(
+                            Icons.person_outline,
+                            size: 60,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ),
+                      // "2 SLOTS LEFT" badge
+                      Positioned(
+                        left: 0,
+                        top: 45,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            borderRadius: BorderRadiusDirectional.only(
+                              topEnd: Radius.circular(5),
+                              bottomEnd: Radius.circular(5),
+                            ),
+                          ),
+                          child: Text(
+                            "2 SLOTS LEFT!",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Dots indicator
+                      Positioned(
+                        bottom: 10,
+                        left: 0,
+                        right: 0,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                            4,
+                            (dotIndex) => Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 3),
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: dotIndex == 0
+                                    ? Colors.black
+                                    : Colors.grey.shade400,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
             ),
-          );
-        } else {
-          return SizedBox.shrink();
-        }
+          ),
+        );
       },
     );
   }

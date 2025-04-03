@@ -25,6 +25,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/models/post_type.dart';
 
+// String extension for capitalization
+extension StringExtension on String {
+  String capitalize() {
+    return "${this[0].toUpperCase()}${substring(1).toLowerCase()}";
+  }
+}
+
 // Custom category filter screen that works with our filter page
 class FilterCategoryScreen extends StatefulWidget {
   final List<CategoryModel> categoryList;
@@ -348,7 +355,7 @@ class FilterScreenState extends State<FilterScreen> {
         return;
       },
       child: Scaffold(
-        backgroundColor: Theme.of(context).colorScheme.primaryColor,
+        backgroundColor: Color(0xFFF8F7FB), // Light purple background
         appBar: UiUtils.buildAppBar(
           context,
           onBackPress: () {
@@ -358,7 +365,6 @@ class FilterScreenState extends State<FilterScreen> {
           showBackButton: true,
           title: "filterTitle".translate(context),
           actions: [
-            // if ((checkFilterValSet() == true)) ...[
             FittedBox(
               fit: BoxFit.none,
               child: UiUtils.buildButton(
@@ -376,7 +382,6 @@ class FilterScreenState extends State<FilterScreen> {
                 buttonTitle: "reset".translate(context),
               ),
             )
-            // ]
           ],
         ),
         bottomNavigationBar: BottomAppBar(
@@ -447,83 +452,82 @@ class FilterScreenState extends State<FilterScreen> {
           physics: const BouncingScrollPhysics(),
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           child: Padding(
-            padding: const EdgeInsets.all(
-              20.0,
-            ),
+            padding: const EdgeInsets.all(20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                // Service Type Filter (Service or Experience)
-                CustomText('Service Type'.translate(context),
+                // Listing Type Filter (Service or Experience)
+                CustomText('Listing Type'.translate(context),
                     color: context.color.textDefaultColor,
                     fontWeight: FontWeight.w600),
                 const SizedBox(height: 5),
                 _buildServiceTypeFilter(context),
                 const SizedBox(height: 15),
 
-                // User Type Filter (Expert or Business)
-                CustomText('User Type'.translate(context),
+                // Provider Type Filter (Expert or Business)
+                CustomText('Provider Type'.translate(context),
                     color: context.color.textDefaultColor,
                     fontWeight: FontWeight.w600),
                 const SizedBox(height: 5),
                 _buildUserTypeFilter(context),
 
-                // Gender Filter (only if Expert is selected)
-                if (_userType == 'expert') ...[
+                // Only show additional filters if both service type and provider type are selected
+                if (_serviceType != null && _userType != null) ...[
                   const SizedBox(height: 15),
-                  CustomText('Gender'.translate(context),
+
+                  // Category Filter
+                  if (widget.categoryIds == null ||
+                      widget.categoryIds!.isEmpty) ...[
+                    CustomText('category'.translate(context),
+                        fontWeight: FontWeight.w600),
+                    const SizedBox(height: 5),
+                    categoryWidget(context),
+                    const SizedBox(height: 15),
+                  ],
+
+                  // Gender Filter (only if Expert is selected)
+                  if (_userType == 'expert') ...[
+                    CustomText('Gender'.translate(context),
+                        color: context.color.textDefaultColor,
+                        fontWeight: FontWeight.w600),
+                    const SizedBox(height: 5),
+                    _buildGenderFilter(context),
+                    const SizedBox(height: 15),
+                  ],
+
+                  // Location Filter
+                  CustomText('locationLbl'.translate(context),
                       color: context.color.textDefaultColor,
                       fontWeight: FontWeight.w600),
                   const SizedBox(height: 5),
-                  _buildGenderFilter(context),
-                ],
-
-                // Special Tags Filter
-                if (_serviceType != null) ...[
+                  locationWidget(context),
                   const SizedBox(height: 15),
+
+                  // Special Tags Filter
                   CustomText('Special Tags'.translate(context),
                       color: context.color.textDefaultColor,
                       fontWeight: FontWeight.w600),
                   const SizedBox(height: 5),
                   _buildSpecialTagsFilter(context),
-                ],
-
-                // Location Filter
-                const SizedBox(height: 15),
-                CustomText('locationLbl'.translate(context),
-                    color: context.color.textDefaultColor,
-                    fontWeight: FontWeight.w600),
-                const SizedBox(height: 5),
-                locationWidget(context),
-
-                // Category Filter
-                if (widget.categoryIds == null ||
-                    widget.categoryIds!.isEmpty) ...[
                   const SizedBox(height: 15),
-                  CustomText('category'.translate(context),
+
+                  // Budget Filter
+                  CustomText('budgetLbl'.translate(context),
+                      fontWeight: FontWeight.w600),
+                  const SizedBox(height: 15),
+                  budgetOption(),
+                  const SizedBox(height: 15),
+
+                  // Posted Since Filter
+                  CustomText('postedSinceLbl'.translate(context),
                       fontWeight: FontWeight.w600),
                   const SizedBox(height: 5),
-                  categoryWidget(context),
-                  const SizedBox(height: 5),
+                  postedSinceOption(context),
+                  const SizedBox(height: 15),
+
+                  // Custom Fields
+                  _buildCustomFields()
                 ],
-
-                // Budget Filter
-                const SizedBox(height: 15),
-                CustomText('budgetLbl'.translate(context),
-                    fontWeight: FontWeight.w600),
-                const SizedBox(height: 15),
-                budgetOption(),
-
-                // Posted Since Filter
-                const SizedBox(height: 15),
-                CustomText('postedSinceLbl'.translate(context),
-                    fontWeight: FontWeight.w600),
-                const SizedBox(height: 5),
-                postedSinceOption(context),
-
-                // Custom Fields
-                const SizedBox(height: 15),
-                _buildCustomFields()
               ],
             ),
           ),
@@ -532,33 +536,89 @@ class FilterScreenState extends State<FilterScreen> {
     );
   }
 
+  // Helper method to build filter option buttons
+  Widget _buildFilterOption(
+    BuildContext context, {
+    required String label,
+    required bool selected,
+    required Function() onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? context.color.territoryColor : Colors.white,
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(
+            color: selected
+                ? context.color.territoryColor
+                : context.color.borderColor,
+            width: 1,
+          ),
+        ),
+        child: CustomText(
+          label,
+          color: selected ? Colors.white : context.color.textColorDark,
+        ),
+      ),
+    );
+  }
+
+  // Service Type filter (Service or Experience)
+  Widget _buildServiceTypeFilter(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      children: [
+        _buildFilterOption(
+          context,
+          label: "Service",
+          selected: _serviceType == 'service',
+          onTap: () {
+            setState(() {
+              _serviceType = _serviceType == 'service' ? null : 'service';
+            });
+          },
+        ),
+        _buildFilterOption(
+          context,
+          label: "Exclusive Experience",
+          selected: _serviceType == 'experience',
+          onTap: () {
+            setState(() {
+              _serviceType = _serviceType == 'experience' ? null : 'experience';
+            });
+          },
+        ),
+      ],
+    );
+  }
+
   // User Type filter (Expert or Business)
   Widget _buildUserTypeFilter(BuildContext context) {
     return Wrap(
       spacing: 10,
       children: [
-        _buildFilterChip(
+        _buildFilterOption(
           context,
           label: "Expert",
           selected: _userType == 'expert',
-          onSelected: (selected) {
+          onTap: () {
             setState(() {
-              _userType = selected ? 'expert' : null;
-              // Reset gender if user type is not expert
+              _userType = _userType == 'expert' ? null : 'expert';
               if (_userType != 'expert') {
                 _gender = null;
               }
             });
           },
         ),
-        _buildFilterChip(
+        _buildFilterOption(
           context,
           label: "Business",
           selected: _userType == 'business',
-          onSelected: (selected) {
+          onTap: () {
             setState(() {
-              _userType = selected ? 'business' : null;
-              // Reset gender when business is selected
+              _userType = _userType == 'business' ? null : 'business';
               if (_userType == 'business') {
                 _gender = null;
               }
@@ -569,95 +629,73 @@ class FilterScreenState extends State<FilterScreen> {
     );
   }
 
-  // Gender filter (only shown when Expert is selected)
+  // Gender filter with dropdown
   Widget _buildGenderFilter(BuildContext context) {
-    return Wrap(
-      spacing: 10,
-      children: [
-        _buildFilterChip(
-          context,
-          label: "Male",
-          selected: _gender == 'male',
-          onSelected: (selected) {
+    return Container(
+      height: 55,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: context.color.borderColor,
+          width: 1,
+        ),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          isExpanded: true,
+          value: _gender,
+          hint: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 15),
+            child: CustomText(
+              "Choose one",
+              color: context.color.textDefaultColor.withOpacity(0.5),
+            ),
+          ),
+          items: ["male", "female"].map((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 15),
+                child: CustomText(
+                  value.capitalize(),
+                  color: context.color.textColorDark,
+                ),
+              ),
+            );
+          }).toList(),
+          onChanged: (newValue) {
             setState(() {
-              _gender = selected ? 'male' : null;
+              _gender = newValue;
             });
           },
         ),
-        _buildFilterChip(
-          context,
-          label: "Female",
-          selected: _gender == 'female',
-          onSelected: (selected) {
-            setState(() {
-              _gender = selected ? 'female' : null;
-            });
-          },
-        ),
-      ],
+      ),
     );
   }
 
-  // Service Type filter (Service or Experience)
-  Widget _buildServiceTypeFilter(BuildContext context) {
-    // Debug: What do PostType values look like
-    print(
-        "DEBUG: PostType.service.toString() = '${PostType.service.toString()}'");
-    print(
-        "DEBUG: PostType.experience.toString() = '${PostType.experience.toString()}'");
-    print("DEBUG: Current _serviceType = '$_serviceType'");
-
-    return Wrap(
-      spacing: 10,
-      children: [
-        _buildFilterChip(
-          context,
-          label: "Service",
-          selected: _serviceType == 'service',
-          onSelected: (selected) {
-            setState(() {
-              _serviceType = selected ? 'service' : null;
-              print("DEBUG: Selected Service, _serviceType = '$_serviceType'");
-            });
-          },
-        ),
-        _buildFilterChip(
-          context,
-          label: "Exclusive Experience",
-          selected: _serviceType == 'experience',
-          onSelected: (selected) {
-            setState(() {
-              _serviceType = selected ? 'experience' : null;
-              print(
-                  "DEBUG: Selected Experience, _serviceType = '$_serviceType'");
-            });
-          },
-        ),
-      ],
-    );
-  }
-
-  // Special Tags filter with checkboxes
+  // Special Tags filter with switches
   Widget _buildSpecialTagsFilter(BuildContext context) {
     return Column(
       children: [
-        _buildCheckboxOption(
+        _buildSwitchOption(
           context,
           label: "Exclusive for Women",
           value: _specialTags["exclusive_women"] ?? false,
           onChanged: (value) {
             setState(() {
-              _specialTags["exclusive_women"] = value ?? false;
+              _specialTags["exclusive_women"] = value;
             });
           },
         ),
-        _buildCheckboxOption(
+        SizedBox(height: 10),
+        _buildSwitchOption(
           context,
-          label: "Corporate Packages",
+          label: "Corporate Package",
           value: _specialTags["corporate_package"] ?? false,
           onChanged: (value) {
             setState(() {
-              _specialTags["corporate_package"] = value ?? false;
+              _specialTags["corporate_package"] = value;
             });
           },
         ),
@@ -665,63 +703,28 @@ class FilterScreenState extends State<FilterScreen> {
     );
   }
 
-  // Helper method to build filter chips
-  Widget _buildFilterChip(
-    BuildContext context, {
-    required String label,
-    required bool selected,
-    required Function(bool) onSelected,
-  }) {
-    return FilterChip(
-      label: CustomText(
-        label,
-        color:
-            selected ? context.color.primaryColor : context.color.textColorDark,
-      ),
-      selected: selected,
-      selectedColor: context.color.territoryColor.withOpacity(0.2),
-      checkmarkColor: context.color.territoryColor,
-      backgroundColor: context.color.secondaryColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(
-          color: selected
-              ? context.color.territoryColor
-              : context.color.borderColor,
-        ),
-      ),
-      onSelected: onSelected,
-    );
-  }
-
-  // Helper method to build checkbox options
-  Widget _buildCheckboxOption(
+  // Helper method to build switch options
+  Widget _buildSwitchOption(
     BuildContext context, {
     required String label,
     required bool value,
-    required Function(bool?) onChanged,
+    required Function(bool) onChanged,
   }) {
-    return InkWell(
-      onTap: () {
-        onChanged(!value);
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Row(
-          children: [
-            Checkbox(
-              value: value,
-              activeColor: context.color.territoryColor,
-              onChanged: onChanged,
-            ),
-            Expanded(
-              child: CustomText(
-                label,
-                color: context.color.textColorDark,
-              ),
-            ),
-          ],
-        ),
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          CustomText(
+            label,
+            color: context.color.textColorDark,
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: context.color.territoryColor,
+          ),
+        ],
       ),
     );
   }

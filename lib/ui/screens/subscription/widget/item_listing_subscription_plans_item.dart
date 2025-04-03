@@ -255,93 +255,11 @@ class _ItemListingSubscriptionPlansItemState
                             UiUtils.checkUser(
                                 onNotGuest: () {
                                   if (!widget.model.isActive!) {
-                                    // Show pending approval dialog
-                                    // showDialog(
-                                    //   context: context,
-                                    //   builder: (BuildContext context) {
-                                    //     return Dialog(
-                                    //       shape: RoundedRectangleBorder(
-                                    //         borderRadius:
-                                    //             BorderRadius.circular(15),
-                                    //       ),
-                                    //       elevation: 0,
-                                    //       backgroundColor: Colors.transparent,
-                                    //       child: Container(
-                                    //         padding: EdgeInsets.all(20),
-                                    //         decoration: BoxDecoration(
-                                    //           color:
-                                    //               context.color.secondaryColor,
-                                    //           borderRadius:
-                                    //               BorderRadius.circular(15),
-                                    //           boxShadow: [
-                                    //             BoxShadow(
-                                    //               color: context
-                                    //                   .color.textDefaultColor
-                                    //                   .withOpacity(0.1),
-                                    //               blurRadius: 10,
-                                    //               offset: Offset(0, 5),
-                                    //             ),
-                                    //           ],
-                                    //         ),
-                                    //         child: Column(
-                                    //           mainAxisSize: MainAxisSize.min,
-                                    //           children: [
-                                    //             // Icon at the top
-                                    //             Container(
-                                    //               padding: EdgeInsets.all(15),
-                                    //               decoration: BoxDecoration(
-                                    //                 color: context
-                                    //                     .color.territoryColor
-                                    //                     .withOpacity(0.1),
-                                    //                 shape: BoxShape.circle,
-                                    //               ),
-                                    //               child: Icon(
-                                    //                 Icons.access_time_rounded,
-                                    //                 color: context
-                                    //                     .color.territoryColor,
-                                    //                 size: 30,
-                                    //               ),
-                                    //             ),
-                                    //             SizedBox(height: 15),
-                                    //             // Title
-                                    //             CustomText(
-                                    //               "Pending Approval",
-                                    //               fontWeight: FontWeight.bold,
-                                    //               fontSize: context.font.larger,
-                                    //               color: context
-                                    //                   .color.textDefaultColor,
-                                    //             ),
-                                    //             SizedBox(height: 10),
-                                    //             // Content
-                                    //             CustomText(
-                                    //               "Your request is pending approval. An admin will contact you soon.",
-                                    //               textAlign: TextAlign.center,
-                                    //               color: context
-                                    //                   .color.textDefaultColor
-                                    //                   .withOpacity(0.7),
-                                    //             ),
-                                    //             SizedBox(height: 20),
-                                    //             // Button
-                                    //             UiUtils.buildButton(
-                                    //               context,
-                                    //               onPressed: () {
-                                    //                 Navigator.of(context).pop();
-                                    //               },
-                                    //               buttonTitle: "OK",
-                                    //               radius: 10,
-                                    //               height: 45,
-                                    //               buttonColor: context
-                                    //                   .color.territoryColor,
-                                    //               textColor: context
-                                    //                   .color.secondaryColor,
-                                    //               fontSize: context.font.large,
-                                    //             ),
-                                    //           ],
-                                    //         ),
-                                    //       ),
-                                    //     );
-                                    //   },
-                                    // );
+                                    // Navigate to homepage
+                                    Navigator.of(Constant
+                                                .navigatorKey.currentContext ??
+                                            context)
+                                        .popUntil((route) => route.isFirst);
 
                                     // Process the package purchase in the background
                                     if (widget.model.finalPrice! > 0) {
@@ -354,8 +272,9 @@ class _ItemListingSubscriptionPlansItemState
                                         context
                                             .read<InAppPurchaseCubit>()
                                             .inAppPurchase(
-                                                packageId: int.parse(
-                                                    widget.model.id!.toString()),
+                                                packageId: int.parse(widget
+                                                    .model.id!
+                                                    .toString()),
                                                 method: "apple",
                                                 purchaseToken: "test_product");
 
@@ -403,41 +322,6 @@ class _ItemListingSubscriptionPlansItemState
                                                 },
                                               ),
                                             ));
-                                        // widget.inAppPurchaseManager.buy(
-                                        //     widget.model.iosProductId!,
-                                        //     widget.model.id!.toString());
-                                        // // First show pending approval dialog like in iOS
-                                        // UiUtils.showBlurredDialoge(context,
-                                        //     dialoge: BlurredDialogBox(
-                                        //       title: "Pending Approval",
-                                        //       showCancelButton: false,
-                                        //       acceptTextColor:
-                                        //           context.color.buttonColor,
-                                        //       content: const CustomText(
-                                        //           "Your request is pending approval. An admin will contact you soon."),
-                                        //       isAcceptContainerPush: true,
-                                        //       onAccept: () {
-                                        //         Navigator.pop(context);
-                                        //         // Then continue with payment intent
-                                        //         context
-                                        //             .read<
-                                        //                 GetPaymentIntentCubit>()
-                                        //             .getPaymentIntent(
-                                        //                 paymentMethod: _selectedGateway ==
-                                        //                         "stripe"
-                                        //                     ? "Stripe"
-                                        //                     : _selectedGateway ==
-                                        //                             "paystack"
-                                        //                         ? "Paystack"
-                                        //                         : _selectedGateway ==
-                                        //                                 "razorpay"
-                                        //                             ? "Razorpay"
-                                        //                             : "PhonePe",
-                                        //                 packageId:
-                                        //                     widget.model.id!);
-                                        //         return Future.value();
-                                        //       },
-                                        // ));
                                       }
                                     } else {
                                       context

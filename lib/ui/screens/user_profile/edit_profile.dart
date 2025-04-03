@@ -78,6 +78,12 @@ class UserProfileScreenState extends State<UserProfileScreen> {
   // Additional controllers for different user types
   final TextEditingController businessNameController = TextEditingController();
   final TextEditingController genderController = TextEditingController();
+  final TextEditingController bioController = TextEditingController();
+  // Social media controllers
+  final TextEditingController facebookController = TextEditingController();
+  final TextEditingController twitterController = TextEditingController();
+  final TextEditingController instagramController = TextEditingController();
+  final TextEditingController tiktokController = TextEditingController();
 
   dynamic size;
   dynamic city, _state, country;
@@ -124,6 +130,29 @@ class UserProfileScreenState extends State<UserProfileScreen> {
 
     // Get user details model
     var userDetails = HiveUtils.getUserDetails();
+
+    // Set bio from user data
+    if (userData['bio'] != null) {
+      bioController.text = userData['bio'].toString();
+    }
+
+    // Set social media links from user data only for Expert and Business users
+    if (userType == "Provider" ||
+        userType == "Expert" ||
+        userType == "Business") {
+      if (userData['facebook'] != null) {
+        facebookController.text = userData['facebook'].toString();
+      }
+      if (userData['twitter'] != null) {
+        twitterController.text = userData['twitter'].toString();
+      }
+      if (userData['instagram'] != null) {
+        instagramController.text = userData['instagram'].toString();
+      }
+      if (userData['tiktok'] != null) {
+        tiktokController.text = userData['tiktok'].toString();
+      }
+    }
 
     // Get location data
     city = HiveUtils.getCityName();
@@ -295,6 +324,9 @@ class UserProfileScreenState extends State<UserProfileScreen> {
         userType == "Expert" ||
         userType == "Business") {
       providerType = userType == "Business" ? "Business" : "Expert";
+    } else {
+      // Ensure client profiles don't show provider UI
+      providerType = "";
     }
 
     log("Building UI with userType: $userType, providerType: $providerType");
@@ -325,10 +357,13 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                                   child: buildProfilePicture(),
                                 ),
 
-                                // ALWAYS show the profile fields regardless of user type detection issues
-                                providerType == "Business"
+                                // Build the appropriate fields based on user type
+                                // Ensure only business/expert users see those specific fields
+                                userType == "Business" ||
+                                        providerType == "Business"
                                     ? _buildBusinessFields()
-                                    : providerType == "Expert"
+                                    : userType == "Expert" ||
+                                            providerType == "Expert"
                                         ? _buildExpertFields()
                                         : _buildClientFields(),
 
@@ -480,6 +515,14 @@ class UserProfileScreenState extends State<UserProfileScreen> {
           validator: CustomTextFieldValidator.email,
         ),
 
+        // Bio
+        buildTextField(
+          context,
+          title: "Bio",
+          controller: bioController,
+          isMultiline: true,
+        ),
+
         // Gender
         _buildGenderDropdown(
           context,
@@ -496,8 +539,8 @@ class UserProfileScreenState extends State<UserProfileScreen> {
           label: "Country",
         ),
 
-        // Phone
-        phoneWidget(),
+        // Phone (Optional, Visible Only If Enabled)
+        _buildOptionalPhone(),
 
         // Location/City
         buildAddressTextField(
@@ -505,6 +548,9 @@ class UserProfileScreenState extends State<UserProfileScreen> {
           title: "addressLbl",
           controller: addressController,
         ),
+
+        // Social Media Links
+        _buildSocialMediaLinks(),
 
         // Categories
         if (!_isLoadingCategories) _buildCategoryMultiSelect(),
@@ -541,6 +587,14 @@ class UserProfileScreenState extends State<UserProfileScreen> {
           validator: CustomTextFieldValidator.email,
         ),
 
+        // Bio
+        buildTextField(
+          context,
+          title: "Bio",
+          controller: bioController,
+          isMultiline: true,
+        ),
+
         // Country Selection
         _buildCountrySelector(
           context,
@@ -549,8 +603,8 @@ class UserProfileScreenState extends State<UserProfileScreen> {
           label: "Country",
         ),
 
-        // Phone
-        phoneWidget(),
+        // Phone (Optional, Visible Only If Enabled)
+        _buildOptionalPhone(),
 
         // Location/City
         buildAddressTextField(
@@ -559,8 +613,116 @@ class UserProfileScreenState extends State<UserProfileScreen> {
           controller: addressController,
         ),
 
+        // Social Media Links
+        _buildSocialMediaLinks(),
+
         // Categories
         if (!_isLoadingCategories) _buildCategoryMultiSelect(),
+      ],
+    );
+  }
+
+  // Social media links section
+  Widget _buildSocialMediaLinks() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: 20),
+        CustomText(
+          "Social Media Links (Optional)",
+          fontWeight: FontWeight.w600,
+        ),
+        SizedBox(height: 10),
+
+        // Facebook
+        buildTextField(
+          context,
+          title: "Facebook",
+          controller: facebookController,
+          validator: null, // Optional field
+        ),
+
+        // Twitter
+        buildTextField(
+          context,
+          title: "Twitter",
+          controller: twitterController,
+          validator: null, // Optional field
+        ),
+
+        // Instagram
+        buildTextField(
+          context,
+          title: "Instagram",
+          controller: instagramController,
+          validator: null, // Optional field
+        ),
+
+        // TikTok
+        buildTextField(
+          context,
+          title: "TikTok",
+          controller: tiktokController,
+          validator: null, // Optional field
+        ),
+      ],
+    );
+  }
+
+  // Optional phone widget
+  Widget _buildOptionalPhone() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: 10),
+        Row(
+          children: [
+            CustomText(
+              "phoneNumber".translate(context),
+              color: context.color.textDefaultColor,
+            ),
+            SizedBox(width: 5),
+          ],
+        ),
+        SizedBox(height: 10),
+        CustomTextFormField(
+          controller: phoneController,
+          // Making it optional by removing validator
+          keyboard: TextInputType.phone,
+          isReadOnly:
+              HiveUtils.getUserDetails().type == AuthenticationType.phone.name
+                  ? true
+                  : false,
+          fillColor: context.color.secondaryColor,
+          onChange: (value) {
+            setState(() {});
+          },
+          isMobileRequired: false,
+          fixedPrefix: SizedBox(
+            width: 55,
+            child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: GestureDetector(
+                  onTap: () {
+                    if (HiveUtils.getUserDetails().type !=
+                        AuthenticationType.phone.name) {
+                      showCountryCode();
+                    }
+                  },
+                  child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8.0, vertical: 8),
+                      child: Center(
+                        child: CustomText(
+                          formatCountryCode(countryCode!),
+                          fontSize: context.font.large,
+                          textAlign: TextAlign.center,
+                        ),
+                      )),
+                )),
+          ),
+          hintText: "phoneNumber".translate(context),
+        )
       ],
     );
   }
@@ -1299,7 +1461,8 @@ class UserProfileScreenState extends State<UserProfileScreen> {
       {required String title,
       required TextEditingController controller,
       CustomTextFieldValidator? validator,
-      bool? readOnly}) {
+      bool? readOnly,
+      bool isMultiline = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1317,6 +1480,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
           controller: controller,
           isReadOnly: readOnly,
           validator: validator,
+          maxLine: isMultiline ? 3 : 1,
           // formaters: [FilteringTextInputFormatter.deny(RegExp(","))],
           fillColor: context.color.secondaryColor,
         ),
@@ -1567,6 +1731,13 @@ class UserProfileScreenState extends State<UserProfileScreen> {
           userType == "Business") {
         // Save categories as a string for consistency with the API
         additionalParams['categories'] = categoriesString;
+        // Add bio for Expert and Business
+        additionalParams['bio'] = bioController.text.trim();
+        // Add social media links for Expert and Business only
+        additionalParams['facebook'] = facebookController.text.trim();
+        additionalParams['twitter'] = twitterController.text.trim();
+        additionalParams['instagram'] = instagramController.text.trim();
+        additionalParams['tiktok'] = tiktokController.text.trim();
 
         if (providerType == "Business") {
           // No need to store businessName separately anymore
@@ -1592,14 +1763,39 @@ class UserProfileScreenState extends State<UserProfileScreen> {
             email: emailController.text.trim(),
             fileUserimg: fileUserimg,
             address: addressController.text,
+            bio: bioController.text.trim(),
             mobile: phoneController.text,
             notification: isNotificationsEnabled == true ? "1" : "0",
             countryCode: countryCode,
             personalDetail: isPersonalDetailShow == true ? 1 : 0,
             country: country,
-            categories: categoriesString);
+            categories: categoriesString,
+            facebook: facebookController.text.trim(),
+            twitter: twitterController.text.trim(),
+            instagram: instagramController.text.trim(),
+            tiktok: tiktokController.text.trim());
+      } else if (providerType == "Expert") {
+        // For expert users
+        response = await context.read<AuthCubit>().updateuserdata(
+              context,
+              name: nameController.text.trim(),
+              email: emailController.text.trim(),
+              bio: bioController.text.trim(),
+              fileUserimg: fileUserimg,
+              address: addressController.text,
+              mobile: phoneController.text,
+              notification: isNotificationsEnabled == true ? "1" : "0",
+              countryCode: countryCode,
+              personalDetail: isPersonalDetailShow == true ? 1 : 0,
+              country: country,
+              categories: categoriesString,
+              facebook: facebookController.text.trim(),
+              twitter: twitterController.text.trim(),
+              instagram: instagramController.text.trim(),
+              tiktok: tiktokController.text.trim(),
+            );
       } else {
-        // For non-business users, use the regular name field
+        // For client users - don't include social media fields
         response = await context.read<AuthCubit>().updateuserdata(
               context,
               name: nameController.text.trim(),
@@ -1611,7 +1807,6 @@ class UserProfileScreenState extends State<UserProfileScreen> {
               countryCode: countryCode,
               personalDetail: isPersonalDetailShow == true ? 1 : 0,
               country: country,
-              categories: categoriesString,
             );
       }
 
@@ -1653,6 +1848,19 @@ class UserProfileScreenState extends State<UserProfileScreen> {
         if (updatedUserData['location'] == null ||
             updatedUserData['location'] == "") {
           updatedUserData['location'] = country;
+        }
+
+        // Save bio for Expert and Business users
+        if (userType == "Provider" ||
+            userType == "Expert" ||
+            userType == "Business") {
+          updatedUserData['bio'] = bioController.text.trim();
+
+          // Save social media data
+          updatedUserData['facebook'] = facebookController.text.trim();
+          updatedUserData['twitter'] = twitterController.text.trim();
+          updatedUserData['instagram'] = instagramController.text.trim();
+          updatedUserData['tiktok'] = tiktokController.text.trim();
         }
 
         // Save back to Hive

@@ -35,8 +35,7 @@ class ChatListScreen extends StatefulWidget {
 
 class _ChatListScreenState extends State<ChatListScreen>
     with AutomaticKeepAliveClientMixin {
-  ScrollController chatBuyerScreenController = ScrollController();
-  ScrollController chatSellerScreenController = ScrollController();
+  ScrollController chatScreenController = ScrollController();
 
   @override
   void initState() {
@@ -44,15 +43,11 @@ class _ChatListScreenState extends State<ChatListScreen>
       context.read<GetBuyerChatListCubit>().fetch();
       context.read<GetSellerChatListCubit>().fetch();
       context.read<BlockedUsersListCubit>().blockedUsersList();
-      chatBuyerScreenController.addListener(() {
-        if (chatBuyerScreenController.isEndReached()) {
+      chatScreenController.addListener(() {
+        if (chatScreenController.isEndReached()) {
           if (context.read<GetBuyerChatListCubit>().hasMoreData()) {
             context.read<GetBuyerChatListCubit>().loadMore();
           }
-        }
-      });
-      chatSellerScreenController.addListener(() {
-        if (chatSellerScreenController.isEndReached()) {
           if (context.read<GetSellerChatListCubit>().hasMoreData()) {
             context.read<GetSellerChatListCubit>().loadMore();
           }
@@ -71,254 +66,210 @@ class _ChatListScreenState extends State<ChatListScreen>
         context: context,
         statusBarColor: context.color.secondaryColor,
       ),
-      child: DefaultTabController(
-        length: 2, // Number of tabs
-        child: Scaffold(
-          backgroundColor: context.color.backgroundColor,
-          appBar: UiUtils.buildAppBar(
-            context,
-            title: "message".translate(context),
-            // bottomHeight: 49,
-            bottomHeight: 49,
-            actions: [
-              InkWell(
-                child: UiUtils.getSvg(AppIcons.blockedUserIcon,
-                    color: context.color.textDefaultColor),
-                onTap: () {
-                  Navigator.pushNamed(context, Routes.blockedUserListScreen);
-                },
-              )
-            ],
-
-            bottom: [
-              TabBar(
-                tabs: [
-                  Tab(text: 'selling'.translate(context)),
-                  Tab(text: 'buying'.translate(context)),
-                ],
-
-                indicatorColor: context.color.textDefaultColor,
-                // Line color
-                indicatorWeight: 1.5,
-                // Line thickness
-                labelColor: context.color.textDefaultColor,
-                // Selected tab text color
-                unselectedLabelColor:
-                    context.color.textDefaultColor.withOpacity(0.3),
-                // Unselected tab text color
-                labelStyle:
-                    TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                // Selected tab text style
-                labelPadding: EdgeInsets.symmetric(horizontal: 16),
-                // Padding around the tab text
-                indicatorSize: TabBarIndicatorSize.tab,
-              ),
-              Divider(
-                height: 0, // Set height to 0 to make it full width
-                thickness: 0.5, // Divider thickness
-                color: context.color.textDefaultColor
-                    .withOpacity(0.2), // Divider color
-              ),
-            ],
-          ),
-          body: TabBarView(
-            children: [
-              // Content of the 'Selling' tab
-              sellingChatListData(),
-              // Content of the 'Buying' tab
-              buyingChatListData(),
-            ],
-          ),
+      child: Scaffold(
+        backgroundColor: context.color.backgroundColor,
+        appBar: UiUtils.buildAppBar(
+          context,
+          title: "message".translate(context),
+          actions: [
+            InkWell(
+              child: UiUtils.getSvg(AppIcons.blockedUserIcon,
+                  color: context.color.textDefaultColor),
+              onTap: () {
+                Navigator.pushNamed(context, Routes.blockedUserListScreen);
+              },
+            )
+          ],
         ),
+        body: combinedChatListData(),
       ),
     );
   }
 
-  Widget buyingChatListData() {
+  Widget combinedChatListData() {
     return RefreshIndicator(
       onRefresh: () async {
         context.read<GetBuyerChatListCubit>().fetch();
-      },
-      color: context.color.territoryColor,
-      child: BlocBuilder<GetBuyerChatListCubit, GetBuyerChatListState>(
-        builder: (context, state) {
-          if (state is GetBuyerChatListFailed) {
-            if (state.error is ApiException) {
-              if (state.error.errorMessage == "no-internet") {
-                return NoInternet(
-                  onRetry: () {
-                    context.read<GetBuyerChatListCubit>().fetch();
-                  },
-                );
-              }
-            }
-
-            return const NoChatFound();
-          }
-
-          if (state is GetBuyerChatListInProgress) {
-            return buildChatListLoadingShimmer();
-          }
-          if (state is GetBuyerChatListSuccess) {
-            if (state.chatedUserList.isEmpty) {
-              return NoChatFound();
-            }
-            return Column(
-              children: [
-                Expanded(
-                  child: ListView.builder(
-                      controller: chatBuyerScreenController,
-                      shrinkWrap: true,
-                      itemCount: state.chatedUserList.length,
-                      padding: const EdgeInsetsDirectional.symmetric(
-                          horizontal: 8, vertical: 4),
-                      itemBuilder: (
-                        context,
-                        index,
-                      ) {
-                        ChatUser chatedUser = state.chatedUserList[index];
-
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: ChatTile(
-                            id: chatedUser.sellerId.toString(),
-                            itemId: chatedUser.itemId.toString(),
-                            isBuyerList: true,
-                            profilePicture: chatedUser.seller != null &&
-                                    chatedUser.seller!.profile != null
-                                ? chatedUser.seller!.profile!
-                                : "",
-                            userName: chatedUser.seller != null &&
-                                    chatedUser.seller!.name != null
-                                ? chatedUser.seller!.name!
-                                : "",
-                            itemPicture: chatedUser.item != null &&
-                                    chatedUser.item!.image != null
-                                ? chatedUser.item!.image!
-                                : "",
-                            itemName: chatedUser.item != null &&
-                                    chatedUser.item!.name != null
-                                ? chatedUser.item!.name!
-                                : "",
-                            pendingMessageCount: "5",
-                            date: chatedUser.createdAt!,
-                            itemOfferId: chatedUser.id!,
-                            itemPrice: chatedUser.item != null &&
-                                    chatedUser.item!.price != null
-                                ? chatedUser.item!.price!
-                                : 0.0,
-                            itemAmount: chatedUser.amount ?? null,
-                            status: chatedUser.item != null &&
-                                    chatedUser.item!.status != null
-                                ? chatedUser.item!.status!
-                                : null,
-                            buyerId: chatedUser.buyerId.toString(),
-                            isPurchased: chatedUser.item!.isPurchased ?? 0,
-                            alreadyReview:
-                                chatedUser.item!.review == null ? false : true,
-                            unreadCount: chatedUser.unreadCount,
-                          ),
-                        );
-                      }),
-                ),
-                if (state.isLoadingMore) UiUtils.progress()
-              ],
-            );
-          }
-
-          return Container();
-        },
-      ),
-    );
-  }
-
-  Widget sellingChatListData() {
-    return RefreshIndicator(
-      onRefresh: () async {
         context.read<GetSellerChatListCubit>().fetch();
       },
       color: context.color.territoryColor,
-      child: BlocBuilder<GetSellerChatListCubit, GetSellerChatListState>(
-        builder: (context, state) {
-          if (state is GetSellerChatListFailed) {
-            if (state.error is ApiException) {
-              if (state.error.errorMessage == "no-internet") {
-                return NoInternet(
-                  onRetry: () {
-                    context.read<GetSellerChatListCubit>().fetch();
-                  },
-                );
+      child: BlocBuilder<GetBuyerChatListCubit, GetBuyerChatListState>(
+        builder: (context, buyerState) {
+          return BlocBuilder<GetSellerChatListCubit, GetSellerChatListState>(
+            builder: (context, sellerState) {
+              // Handle loading states
+              if (buyerState is GetBuyerChatListInProgress ||
+                  sellerState is GetSellerChatListInProgress) {
+                return buildChatListLoadingShimmer();
               }
-            }
 
-            return const NoChatFound();
-          }
+              // Handle error states
+              if ((buyerState is GetBuyerChatListFailed &&
+                  sellerState is GetSellerChatListFailed)) {
+                if ((buyerState.error is ApiException &&
+                        buyerState.error.errorMessage == "no-internet") ||
+                    (sellerState.error is ApiException &&
+                        sellerState.error.errorMessage == "no-internet")) {
+                  return NoInternet(
+                    onRetry: () {
+                      context.read<GetBuyerChatListCubit>().fetch();
+                      context.read<GetSellerChatListCubit>().fetch();
+                    },
+                  );
+                }
+                return const NoChatFound();
+              }
 
-          if (state is GetSellerChatListInProgress) {
-            return buildChatListLoadingShimmer();
-          }
-          if (state is GetSellerChatListSuccess) {
-            if (state.chatedUserList.isEmpty) {
-              return NoChatFound();
-            }
-            return Column(
-              children: [
-                Expanded(
-                  child: ListView.builder(
-                      controller: chatSellerScreenController,
+              // Extract chat lists
+              List<ChatUser> buyerChats = [];
+              if (buyerState is GetBuyerChatListSuccess) {
+                buyerChats = buyerState.chatedUserList;
+              }
+
+              List<ChatUser> sellerChats = [];
+              if (sellerState is GetSellerChatListSuccess) {
+                sellerChats = sellerState.chatedUserList;
+              }
+
+              // Combine the lists
+              List<Map<String, dynamic>> combinedChats = [];
+
+              // Add buyer chats
+              for (var chat in buyerChats) {
+                combinedChats.add({
+                  'chat': chat,
+                  'isBuyerList': true,
+                  'date': chat.createdAt,
+                });
+              }
+
+              // Add seller chats
+              for (var chat in sellerChats) {
+                combinedChats.add({
+                  'chat': chat,
+                  'isBuyerList': false,
+                  'date': chat.createdAt,
+                });
+              }
+
+              // Sort by date (most recent first)
+              combinedChats.sort((a, b) {
+                DateTime dateA = DateTime.parse(a['date'] ?? '');
+                DateTime dateB = DateTime.parse(b['date'] ?? '');
+                return dateB.compareTo(dateA);
+              });
+
+              if (combinedChats.isEmpty) {
+                return NoChatFound();
+              }
+
+              return Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      controller: chatScreenController,
                       shrinkWrap: true,
-                      itemCount: state.chatedUserList.length,
+                      itemCount: combinedChats.length,
                       padding: const EdgeInsetsDirectional.symmetric(
                           horizontal: 8, vertical: 4),
-                      itemBuilder: (
-                        context,
-                        index,
-                      ) {
-                        ChatUser chatedUser = state.chatedUserList[index];
+                      itemBuilder: (context, index) {
+                        final chatData = combinedChats[index];
+                        final ChatUser chatUser = chatData['chat'];
+                        final bool isBuyerList = chatData['isBuyerList'];
 
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: ChatTile(
-                            id: chatedUser.buyerId.toString(),
-                            itemId: chatedUser.itemId.toString(),
-                            isBuyerList: false,
-                            profilePicture: chatedUser.buyer?.profile ?? "",
-                            userName: chatedUser.buyer?.name ?? "",
-                            itemPicture: chatedUser.item != null &&
-                                    chatedUser.item!.image != null
-                                ? chatedUser.item!.image!
-                                : "",
-                            itemName: chatedUser.item != null &&
-                                    chatedUser.item!.name != null
-                                ? chatedUser.item!.name!
-                                : "",
-                            pendingMessageCount: "5",
-                            date: chatedUser.createdAt ?? '',
-                            itemOfferId: chatedUser.id!,
-                            itemPrice: chatedUser.item != null &&
-                                    chatedUser.item!.price != null
-                                ? chatedUser.item!.price!
-                                : 0,
-                            itemAmount: chatedUser.amount ?? null,
-                            status: chatedUser.item != null &&
-                                    chatedUser.item!.status != null
-                                ? chatedUser.item!.status!
-                                : null,
-                            buyerId: chatedUser.buyerId.toString(),
-                            isPurchased: chatedUser.item?.isPurchased ?? 0,
-                            alreadyReview:
-                                chatedUser.item!.review == null ? false : true,
-                            unreadCount: chatedUser.unreadCount,
-                          ),
-                        );
-                      }),
-                ),
-                if (state.isLoadingMore) UiUtils.progress()
-              ],
-            );
-          }
-
-          return Container();
+                        if (isBuyerList) {
+                          // Buyer chat tile
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: ChatTile(
+                              id: chatUser.sellerId.toString(),
+                              itemId: chatUser.itemId.toString(),
+                              isBuyerList: true,
+                              profilePicture: chatUser.seller != null &&
+                                      chatUser.seller!.profile != null
+                                  ? chatUser.seller!.profile!
+                                  : "",
+                              userName: chatUser.seller != null &&
+                                      chatUser.seller!.name != null
+                                  ? chatUser.seller!.name!
+                                  : "",
+                              itemPicture: chatUser.item != null &&
+                                      chatUser.item!.image != null
+                                  ? chatUser.item!.image!
+                                  : "",
+                              itemName: chatUser.item != null &&
+                                      chatUser.item!.name != null
+                                  ? chatUser.item!.name!
+                                  : "",
+                              pendingMessageCount: "5",
+                              date: chatUser.createdAt!,
+                              itemOfferId: chatUser.id!,
+                              itemPrice: chatUser.item != null &&
+                                      chatUser.item!.price != null
+                                  ? chatUser.item!.price!
+                                  : 0.0,
+                              itemAmount: chatUser.amount ?? null,
+                              status: chatUser.item != null &&
+                                      chatUser.item!.status != null
+                                  ? chatUser.item!.status!
+                                  : null,
+                              buyerId: chatUser.buyerId.toString(),
+                              isPurchased: chatUser.item!.isPurchased ?? 0,
+                              alreadyReview:
+                                  chatUser.item!.review == null ? false : true,
+                              unreadCount: chatUser.unreadCount,
+                            ),
+                          );
+                        } else {
+                          // Seller chat tile
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: ChatTile(
+                              id: chatUser.buyerId.toString(),
+                              itemId: chatUser.itemId.toString(),
+                              isBuyerList: false,
+                              profilePicture: chatUser.buyer?.profile ?? "",
+                              userName: chatUser.buyer?.name ?? "",
+                              itemPicture: chatUser.item != null &&
+                                      chatUser.item!.image != null
+                                  ? chatUser.item!.image!
+                                  : "",
+                              itemName: chatUser.item != null &&
+                                      chatUser.item!.name != null
+                                  ? chatUser.item!.name!
+                                  : "",
+                              pendingMessageCount: "5",
+                              date: chatUser.createdAt ?? '',
+                              itemOfferId: chatUser.id!,
+                              itemPrice: chatUser.item != null &&
+                                      chatUser.item!.price != null
+                                  ? chatUser.item!.price!
+                                  : 0,
+                              itemAmount: chatUser.amount ?? null,
+                              status: chatUser.item != null &&
+                                      chatUser.item!.status != null
+                                  ? chatUser.item!.status!
+                                  : null,
+                              buyerId: chatUser.buyerId.toString(),
+                              isPurchased: chatUser.item?.isPurchased ?? 0,
+                              alreadyReview:
+                                  chatUser.item!.review == null ? false : true,
+                              unreadCount: chatUser.unreadCount,
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                  if ((buyerState is GetBuyerChatListSuccess &&
+                          buyerState.isLoadingMore) ||
+                      (sellerState is GetSellerChatListSuccess &&
+                          sellerState.isLoadingMore))
+                    UiUtils.progress()
+                ],
+              );
+            },
+          );
         },
       ),
     );

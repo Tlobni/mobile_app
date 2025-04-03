@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:ui' as ui;
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -26,6 +27,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+// Extended User model with additional fields used in profile screen
+extension UserExt on User {
+  String? get categories => null;
+  String? get website => null;
+  String? get bio => null;
+  String? get facebook => null;
+  String? get twitter => null;
+  String? get instagram => null;
+  String? get tiktok => null;
+}
 
 class SellerProfileScreen extends StatefulWidget {
   final User model;
@@ -80,7 +93,12 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+
+    // Check if user is a Client (not a business or expert)
+    bool isClientProfile = widget.model.type?.toLowerCase() == "client";
+    int tabCount = isClientProfile ? 2 : 3; // Only 2 tabs for client profiles
+
+    _tabController = TabController(length: tabCount, vsync: this);
 
     // Listen for changes in tab selection
     _tabController.addListener(() {
@@ -129,11 +147,20 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
   @override
   Widget build(BuildContext context) {
     print("_tabController.index***${_tabController.index}");
+
+    // Check if user is a Client (not a business or expert)
+    bool isClientProfile = widget.model.type?.toLowerCase() == "client";
+    int tabCount = isClientProfile ? 2 : 3; // Only 2 tabs for client profiles
+
+    // Check if this is the current user's own profile
+    bool isOwnProfile = widget.model.id.toString() == HiveUtils.getUserId();
+    print("Is own profile: $isOwnProfile");
+
     return DefaultTabController(
-      length: 2,
+      length: tabCount, // Conditional number of tabs
       child: Scaffold(
         backgroundColor: context.color.backgroundColor,
-        floatingActionButton: isBusinessOrExpertProfile()
+        floatingActionButton: isBusinessOrExpertProfile() && !isOwnProfile
             ? FloatingActionButton(
                 onPressed: () {
                   print("FloatingActionButton pressed");
@@ -266,17 +293,47 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
                         color: context.color.textDefaultColor,
                         fontWeight: FontWeight.w600,
                       ),
-                      if (widget.model.createdAt != null &&
-                          widget.model.createdAt != '') ...[
-                        SizedBox(
-                          height: 7,
-                        ),
+                      SizedBox(height: 5),
+                      // Display category
+                      if (widget.model.categories != null &&
+                          widget.model.categories!.isNotEmpty)
                         CustomText(
-                          "${"memberSince".translate(context)}\t${UiUtils.monthYearDate(widget.model.createdAt!)}",
-                          color: context.color.textDefaultColor,
+                          // Show first category name or "Category"
+                          widget.model.categories!.split(',').first,
+                          color:
+                              context.color.textDefaultColor.withOpacity(0.7),
                           fontWeight: FontWeight.w400,
                         ),
-                      ],
+
+                      // Website link
+                      if (widget.model.website != null &&
+                          widget.model.website!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 5),
+                          child: GestureDetector(
+                            onTap: () {
+                              // Open website URL
+                              _launchURL(widget.model.website!);
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.link,
+                                  size: 16,
+                                  color: context.color.territoryColor,
+                                ),
+                                SizedBox(width: 4),
+                                CustomText(
+                                  widget.model.website!,
+                                  color: context.color.territoryColor,
+                                  fontSize: context.font.small,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
                       if (widget.rating != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
@@ -348,10 +405,20 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
                             .textTheme
                             .titleMedium!
                             .copyWith(fontWeight: FontWeight.w500),
-                        tabs: [
-                          Tab(text: 'liveAds'.translate(context)),
-                          Tab(text: 'ratings'.translate(context)),
-                        ],
+                        tabs: isClientProfile
+                            ?
+                            // For client profiles, only show Live Ads and Ratings tabs
+                            [
+                                Tab(text: 'liveAds'.translate(context)),
+                                Tab(text: 'ratings'.translate(context)),
+                              ]
+                            :
+                            // For business/expert profiles, show all three tabs
+                            [
+                                Tab(text: 'liveAds'.translate(context)),
+                                Tab(text: 'About'.translate(context)),
+                                Tab(text: 'ratings'.translate(context)),
+                              ],
                       ),
                       Divider(
                         height: 0,
@@ -368,10 +435,20 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
             top: false,
             child: TabBarView(
               controller: _tabController,
-              children: [
-                liveAdsWidget(),
-                ratingsListWidget(),
-              ],
+              children: isClientProfile
+                  ?
+                  // For client profiles, only show Live Ads and Ratings tabs
+                  [
+                      liveAdsWidget(),
+                      ratingsListWidget(),
+                    ]
+                  :
+                  // For business/expert profiles, show all three tabs
+                  [
+                      liveAdsWidget(),
+                      aboutWidget(),
+                      ratingsListWidget(),
+                    ],
             ),
           ),
         ),
@@ -1097,6 +1174,14 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
   Widget _buildReviewButtonSection(Seller seller) {
     final bool isLoggedIn = HiveUtils.isUserAuthenticated();
 
+    // Check if this is the current user's own profile
+    bool isOwnProfile = seller.id.toString() == HiveUtils.getUserId();
+
+    // Don't show review button for own profile
+    if (isOwnProfile) {
+      return Container(); // Return empty container
+    }
+
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8),
       padding: EdgeInsets.all(15),
@@ -1203,6 +1288,236 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
         ],
       ),
     );
+  }
+
+  // New About tab with bio, portfolio, social links
+  Widget aboutWidget() {
+    // Check if we have bio data to display
+    bool hasBio = widget.model.bio != null && widget.model.bio!.isNotEmpty;
+
+    // Check if phone is available and enabled
+    bool hasPhone = widget.model.mobile != null &&
+        widget.model.mobile!.isNotEmpty &&
+        widget.model.showPersonalDetails == 1;
+
+    // Check if this is the current user's own profile
+    bool isOwnProfile = widget.model.id.toString() == HiveUtils.getUserId();
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Bio Section - only show if bio exists
+          if (hasBio)
+            _buildSectionCard(
+              title: "Bio",
+              child: CustomText(
+                widget.model.bio ?? "",
+                color: context.color.textDefaultColor,
+              ),
+            ),
+
+          if (hasBio) SizedBox(height: 16),
+
+          // Contact Buttons - only show if not viewing own profile
+          if (!isOwnProfile)
+            Row(
+              children: [
+                // Only show Call Button if phone is available and enabled
+                if (hasPhone) ...[
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Container(
+                      height: 50,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          _launchURL("tel:${widget.model.mobile}");
+                        },
+                        icon: Icon(Icons.phone,
+                            color: context.color.textDefaultColor),
+                        label: CustomText(
+                          "Call",
+                          color: context.color.textDefaultColor,
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: context.color.secondaryColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+
+          if (!isOwnProfile) SizedBox(height: 24),
+
+          // Social Media Links
+          _buildSocialMediaLinks(),
+        ],
+      ),
+    );
+  }
+
+  // Section card widget with title
+  Widget _buildSectionCard({required String title, required Widget child}) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+          color: context.color.secondaryColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: context.color.borderColor)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: CustomText(
+              title,
+              fontWeight: FontWeight.bold,
+              fontSize: context.font.large,
+            ),
+          ),
+          Divider(height: 0, thickness: 1, color: context.color.borderColor),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: child,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Social media links row
+  Widget _buildSocialMediaLinks() {
+    // List to hold only available social links
+    List<Widget> socialButtons = [];
+
+    // Only add buttons for links that exist
+    if (widget.model.facebook != null && widget.model.facebook!.isNotEmpty) {
+      socialButtons.add(_buildSocialButton(
+        icon: Icons.facebook,
+        url: widget.model.facebook,
+        backgroundColor: Color(0xFF1877F2),
+      ));
+    }
+
+    if (widget.model.twitter != null && widget.model.twitter!.isNotEmpty) {
+      socialButtons.add(_buildSocialButton(
+        // Use a custom X icon for Twitter
+        icon: Icons.close, // X icon for Twitter
+        isTwitter: true,
+        url: widget.model.twitter,
+        backgroundColor: Color(0xFF000000),
+      ));
+    }
+
+    if (widget.model.instagram != null && widget.model.instagram!.isNotEmpty) {
+      socialButtons.add(_buildSocialButton(
+        // Use a proper Instagram icon
+        icon: Icons.camera_alt,
+        isInstagram: true,
+        url: widget.model.instagram,
+        backgroundColor: Color(0xFFE1306C),
+      ));
+    }
+
+    if (widget.model.tiktok != null && widget.model.tiktok!.isNotEmpty) {
+      socialButtons.add(_buildSocialButton(
+        icon: Icons.music_note,
+        url: widget.model.tiktok,
+        backgroundColor: Color(0xFF000000),
+      ));
+    }
+
+    // If no social links, return an empty container
+    if (socialButtons.isEmpty) {
+      return Container();
+    }
+
+    // Return row of social buttons
+    return Center(
+      child: Wrap(
+        spacing: 20,
+        runSpacing: 10,
+        children: socialButtons,
+      ),
+    );
+  }
+
+  // Social media button
+  Widget _buildSocialButton({
+    IconData? icon,
+    String? url,
+    required Color backgroundColor,
+    bool isTwitter = false,
+    bool isInstagram = false,
+  }) {
+    return InkWell(
+      onTap: () => _launchURL(url!),
+      child: Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: isTwitter
+              ?
+              // Custom X logo for Twitter
+              Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 24,
+                  weight: 800, // Bold X for Twitter
+                )
+              : isInstagram
+                  ?
+                  // Custom Instagram logo
+                  ShaderMask(
+                      blendMode: BlendMode.srcIn,
+                      shaderCallback: (Rect bounds) {
+                        return LinearGradient(
+                          colors: [
+                            Color(0xFFFED373),
+                            Color(0xFFFF930F),
+                            Color(0xFFEF5E5E),
+                            Color(0xFFD5267B),
+                            Color(0xFF803CB6),
+                          ],
+                          begin: Alignment.topRight,
+                          end: Alignment.bottomLeft,
+                        ).createShader(bounds);
+                      },
+                      child: Icon(
+                        Icons.camera_alt,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    )
+                  :
+                  // Regular icon
+                  Icon(
+                      icon ?? Icons.link,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+        ),
+      ),
+    );
+  }
+
+  // Helper method to launch URLs
+  void _launchURL(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      print('Could not launch $url');
+    }
   }
 }
 

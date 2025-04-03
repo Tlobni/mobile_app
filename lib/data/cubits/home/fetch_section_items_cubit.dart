@@ -47,82 +47,98 @@ class FetchSectionItemsFail extends FetchSectionItemsState {
 }
 
 class FetchSectionItemsCubit extends Cubit<FetchSectionItemsState> {
-  FetchSectionItemsCubit() : super(FetchSectionItemsInitial());
+  final HomeRepository _homeRepository;
+  final List<ItemModel> _items = [];
+  bool _hasMore = true;
+  int _page = 1;
+  bool _isLoadingMore = false;
+  Map<String, dynamic>? _filter;
 
-  final HomeRepository _homeRepository = HomeRepository();
+  FetchSectionItemsCubit(this._homeRepository)
+      : super(FetchSectionItemsInitial());
+
+  void setFilter(Map<String, dynamic> filter) {
+    _filter = filter;
+  }
 
   void fetchSectionItem(
       {required int sectionId,
+      String? city,
+      int? areaId,
       String? country,
       String? state,
-      String? city,
-      int? areaId}) async {
+      String? endpoint}) async {
     try {
       emit(FetchSectionItemsInProgress());
-      DataOutput<ItemModel> result = await _homeRepository.fetchSectionItems(
-          page: 1,
-          sectionId: sectionId,
-          state: state,
-          country: country,
-          city: city,
-          areaId: areaId);
+      _page = 1;
+      _items.clear();
+      _hasMore = true;
 
-      emit(
-        FetchSectionItemsSuccess(
-          page: 1,
-          isLoadingMore: false,
-          loadingMoreError: false,
-          items: result.modelList,
-          total: result.total,
-        ),
-      );
+      DataOutput<ItemModel> result = await _homeRepository.fetchSectionItems(
+          page: _page,
+          sectionId: sectionId,
+          city: city,
+          areaId: areaId,
+          country: country,
+          state: state,
+          endpoint: endpoint,
+          filter: _filter);
+
+      _items.addAll(result.modelList);
+      _hasMore = _items.length < result.total;
+      emit(FetchSectionItemsSuccess(
+        items: _items,
+        page: _page,
+        total: result.total,
+        isLoadingMore: false,
+        loadingMoreError: false,
+      ));
     } catch (e) {
       emit(FetchSectionItemsFail(e));
     }
   }
 
-  Future<void> fetchSectionItemMore(
+  void fetchSectionItemMore(
       {required int sectionId,
+      String? city,
+      int? areaId,
       String? country,
       String? stateName,
-      String? city,
-      int? areaId}) async {
-    try {
-      if (state is FetchSectionItemsSuccess) {
-        if ((state as FetchSectionItemsSuccess).isLoadingMore) {
-          return;
-        }
-        emit((state as FetchSectionItemsSuccess).copyWith(isLoadingMore: true));
-        DataOutput<ItemModel> result = await _homeRepository.fetchSectionItems(
-            page: (state as FetchSectionItemsSuccess).page + 1,
-            sectionId: sectionId,
-            state: stateName,
-            country: country,
-            city: city,
-            areaId: areaId);
+      String? endpoint}) async {
+    if (!_hasMore || _isLoadingMore) return;
 
-        FetchSectionItemsSuccess itemModelState =
-            (state as FetchSectionItemsSuccess);
-        itemModelState.items.addAll(result.modelList);
-        emit(FetchSectionItemsSuccess(
-            isLoadingMore: false,
-            loadingMoreError: false,
-            items: itemModelState.items,
-            page: (state as FetchSectionItemsSuccess).page + 1,
-            total: result.total));
-      }
+    try {
+      _isLoadingMore = true;
+      _page++;
+
+      DataOutput<ItemModel> result = await _homeRepository.fetchSectionItems(
+          page: _page,
+          sectionId: sectionId,
+          city: city,
+          areaId: areaId,
+          country: country,
+          state: stateName,
+          endpoint: endpoint,
+          filter: _filter);
+
+      _items.addAll(result.modelList);
+      _hasMore = _items.length < result.total;
+      emit(FetchSectionItemsSuccess(
+        items: _items,
+        page: _page,
+        total: result.total,
+        isLoadingMore: false,
+        loadingMoreError: false,
+      ));
     } catch (e) {
-      emit((state as FetchSectionItemsSuccess)
-          .copyWith(isLoadingMore: false, loadingMoreError: true));
+      emit(FetchSectionItemsFail(e));
+    } finally {
+      _isLoadingMore = false;
     }
   }
 
   bool hasMoreData() {
-    if (state is FetchSectionItemsSuccess) {
-      return (state as FetchSectionItemsSuccess).items.length <
-          (state as FetchSectionItemsSuccess).total;
-    }
-    return false;
+    return _hasMore;
   }
 
   FetchSectionItemsState? fromJson(Map<String, dynamic> json) {

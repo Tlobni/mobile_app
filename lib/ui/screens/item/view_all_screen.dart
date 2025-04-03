@@ -19,18 +19,22 @@ import 'package:tlobni/ui/screens/widgets/shimmerLoadingContainer.dart';
 class SectionItemsScreen extends StatefulWidget {
   final String title;
   final int sectionId;
+  final String? endpoint;
 
   const SectionItemsScreen({
     super.key,
     required this.title,
     required this.sectionId,
+    this.endpoint,
   });
 
   static Route route(RouteSettings routeSettings) {
     Map arguments = routeSettings.arguments as Map;
     return BlurredRouter(
       builder: (_) => SectionItemsScreen(
-          title: arguments['title'], sectionId: arguments['sectionId']),
+          title: arguments['title'],
+          sectionId: arguments['sectionId'],
+          endpoint: arguments['endpoint']),
     );
   }
 
@@ -51,7 +55,8 @@ class _SectionItemsScreenState extends State<SectionItemsScreen> {
                 city: HiveUtils.getCityName(),
                 areaId: HiveUtils.getAreaId(),
                 country: HiveUtils.getCountryName(),
-                stateName: HiveUtils.getStateName());
+                stateName: HiveUtils.getStateName(),
+                endpoint: widget.endpoint);
           }
         }
       },
@@ -70,7 +75,8 @@ class _SectionItemsScreenState extends State<SectionItemsScreen> {
         city: HiveUtils.getCityName(),
         areaId: HiveUtils.getAreaId(),
         country: HiveUtils.getCountryName(),
-        state: HiveUtils.getStateName());
+        state: HiveUtils.getStateName(),
+        endpoint: widget.endpoint);
   }
 
   @override

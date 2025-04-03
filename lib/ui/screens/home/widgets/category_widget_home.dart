@@ -30,61 +30,81 @@ class CategoryWidgetHome extends StatelessWidget {
           if (serviceCategories.isNotEmpty) {
             return Padding(
               padding: const EdgeInsets.only(top: 12),
-              child: SizedBox(
-                width: context.screenWidth,
-                height: 103,
-                child: ListView.separated(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: sidePadding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: sidePadding),
+                    child: Text(
+                      "Categories",
+                      style: TextStyle(
+                        fontSize: context.font.large,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
-                  shrinkWrap: true,
-                  scrollDirection: Axis.horizontal,
-                  itemBuilder: (context, index) {
-                    if (serviceCategories.length > 10 &&
-                        index == serviceCategories.length) {
-                      return moreCategory(context);
-                    } else {
-                      return CategoryHomeCard(
-                        title: serviceCategories[index].name!,
-                        url: serviceCategories[index].url!,
-                        onTap: () {
-                          if (serviceCategories[index].children!.isNotEmpty) {
-                            Navigator.pushNamed(
-                                context, Routes.subCategoryScreen,
-                                arguments: {
-                                  "categoryList":
-                                      serviceCategories[index].children,
-                                  "catName": serviceCategories[index].name,
-                                  "catId": serviceCategories[index].id,
-                                  "categoryIds": [
-                                    serviceCategories[index].id.toString()
-                                  ]
-                                });
-                          } else {
-                            Navigator.pushNamed(context, Routes.itemsList,
-                                arguments: {
-                                  'catID':
-                                      serviceCategories[index].id.toString(),
-                                  'catName': serviceCategories[index].name,
-                                  "categoryIds": [
-                                    serviceCategories[index].id.toString()
-                                  ]
-                                });
-                          }
-                        },
-                      );
-                    }
-                  },
-                  itemCount: serviceCategories.length > 10
-                      ? serviceCategories.length + 1
-                      : serviceCategories.length,
-                  separatorBuilder: (context, index) {
-                    return const SizedBox(
-                      width: 12,
-                    );
-                  },
-                ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: context.screenWidth,
+                    height: 103,
+                    child: ListView.separated(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: sidePadding,
+                      ),
+                      shrinkWrap: true,
+                      scrollDirection: Axis.horizontal,
+                      itemBuilder: (context, index) {
+                        if (serviceCategories.length > 10 &&
+                            index == serviceCategories.length) {
+                          return moreCategory(context);
+                        } else {
+                          return CategoryHomeCard(
+                            title: serviceCategories[index].name!,
+                            url: serviceCategories[index].url!,
+                            onTap: () {
+                              if (serviceCategories[index].children != null &&
+                                  serviceCategories[index]
+                                      .children!
+                                      .isNotEmpty) {
+                                Navigator.pushNamed(
+                                    context, Routes.subCategoryScreen,
+                                    arguments: {
+                                      "categoryList":
+                                          serviceCategories[index].children,
+                                      "catName": serviceCategories[index].name,
+                                      "catId": serviceCategories[index].id,
+                                      "categoryIds": [
+                                        serviceCategories[index].id.toString()
+                                      ]
+                                    });
+                              } else {
+                                Navigator.pushNamed(context, Routes.itemsList,
+                                    arguments: {
+                                      'catID': serviceCategories[index]
+                                          .id
+                                          .toString(),
+                                      'catName': serviceCategories[index].name,
+                                      "categoryIds": [
+                                        serviceCategories[index].id.toString()
+                                      ]
+                                    });
+                              }
+                            },
+                          );
+                        }
+                      },
+                      itemCount: serviceCategories.length > 10
+                          ? serviceCategories.length + 1
+                          : serviceCategories.length,
+                      separatorBuilder: (context, index) {
+                        return const SizedBox(
+                          width: 12,
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             );
           } else {
@@ -115,7 +135,8 @@ class CategoryWidgetHome extends StatelessWidget {
         onTap: () {
           Navigator.pushNamed(context, Routes.categories, arguments: {
             "from": Routes.home,
-            "categoryType": currentType, // Pass the current category type
+            "categoryType": CategoryType
+                .serviceExperience, // Always pass service_experience type
           }).then(
             (dynamic value) {
               if (value != null) {

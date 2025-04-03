@@ -34,12 +34,23 @@ class FetchItemFromSlugCubit extends Cubit<FetchItemFromSlugState> {
       if (models.modelList.isNotEmpty) {
         emit(FetchItemFromSlugSuccess(item: models.modelList.first));
       } else {
-        emit(FetchItemFromSlugFailure(errorMessage: "Item not found"));
+        log('No items found for slug: $slug');
+        emit(FetchItemFromSlugFailure(errorMessage: "item-not-found"));
       }
     } on Exception catch (e, stack) {
-      log(e.toString(), name: 'fetchItemFromSlug');
+      log('Error in fetchItemFromSlug: ${e.toString()}',
+          name: 'fetchItemFromSlug');
       log('$stack', name: 'fetchItemFromSlug');
-      emit(FetchItemFromSlugFailure(errorMessage: e.toString()));
+
+      // Special handling for common network errors
+      String errorMsg = e.toString();
+      if (errorMsg.contains("no-internet")) {
+        emit(FetchItemFromSlugFailure(errorMessage: "no-internet"));
+      } else if (errorMsg.contains("session-expired")) {
+        emit(FetchItemFromSlugFailure(errorMessage: "session-expired"));
+      } else {
+        emit(FetchItemFromSlugFailure(errorMessage: errorMsg));
+      }
     }
   }
 }

@@ -152,6 +152,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
   void initState() {
     super.initState();
     if (widget.model != null) {
+      model = widget.model!;
       initVariables(widget.model!);
 
       // Immediately try to fetch reviews if the item ID is available
@@ -284,6 +285,17 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
           if (state is FetchItemFromSlugSuccess) {
             log('success');
             initVariables(state.item);
+          } else if (state is FetchItemFromSlugFailure) {
+            // Only show error message if it's not a refresh operation
+            // or if it's a significant error like no internet
+            if (state.errorMessage.contains("no-internet")) {
+              HelperUtils.showSnackBarMessage(
+                  context, "noInternet".translate(context));
+            } else if (!state.errorMessage.contains("unexpected-error") &&
+                !state.errorMessage.contains("session-expired")) {
+              // Don't show generic errors during refresh operations
+              log("Error ignored during refresh: ${state.errorMessage}");
+            }
           }
         }, builder: (context, state) {
           if (state is FetchItemFromSlugInitial && widget.slug != null) {
@@ -303,9 +315,35 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                 child: UiUtils.progress(),
               ),
             );
-          } else if (state is FetchItemFromSlugFailure) {
-            log('failure');
-            return SomethingWentWrong();
+          } else if (state is FetchItemFromSlugFailure &&
+              widget.model == null) {
+            // Only show error screen if we don't have a model to display
+            return Scaffold(
+              appBar: UiUtils.buildAppBar(
+                context,
+                backgroundColor: context.color.secondaryDetailsColor,
+                showBackButton: true,
+              ),
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SomethingWentWrong(),
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (widget.slug != null) {
+                          context
+                              .read<FetchItemFromSlugCubit>()
+                              .fetchItemFromSlug(slug: widget.slug!);
+                        }
+                      },
+                      child: CustomText("retryBtnLbl".translate(context)),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
           return BlocListener<MakeAnOfferItemCubit, MakeAnOfferItemState>(
             listener: (context, state) {
@@ -480,83 +518,141 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   child: bottomButtonWidget()),
-              body: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(13.0, 0.0, 13.0, 13.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      setImageViewer(),
-                      if (isAddedByMe) setLikesAndViewsCount(),
-                      Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: CustomText(
-                            model.name!,
-                            color: context.color.textDefaultColor,
-                            fontSize: context.font.large,
-                            maxLines: 2,
-                          )),
-                      setPriceAndStatus(),
-                      if (model.specialTags != null || model.priceType != null)
-                        setSpecialTagsAndPriceType(),
-                      if (isAddedByMe) setRejectedReason(),
-                      if (model.address != null) setAddress(isDate: true),
-                      const SizedBox(
-                        height: 10,
-                      ),
-                      if (Constant.isGoogleBannerAdsEnabled == "1") ...[
-                        Container(
-                          alignment: AlignmentDirectional.center,
-                          child:
-                              AdBannerWidget(), // Custom widget for banner ad
+              body: RefreshIndicator(
+                onRefresh: () async {
+                  // Create a completer to control when the refresh is considered done
+                  Completer<void> completer = Completer<void>();
+
+                  try {
+                    // Refresh the entire detail screen data only if we have a slug to work with
+                    if (widget.slug != null || model.slug != null) {
+                      String slugToUse = widget.slug ?? model.slug!;
+                      final cubit = context.read<FetchItemFromSlugCubit>();
+
+                      // Listen for state changes
+                      var subscription = cubit.stream.listen((state) {
+                        if (state is FetchItemFromSlugSuccess ||
+                            state is FetchItemFromSlugFailure) {
+                          if (!completer.isCompleted) {
+                            completer.complete();
+                          }
+                        }
+                      });
+
+                      // Start the refresh
+                      await cubit.fetchItemFromSlug(slug: slugToUse);
+
+                      // Clean up listener
+                      subscription.cancel();
+                    }
+
+                    // Always try to refresh related items even if the main item refresh fails
+                    if (categoryId != null) {
+                      context.read<FetchRelatedItemsCubit>().fetchRelatedItems(
+                          categoryId: categoryId!,
+                          city: HiveUtils.getCityName(),
+                          areaId: HiveUtils.getAreaId(),
+                          country: HiveUtils.getCountryName(),
+                          state: HiveUtils.getStateName());
+                    }
+
+                    // If we haven't completed yet, do so now
+                    if (!completer.isCompleted) {
+                      completer.complete();
+                    }
+                  } catch (e) {
+                    // Log the error but don't navigate away
+                    log('Error refreshing: $e');
+
+                    // Ensure completer is completed even on error
+                    if (!completer.isCompleted) {
+                      completer.complete();
+                    }
+                  }
+
+                  // Return the completer future to properly control the refresh indicator
+                  return completer.future;
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(13.0, 0.0, 13.0, 13.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        setImageViewer(),
+                        if (isAddedByMe) setLikesAndViewsCount(),
+                        Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: CustomText(
+                              model.name!,
+                              color: context.color.textDefaultColor,
+                              fontSize: context.font.large,
+                              maxLines: 2,
+                            )),
+                        setPriceAndStatus(),
+                        if (model.specialTags != null ||
+                            model.priceType != null)
+                          setSpecialTagsAndPriceType(),
+                        if (isAddedByMe) setRejectedReason(),
+                        if (model.address != null) setAddress(isDate: true),
+                        const SizedBox(
+                          height: 10,
                         ),
-                      ],
-                      const SizedBox(
-                        height: 10,
-                      ),
-                      if (isAddedByMe)
-                        if (!model.isFeature!) createFeaturesAds(),
-                      if (model.customFields!.isNotEmpty) customFields(),
-                      //detailsContainer Widget
-                      //Dynamic Ads here
-                      Divider(
-                          thickness: 1,
-                          color:
-                              context.color.textDefaultColor.withOpacity(0.1)),
-                      setDescription(),
-                      Divider(
-                          thickness: 1,
-                          color:
-                              context.color.textDefaultColor.withOpacity(0.1)),
-                      if (!isAddedByMe && model.user != null)
-                        setSellerDetails(),
-
-                      // Show reviews for services and experiences
-                      if ((model.category != null &&
-                          (model.category!.type ==
-                                  CategoryType.serviceExperience ||
-                              model.itemType == "service" ||
-                              model.itemType == "experience")))
-                        buildServiceReviews(),
-
-                      //Dynamic Ads here
-                      if (Constant.isGoogleBannerAdsEnabled == "1") ...[
+                        if (Constant.isGoogleBannerAdsEnabled == "1") ...[
+                          Container(
+                            alignment: AlignmentDirectional.center,
+                            child:
+                                AdBannerWidget(), // Custom widget for banner ad
+                          ),
+                        ],
+                        const SizedBox(
+                          height: 10,
+                        ),
+                        if (isAddedByMe)
+                          if (!(model.isFeature ?? false)) createFeaturesAds(),
+                        if (model.customFields?.isNotEmpty ?? false)
+                          customFields(),
+                        //detailsContainer Widget
+                        //Dynamic Ads here
                         Divider(
                             thickness: 1,
                             color: context.color.textDefaultColor
                                 .withOpacity(0.1)),
-                        Container(
-                          alignment: AlignmentDirectional.center,
-                          child:
-                              AdBannerWidget(), // Custom widget for banner ad
-                        ),
-                      ],
+                        setDescription(),
+                        Divider(
+                            thickness: 1,
+                            color: context.color.textDefaultColor
+                                .withOpacity(0.1)),
+                        if (!isAddedByMe && model.user != null)
+                          setSellerDetails(),
 
-                      if (!isAddedByMe) reportedAdsWidget(),
-                      if (!isAddedByMe) relatedAds(),
-                      // const SizedBox(height: 15),
-                    ],
+                        // Show reviews for services and experiences
+                        if ((model.category != null &&
+                            (model.category!.type ==
+                                    CategoryType.serviceExperience ||
+                                model.itemType == "service" ||
+                                model.itemType == "experience")))
+                          buildServiceReviews(),
+
+                        //Dynamic Ads here
+                        if (Constant.isGoogleBannerAdsEnabled == "1") ...[
+                          Divider(
+                              thickness: 1,
+                              color: context.color.textDefaultColor
+                                  .withOpacity(0.1)),
+                          Container(
+                            alignment: AlignmentDirectional.center,
+                            child:
+                                AdBannerWidget(), // Custom widget for banner ad
+                          ),
+                        ],
+
+                        if (!isAddedByMe) reportedAdsWidget(),
+                        if (!isAddedByMe) relatedAds(),
+                        // const SizedBox(height: 15),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -587,82 +683,100 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
   Widget relatedAds() {
     return BlocBuilder<FetchRelatedItemsCubit, FetchRelatedItemsState>(
         builder: (context, state) {
-      if (state is FetchRelatedItemsInProgress) {
-        return relatedItemShimmer();
-      }
-      if (state is FetchRelatedItemsFailure) {
-        if (state.errorMessage is ApiException) {
-          if (state.errorMessage == "no-internet") {
-            return NoInternet(
-              onRetry: () {
-                context.read<FetchRelatedItemsCubit>().fetchRelatedItems(
-                    categoryId: categoryId!,
-                    city: HiveUtils.getCityName(),
-                    areaId: HiveUtils.getAreaId(),
-                    country: HiveUtils.getCountryName(),
-                    state: HiveUtils.getStateName());
-              },
-            );
-          }
-        }
-
-        return const SomethingWentWrong();
-      }
-
-      if (state is FetchRelatedItemsSuccess) {
-        if (state.itemModel.isEmpty || state.itemModel.length == 1) {
-          return SizedBox.shrink();
-        }
-
-        return buildRelatedListWidget(state);
-      }
-
-      return const SizedBox.square();
+      return RefreshIndicator(
+        onRefresh: () async {
+          context.read<FetchRelatedItemsCubit>().fetchRelatedItems(
+              categoryId: categoryId!,
+              city: HiveUtils.getCityName(),
+              areaId: HiveUtils.getAreaId(),
+              country: HiveUtils.getCountryName(),
+              state: HiveUtils.getStateName());
+        },
+        child: SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              if (state is FetchRelatedItemsInProgress)
+                relatedItemShimmer()
+              else if (state is FetchRelatedItemsFailure)
+                _buildFailureWidget(state)
+              else
+                _buildSuccessWidget(state),
+            ],
+          ),
+        ),
+      );
     });
   }
 
-  Widget buildRelatedListWidget(FetchRelatedItemsSuccess state) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 10.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CustomText(
-            "relatedAds".translate(context),
-            fontSize: context.font.large,
-            fontWeight: FontWeight.w600,
-            maxLines: 1,
-          ),
-          SizedBox(
-            height: 15,
-          ),
-          GridListAdapter(
-            type: ListUiType.List,
-            height: MediaQuery.of(context).size.height / 3.5,
-            controller: _pageScrollController,
-            listAxis: Axis.horizontal,
-            listSeparator: (BuildContext p0, int p1) => const SizedBox(
-              width: 14,
-            ),
-            isNotSidePadding: true,
-            builder: (context, int index, bool) {
-              ItemModel? item = state.itemModel[index];
+  Widget _buildFailureWidget(FetchRelatedItemsFailure state) {
+    if (state.errorMessage is ApiException) {
+      if (state.errorMessage == "no-internet") {
+        return NoInternet(
+          onRetry: () {
+            context.read<FetchRelatedItemsCubit>().fetchRelatedItems(
+                categoryId: categoryId!,
+                city: HiveUtils.getCityName(),
+                areaId: HiveUtils.getAreaId(),
+                country: HiveUtils.getCountryName(),
+                state: HiveUtils.getStateName());
+          },
+        );
+      }
+    }
+    return const SomethingWentWrong();
+  }
 
-              if (item.id != model.id) {
-                return ItemCard(
-                  item: item,
-                  width: 162,
-                );
-              } else {
-                return SizedBox.shrink();
-              }
-            },
-            total: state.itemModel.length,
-          ),
-        ],
-      ),
-    );
+  Widget _buildSuccessWidget(FetchRelatedItemsState state) {
+    if (state is FetchRelatedItemsSuccess) {
+      if (state.itemModel.isEmpty || state.itemModel.length == 1) {
+        return SizedBox.shrink();
+      }
+
+      return Padding(
+        padding: const EdgeInsets.only(top: 10.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CustomText(
+              "relatedAds".translate(context),
+              fontSize: context.font.large,
+              fontWeight: FontWeight.w600,
+              maxLines: 1,
+            ),
+            SizedBox(
+              height: 15,
+            ),
+            GridListAdapter(
+              type: ListUiType.List,
+              height: MediaQuery.of(context).size.height / 3.5,
+              controller: _pageScrollController,
+              listAxis: Axis.horizontal,
+              listSeparator: (BuildContext p0, int p1) => const SizedBox(
+                width: 14,
+              ),
+              isNotSidePadding: true,
+              builder: (context, int index, bool) {
+                ItemModel? item = state.itemModel[index];
+
+                if (item.id != model.id) {
+                  return ItemCard(
+                    item: item,
+                    width: 162,
+                  );
+                } else {
+                  return SizedBox.shrink();
+                }
+              },
+              total: state.itemModel.length,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return const SizedBox.square();
   }
 
   Widget relatedItemShimmer() {
@@ -1411,18 +1525,6 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                   }
                 });
               }, contextColor.secondaryColor, contextColor.territoryColor),
-            ),
-            SizedBox(width: 10),
-            Expanded(
-              child: _buildButton("soldOut".translate(context), () async {
-                Navigator.pushNamed(context, Routes.soldOutBoughtScreen,
-                    arguments: {
-                      "itemId": model.id,
-                      "price": model.price,
-                      "itemName": model.name,
-                      "itemImage": model.image
-                    });
-              }, null, null),
             ),
           ],
         );

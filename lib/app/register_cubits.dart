@@ -68,6 +68,7 @@ import 'package:tlobni/data/cubits/system/notification_cubit.dart';
 import 'package:tlobni/data/cubits/system/user_details.dart';
 import 'package:tlobni/data/cubits/utility/item_edit_global.dart';
 import 'package:tlobni/data/repositories/favourites_repository.dart';
+import 'package:tlobni/data/repositories/home/home_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nested/nested.dart';
 
@@ -106,7 +107,7 @@ class RegisterCubits {
     BlocProvider(create: (context) => FetchHomeAllItemsCubit()),
     BlocProvider(create: (context) => DeleteItemCubit()),
     BlocProvider(create: (context) => ItemTotalClickCubit()),
-    BlocProvider(create: (context) => FetchSectionItemsCubit()),
+    BlocProvider(create: (context) => FetchSectionItemsCubit(HomeRepository())),
     BlocProvider(create: (context) => ItemReportCubit()),
     BlocProvider(create: (context) => FetchRelatedItemsCubit()),
     BlocProvider(create: (context) => FetchPopularItemsCubit()),

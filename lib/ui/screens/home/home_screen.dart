@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:async';
 import 'dart:developer';
+import 'dart:convert';
 
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/category/fetch_category_cubit.dart';
@@ -30,8 +31,10 @@ import 'package:tlobni/ui/screens/home/widgets/location_widget.dart';
 import 'package:tlobni/ui/screens/home/widgets/location_autocomplete_header.dart';
 import 'package:tlobni/ui/screens/widgets/errors/no_internet.dart';
 import 'package:tlobni/ui/screens/widgets/errors/something_went_wrong.dart';
+import 'package:tlobni/ui/screens/widgets/promoted_widget.dart';
 import 'package:tlobni/ui/screens/widgets/shimmerLoadingContainer.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/custom_text.dart';
 //import 'package:uni_links/uni_links.dart';
 
 import 'package:tlobni/utils/api.dart';
@@ -46,6 +49,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:tlobni/data/model/category_model.dart';
+import 'package:tlobni/data/cubits/favorite/manage_fav_cubit.dart';
+import 'package:tlobni/data/repositories/favourites_repository.dart';
 
 const double sidePadding = 10;
 
@@ -83,6 +88,29 @@ class HomeScreenState extends State<HomeScreen>
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       GlobalKey<RefreshIndicatorState>();
 
+  // Add these new properties
+  final List<ItemModel> _experienceItems = [];
+  bool _isLoadingExperiences = true;
+  String? _experienceError;
+
+  final List<ItemModel> _featuredItems = [];
+  bool _isLoadingFeatured = true;
+  String? _featuredError;
+
+  // Add these properties for women exclusive and corporate package items
+  final List<ItemModel> _womenExclusiveItems = [];
+  bool _isLoadingWomenExclusive = true;
+  String? _womenExclusiveError;
+
+  final List<ItemModel> _corporatePackageItems = [];
+  bool _isLoadingCorporatePackages = true;
+  String? _corporatePackagesError;
+
+  // Add properties for newest items
+  final List<ItemModel> _newestItems = [];
+  bool _isLoadingNewestItems = true;
+  String? _newestItemsError;
+
   @override
   void initState() {
     super.initState();
@@ -111,6 +139,13 @@ class HomeScreenState extends State<HomeScreen>
         latitude: HiveUtils.getLatitude(),
         country: HiveUtils.getCountryName(),
         state: HiveUtils.getStateName());
+
+    // Fetch items for each specialized section
+    _fetchExperienceItems();
+    _fetchFeaturedItems();
+    _fetchWomenExclusiveItems();
+    _fetchCorporatePackageItems();
+    _fetchNewestItems();
 
     context.read<FavoriteCubit>().getFavorite();
     //fetchApiKeys();
@@ -198,8 +233,8 @@ class HomeScreenState extends State<HomeScreen>
               child: Stack(
                 children: [
                   IconButton(
-                    icon: UiUtils.getSvg(
-                      AppIcons.notification,
+                    icon: Icon(
+                      Icons.notifications_outlined,
                       color: context.color.textDefaultColor,
                     ),
                     onPressed: () {
@@ -248,11 +283,9 @@ class HomeScreenState extends State<HomeScreen>
         backgroundColor: context.color.primaryColor,
         body: RefreshIndicator(
           key: _refreshIndicatorKey,
-          color: context.color.territoryColor,
           onRefresh: () async {
-            context.read<SliderCubit>().fetchSlider(
-                  context,
-                );
+            // Fetch all data
+            context.read<SliderCubit>().fetchSlider(context);
             context.read<FetchCategoryCubit>().fetchCategories(
                   type: CategoryType.serviceExperience,
                 );
@@ -269,61 +302,50 @@ class HomeScreenState extends State<HomeScreen>
                 latitude: HiveUtils.getLatitude(),
                 country: HiveUtils.getCountryName(),
                 state: HiveUtils.getStateName());
+
+            // Refresh all specialized sections
+            _fetchExperienceItems();
+            _fetchFeaturedItems();
+            _fetchWomenExclusiveItems();
+            _fetchCorporatePackageItems();
+            _fetchNewestItems();
+
+            // Also refresh the favorites
+            context.read<FavoriteCubit>().getFavorite();
           },
           child: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(),
             controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                BlocBuilder<FetchHomeScreenCubit, FetchHomeScreenState>(
-                  builder: (context, state) {
-                    if (state is FetchHomeScreenInProgress) {
-                      return shimmerEffect();
-                    }
-                    if (state is FetchHomeScreenSuccess) {
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const HomeSearchField(),
-                          const SliderWidget(),
-                          const CategoryWidgetHome(),
-                          ...List.generate(state.sections.length, (index) {
-                            HomeScreenSection section = state.sections[index];
-                            if (state.sections.isNotEmpty) {
-                              return HomeSectionsAdapter(
-                                section: section,
-                              );
-                            } else {
-                              return SizedBox.shrink();
-                            }
-                          }),
-                          if (state.sections.isNotEmpty &&
-                              Constant.isGoogleBannerAdsEnabled == "1") ...[
-                            Container(
-                              padding: EdgeInsets.only(top: 5),
-                              margin: EdgeInsets.symmetric(vertical: 10),
-                              child:
-                                  AdBannerWidget(), // Custom widget for banner ad
-                            )
-                          ] else ...[
-                            SizedBox(
-                              height: 10,
-                            )
-                          ],
-                        ],
-                      );
-                    }
+                // Search Bar
+                const HomeSearchField(),
 
-                    if (state is FetchHomeScreenFail) {
-                      print('hey bro ${state.error}');
-                    }
-                    return SizedBox.shrink();
-                  },
-                ),
-                const AllItemsWidget(),
-                const SizedBox(
-                  height: 30,
-                )
+                // Exclusive Experiences Section
+                _buildSectionHeader(context, "Exclusive Experiences"),
+                _buildExclusiveExperiences(context),
+
+                // Categories
+                const CategoryWidgetHome(),
+
+                // Newest Listings Section
+                _buildSectionHeader(context, "Newest Listings"),
+                _buildNewestListings(context),
+
+                // Featured Experts & Businesses
+                _buildSectionHeader(context, "Featured"),
+                _buildFeaturedExperts(context),
+
+                // Women-Exclusive Services
+                _buildSectionHeader(context, "Women-Exclusive Services"),
+                _buildWomenExclusiveServices(context),
+
+                // Corporate & Business Packages
+                _buildSectionHeader(context, "Corporate & Business Packages"),
+                _buildCorporatePackages(context),
+
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -332,189 +354,901 @@ class HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget shimmerEffect() {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: 24,
-          horizontal: defaultPadding,
-        ),
-        child: Column(
-          children: [
-            ClipRRect(
-              clipBehavior: Clip.antiAliasWithSaveLayer,
-              borderRadius: BorderRadius.all(Radius.circular(10)),
-              child: CustomShimmer(height: 52, width: double.maxFinite),
-            ),
-            SizedBox(
-              height: 12,
-            ),
-            ClipRRect(
-              clipBehavior: Clip.antiAliasWithSaveLayer,
-              borderRadius: BorderRadius.all(Radius.circular(10)),
-              child: CustomShimmer(height: 170, width: double.maxFinite),
-            ),
-            SizedBox(
-              height: 12,
-            ),
-            Container(
-              height: 100,
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: 10,
-                physics: NeverScrollableScrollPhysics(),
-                scrollDirection: Axis.horizontal,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: index == 0 ? 0 : 8.0),
-                    child: const Column(
-                      children: [
-                        ClipRRect(
-                          clipBehavior: Clip.antiAliasWithSaveLayer,
-                          borderRadius: BorderRadius.all(Radius.circular(10)),
-                          child: CustomShimmer(
-                            height: 70,
-                            width: 66,
-                          ),
-                        ),
-                        const SizedBox(
-                          height: 5,
-                        ),
-                        CustomShimmer(
-                          height: 10,
-                          width: 48,
-                        ),
-                        const SizedBox(
-                          height: 2,
-                        ),
-                        const CustomShimmer(
-                          height: 10,
-                          width: 60,
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(
-              height: 18,
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                CustomShimmer(
-                  height: 20,
-                  width: 150,
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: EdgeInsetsDirectional.only(
+          top: 18, bottom: 12, start: sidePadding, end: sidePadding),
+      child: Row(
+        children: [
+          Expanded(
+              flex: 4,
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: context.font.large,
+                  fontWeight: FontWeight.w600,
                 ),
-                /* CustomShimmer(
-                  height: 20,
-                  width: 50,
-                ),*/
-              ],
-            ),
-            Container(
-              height: 214,
-              margin: EdgeInsets.only(top: 10),
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: 5,
-                physics: NeverScrollableScrollPhysics(),
-                scrollDirection: Axis.horizontal,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: index == 0 ? 0 : 10.0),
-                    child: const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ClipRRect(
-                          clipBehavior: Clip.antiAliasWithSaveLayer,
-                          borderRadius: BorderRadius.all(Radius.circular(10)),
-                          child: CustomShimmer(
-                            height: 147,
-                            width: 250,
-                          ),
-                        ),
-                        const SizedBox(
-                          height: 8,
-                        ),
-                        CustomShimmer(
-                          height: 15,
-                          width: 90,
-                        ),
-                        const SizedBox(
-                          height: 8,
-                        ),
-                        const CustomShimmer(
-                          height: 14,
-                          width: 230,
-                        ),
-                        const SizedBox(
-                          height: 8,
-                        ),
-                        const CustomShimmer(
-                          height: 14,
-                          width: 200,
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                maxLines: 1,
+              )),
+          const Spacer(),
+          GestureDetector(
+            onTap: () {
+              // Navigate to the correct "see all" screen based on the section title
+              if (title == "Exclusive Experiences") {
+                Navigator.pushNamed(context, Routes.sectionWiseItemsScreen,
+                    arguments: {
+                      "title": "Exclusive Experiences",
+                      "sectionId": 1,
+                      "endpoint": Api.getExperienceItemsApi,
+                      "filter": {"post_type": "experience"},
+                    });
+              } else if (title == "Featured") {
+                Navigator.pushNamed(context, Routes.sectionWiseItemsScreen,
+                    arguments: {
+                      "title": "Featured",
+                      "sectionId": 2,
+                      "endpoint": Api.featuredItemsApi,
+                      "filter": {},
+                    });
+              } else if (title == "Women-Exclusive Services") {
+                Navigator.pushNamed(context, Routes.sectionWiseItemsScreen,
+                    arguments: {
+                      "title": "Women-Exclusive Services",
+                      "sectionId": 3,
+                      "endpoint": Api.getExclusiveWomenItemsApi,
+                      "filter": {"special_tag": "exclusive_women"},
+                    });
+              } else if (title == "Corporate & Business Packages") {
+                Navigator.pushNamed(context, Routes.sectionWiseItemsScreen,
+                    arguments: {
+                      "title": "Corporate & Business Packages",
+                      "sectionId": 4,
+                      "endpoint": Api.getCorporatePackageItemsApi,
+                      "filter": {"special_tag": "corporate_package"},
+                    });
+              } else if (title == "Newest Listings") {
+                Navigator.pushNamed(context, Routes.sectionWiseItemsScreen,
+                    arguments: {
+                      "title": "Newest Listings",
+                      "sectionId": 5,
+                      "endpoint": Api.getNewestItemsApi,
+                      "filter": {"sort_by": "new-to-old"},
+                    });
+              } else {
+                // Default behavior for other sections
+                Navigator.pushNamed(context, Routes.sectionWiseItemsScreen,
+                    arguments: {
+                      "title": title,
+                      "sectionId": 6,
+                      "filter": {"sort_by": "new-to-old"},
+                    });
+              }
+            },
+            child: Text(
+              "See All",
+              style: TextStyle(
+                fontSize: context.font.small,
+                fontWeight: FontWeight.w600,
+                color: context.color.textLightColor,
               ),
             ),
-            Container(
-              padding: EdgeInsets.only(top: 20),
-              child: GridView.builder(
-                shrinkWrap: true,
-                itemCount: 16,
-                physics: NeverScrollableScrollPhysics(),
-                itemBuilder: (context, index) {
-                  return const Column(
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNewestListings(BuildContext context) {
+    if (_isLoadingNewestItems) {
+      return SizedBox(
+        height: 210,
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+          scrollDirection: Axis.horizontal,
+          itemCount: 4,
+          separatorBuilder: (context, index) => const SizedBox(width: 14),
+          itemBuilder: (context, index) {
+            return CustomShimmer(
+              width: 170,
+              height: 210,
+              borderRadius: 10,
+            );
+          },
+        ),
+      );
+    }
+
+    if (_newestItemsError != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+        child: Text("Failed to load newest items: $_newestItemsError"),
+      );
+    }
+
+    if (_newestItems.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+        child: Text("No newest items found"),
+      );
+    }
+
+    return SizedBox(
+      height: 210,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+        scrollDirection: Axis.horizontal,
+        itemCount: _newestItems.length > 3 ? 3 : _newestItems.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 14),
+        itemBuilder: (context, index) {
+          final item = _newestItems[index];
+          return GestureDetector(
+            onTap: () {
+              Navigator.pushNamed(context, Routes.adDetailsScreen, arguments: {
+                "model": item,
+              });
+            },
+            child: Container(
+              width: 170,
+              decoration: BoxDecoration(
+                border: Border.all(color: context.color.borderColor.darken(50)),
+                color: context.color.secondaryColor,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Stack(
+                children: [
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ClipRRect(
-                        clipBehavior: Clip.antiAliasWithSaveLayer,
-                        borderRadius: BorderRadius.all(Radius.circular(10)),
-                        child: CustomShimmer(
-                          height: 147,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(10),
+                          topRight: Radius.circular(10),
+                        ),
+                        child: UiUtils.getImage(
+                          item.image ?? "",
+                          height: 120,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
                         ),
                       ),
-                      const SizedBox(
-                        height: 8,
-                      ),
-                      CustomShimmer(
-                        height: 15,
-                        width: 70,
-                      ),
-                      const SizedBox(
-                        height: 8,
-                      ),
-                      const CustomShimmer(
-                        height: 14,
-                      ),
-                      const SizedBox(
-                        height: 8,
-                      ),
-                      const CustomShimmer(
-                        height: 14,
-                        width: 130,
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "\$ ${item.price?.toStringAsFixed(2) ?? '0.00'}",
+                              style: TextStyle(
+                                fontSize: context.font.large,
+                                fontWeight: FontWeight.w700,
+                                color: context.color.territoryColor,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              item.name ?? "",
+                              style: TextStyle(
+                                fontSize: context.font.small * 1.2,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  size: 14,
+                                  color: context.color.textLightColor,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    item.address ?? "",
+                                    style: TextStyle(
+                                      fontSize: context.font.small,
+                                      color: context.color.textLightColor,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ],
-                  );
-                },
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  mainAxisExtent: 215,
-                  crossAxisCount: 2, // Single column grid
-                  mainAxisSpacing: 15.0,
-                  crossAxisSpacing: 15.0,
-                  // You may adjust this aspect ratio as needed
-                ),
+                  ),
+                  if (item.isFeature ?? false)
+                    PositionedDirectional(
+                      start: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: context.color.territoryColor,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          "Featured",
+                          style: TextStyle(
+                            fontSize: context.font.small * 0.8,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  PositionedDirectional(
+                    end: 8,
+                    bottom: 50,
+                    child: BlocBuilder<FavoriteCubit, FavoriteState>(
+                      builder: (context, state) {
+                        bool isLike = context
+                            .read<FavoriteCubit>()
+                            .isItemFavorite(item.id!);
+                        return GestureDetector(
+                          onTap: () {
+                            UiUtils.checkUser(
+                              context: context,
+                              onNotGuest: () {
+                                context
+                                    .read<UpdateFavoriteCubit>()
+                                    .setFavoriteItem(
+                                      item: item,
+                                      type: isLike ? 0 : 1,
+                                    );
+                              },
+                            );
+                          },
+                          child: Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: context.color.secondaryColor,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Icon(
+                                isLike ? Icons.favorite : Icons.favorite_border,
+                                size: 18,
+                                color: context.color.territoryColor,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFeaturedExperts(BuildContext context) {
+    if (_isLoadingFeatured) {
+      return SizedBox(
+        height: 210,
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+          scrollDirection: Axis.horizontal,
+          itemCount: 3,
+          separatorBuilder: (context, index) => const SizedBox(width: 14),
+          itemBuilder: (context, index) {
+            return CustomShimmer(
+              width: 170,
+              height: 210,
+              borderRadius: 10,
+            );
+          },
         ),
+      );
+    }
+
+    if (_featuredError != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+        child: Text("Failed to load featured items: $_featuredError"),
+      );
+    }
+
+    if (_featuredItems.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+        child: Text("No featured experts or businesses found"),
+      );
+    }
+
+    return SizedBox(
+      height: 210,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+        scrollDirection: Axis.horizontal,
+        itemCount: _featuredItems.length > 3 ? 3 : _featuredItems.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 14),
+        itemBuilder: (context, index) {
+          final item = _featuredItems[index];
+          return GestureDetector(
+            onTap: () {
+              Navigator.pushNamed(context, Routes.adDetailsScreen, arguments: {
+                "model": item,
+              });
+            },
+            child: Container(
+              width: 170,
+              decoration: BoxDecoration(
+                border: Border.all(color: context.color.borderColor.darken(50)),
+                color: context.color.secondaryColor,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Stack(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(10),
+                          topRight: Radius.circular(10),
+                        ),
+                        child: UiUtils.getImage(
+                          item.image ?? "",
+                          height: 120,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "\$ ${item.price?.toStringAsFixed(2) ?? '0.00'}",
+                              style: TextStyle(
+                                fontSize: context.font.large,
+                                fontWeight: FontWeight.w700,
+                                color: context.color.territoryColor,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              item.name ?? "Name",
+                              style: TextStyle(
+                                fontSize: context.font.small * 1.2,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  size: 14,
+                                  color: context.color.textLightColor,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    item.address ?? "",
+                                    style: TextStyle(
+                                      fontSize: context.font.small,
+                                      color: context.color.textLightColor,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (item.isFeature ?? false)
+                    PositionedDirectional(
+                      start: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: context.color.territoryColor,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          "Featured",
+                          style: TextStyle(
+                            fontSize: context.font.small * 0.8,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  PositionedDirectional(
+                    end: 8,
+                    bottom: 46,
+                    child: BlocBuilder<FavoriteCubit, FavoriteState>(
+                      builder: (context, state) {
+                        bool isLike = context
+                            .read<FavoriteCubit>()
+                            .isItemFavorite(item.id!);
+                        return GestureDetector(
+                          onTap: () {
+                            UiUtils.checkUser(
+                              context: context,
+                              onNotGuest: () {
+                                context
+                                    .read<UpdateFavoriteCubit>()
+                                    .setFavoriteItem(
+                                      item: item,
+                                      type: isLike ? 0 : 1,
+                                    );
+                              },
+                            );
+                          },
+                          child: Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: context.color.secondaryColor,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Icon(
+                                isLike ? Icons.favorite : Icons.favorite_border,
+                                size: 18,
+                                color: context.color.territoryColor,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildWomenExclusiveServices(BuildContext context) {
+    if (_isLoadingWomenExclusive) {
+      return SizedBox(
+        height: 210,
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+          scrollDirection: Axis.horizontal,
+          itemCount: 3,
+          separatorBuilder: (context, index) => const SizedBox(width: 14),
+          itemBuilder: (context, index) {
+            return CustomShimmer(
+              width: 170,
+              height: 210,
+              borderRadius: 10,
+            );
+          },
+        ),
+      );
+    }
+
+    if (_womenExclusiveError != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+        child: Text(
+            "Failed to load women-exclusive services: $_womenExclusiveError"),
+      );
+    }
+
+    if (_womenExclusiveItems.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+        child: Text("No women-exclusive services found"),
+      );
+    }
+
+    return SizedBox(
+      height: 210,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+        scrollDirection: Axis.horizontal,
+        itemCount:
+            _womenExclusiveItems.length > 3 ? 3 : _womenExclusiveItems.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 14),
+        itemBuilder: (context, index) {
+          final item = _womenExclusiveItems[index];
+          return GestureDetector(
+            onTap: () {
+              Navigator.pushNamed(context, Routes.adDetailsScreen, arguments: {
+                "model": item,
+              });
+            },
+            child: Container(
+              width: 170,
+              decoration: BoxDecoration(
+                border: Border.all(color: context.color.borderColor.darken(50)),
+                color: context.color.secondaryColor,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Stack(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(10),
+                          topRight: Radius.circular(10),
+                        ),
+                        child: UiUtils.getImage(
+                          item.image ?? "",
+                          height: 120,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "\$ ${item.price?.toStringAsFixed(2) ?? '0.00'}",
+                              style: TextStyle(
+                                fontSize: context.font.large,
+                                fontWeight: FontWeight.w700,
+                                color: context.color.territoryColor,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              item.name ?? "",
+                              style: TextStyle(
+                                fontSize: context.font.small * 1.2,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  size: 14,
+                                  color: context.color.textLightColor,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    item.address ?? "",
+                                    style: TextStyle(
+                                      fontSize: context.font.small,
+                                      color: context.color.textLightColor,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (item.isFeature ?? false)
+                    PositionedDirectional(
+                      start: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: context.color.territoryColor,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          "Featured",
+                          style: TextStyle(
+                            fontSize: context.font.small * 0.8,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  PositionedDirectional(
+                    end: 8,
+                    bottom: 45,
+                    child: BlocProvider(
+                      create: (context) =>
+                          UpdateFavoriteCubit(FavoriteRepository()),
+                      child: BlocBuilder<FavoriteCubit, FavoriteState>(
+                        builder: (context, state) {
+                          bool isLike = context
+                              .read<FavoriteCubit>()
+                              .isItemFavorite(item.id!);
+                          return GestureDetector(
+                            onTap: () {
+                              UiUtils.checkUser(
+                                context: context,
+                                onNotGuest: () {
+                                  context
+                                      .read<UpdateFavoriteCubit>()
+                                      .setFavoriteItem(
+                                        item: item,
+                                        type: isLike ? 0 : 1,
+                                      );
+                                },
+                              );
+                            },
+                            child: Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                color: context.color.secondaryColor,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  isLike
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  size: 18,
+                                  color: context.color.territoryColor,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCorporatePackages(BuildContext context) {
+    if (_isLoadingCorporatePackages) {
+      return SizedBox(
+        height: 210,
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+          scrollDirection: Axis.horizontal,
+          itemCount: 3,
+          separatorBuilder: (context, index) => const SizedBox(width: 14),
+          itemBuilder: (context, index) {
+            return CustomShimmer(
+              width: 170,
+              height: 210,
+              borderRadius: 10,
+            );
+          },
+        ),
+      );
+    }
+
+    if (_corporatePackagesError != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+        child:
+            Text("Failed to load corporate packages: $_corporatePackagesError"),
+      );
+    }
+
+    if (_corporatePackageItems.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+        child: Text("No corporate packages found"),
+      );
+    }
+
+    return SizedBox(
+      height: 210,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+        scrollDirection: Axis.horizontal,
+        itemCount: _corporatePackageItems.length > 3
+            ? 3
+            : _corporatePackageItems.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 14),
+        itemBuilder: (context, index) {
+          final item = _corporatePackageItems[index];
+          return GestureDetector(
+            onTap: () {
+              Navigator.pushNamed(context, Routes.adDetailsScreen, arguments: {
+                "model": item,
+              });
+            },
+            child: Container(
+              width: 170,
+              decoration: BoxDecoration(
+                border: Border.all(color: context.color.borderColor.darken(50)),
+                color: context.color.secondaryColor,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Stack(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(10),
+                          topRight: Radius.circular(10),
+                        ),
+                        child: UiUtils.getImage(
+                          item.image ?? "",
+                          height: 120,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "\$ ${item.price?.toStringAsFixed(2) ?? '0.00'}",
+                              style: TextStyle(
+                                fontSize: context.font.large,
+                                fontWeight: FontWeight.w700,
+                                color: context.color.territoryColor,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              item.name ?? "",
+                              style: TextStyle(
+                                fontSize: context.font.small * 1.2,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  size: 14,
+                                  color: context.color.textLightColor,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    item.address ?? "",
+                                    style: TextStyle(
+                                      fontSize: context.font.small,
+                                      color: context.color.textLightColor,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (item.isFeature ?? false)
+                    PositionedDirectional(
+                      start: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: context.color.territoryColor,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          "Featured",
+                          style: TextStyle(
+                            fontSize: context.font.small * 0.8,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  PositionedDirectional(
+                    end: 8,
+                    bottom: 45,
+                    child: BlocProvider(
+                      create: (context) =>
+                          UpdateFavoriteCubit(FavoriteRepository()),
+                      child: BlocBuilder<FavoriteCubit, FavoriteState>(
+                        builder: (context, state) {
+                          bool isLike = context
+                              .read<FavoriteCubit>()
+                              .isItemFavorite(item.id!);
+                          return GestureDetector(
+                            onTap: () {
+                              UiUtils.checkUser(
+                                context: context,
+                                onNotGuest: () {
+                                  context
+                                      .read<UpdateFavoriteCubit>()
+                                      .setFavoriteItem(
+                                        item: item,
+                                        type: isLike ? 0 : 1,
+                                      );
+                                },
+                              );
+                            },
+                            child: Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                color: context.color.secondaryColor,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  isLike
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  size: 18,
+                                  color: context.color.territoryColor,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -632,6 +1366,452 @@ class HomeScreenState extends State<HomeScreen>
     }
 
     return 0;
+  }
+
+  // Fetch items with post_type as experience
+  void _fetchExperienceItems() {
+    setState(() {
+      _isLoadingExperiences = true;
+      _experienceError = null;
+    });
+
+    Map<String, dynamic> parameters = {
+      "page": 1,
+      if (HiveUtils.getCityName() != null) 'city': HiveUtils.getCityName(),
+      if (HiveUtils.getAreaId() != null) 'area_id': HiveUtils.getAreaId(),
+      if (HiveUtils.getCountryName() != null)
+        'country': HiveUtils.getCountryName(),
+      if (HiveUtils.getStateName() != null) 'state': HiveUtils.getStateName(),
+    };
+
+    Api.get(url: Api.getExperienceItemsApi, queryParameters: parameters)
+        .then((response) {
+      if (!response[Api.error] && response['data'] != null) {
+        List<ItemModel> items = [];
+        if (response['data'] is List) {
+          items = (response['data'] as List)
+              .map((e) => ItemModel.fromJson(e))
+              .toList();
+        } else if (response['data']['data'] is List) {
+          items = (response['data']['data'] as List)
+              .map((e) => ItemModel.fromJson(e))
+              .toList();
+        } else if (response['data']['items'] is List) {
+          items = (response['data']['items'] as List)
+              .map((e) => ItemModel.fromJson(e))
+              .toList();
+        }
+
+        if (mounted) {
+          setState(() {
+            _experienceItems.clear();
+            _experienceItems.addAll(items);
+            _isLoadingExperiences = false;
+          });
+        }
+      }
+    }).catchError((error) {
+      if (mounted) {
+        setState(() {
+          _isLoadingExperiences = false;
+          _experienceError = error.toString();
+        });
+      }
+    });
+  }
+
+  // Fetch featured items for experts & businesses section
+  void _fetchFeaturedItems() {
+    setState(() {
+      _isLoadingFeatured = true;
+      _featuredError = null;
+    });
+
+    Map<String, dynamic> parameters = {
+      "page": 1,
+      if (HiveUtils.getCityName() != null) 'city': HiveUtils.getCityName(),
+      if (HiveUtils.getAreaId() != null) 'area_id': HiveUtils.getAreaId(),
+      if (HiveUtils.getCountryName() != null)
+        'country': HiveUtils.getCountryName(),
+      if (HiveUtils.getStateName() != null) 'state': HiveUtils.getStateName(),
+    };
+
+    Api.get(url: Api.featuredItemsApi, queryParameters: parameters)
+        .then((response) {
+      if (!response[Api.error] && response['data'] != null) {
+        List<ItemModel> items = [];
+        if (response['data'] is List) {
+          items = (response['data'] as List)
+              .map((e) => ItemModel.fromJson(e))
+              .toList();
+        } else if (response['data']['data'] is List) {
+          items = (response['data']['data'] as List)
+              .map((e) => ItemModel.fromJson(e))
+              .toList();
+        } else if (response['data']['items'] is List) {
+          items = (response['data']['items'] as List)
+              .map((e) => ItemModel.fromJson(e))
+              .toList();
+        }
+
+        if (mounted) {
+          setState(() {
+            _featuredItems.clear();
+            _featuredItems.addAll(items);
+            _isLoadingFeatured = false;
+          });
+        }
+      }
+    }).catchError((error) {
+      if (mounted) {
+        setState(() {
+          _isLoadingFeatured = false;
+          _featuredError = error.toString();
+        });
+      }
+    });
+  }
+
+  // Add new method for fetching women exclusive items
+  void _fetchWomenExclusiveItems() {
+    setState(() {
+      _isLoadingWomenExclusive = true;
+      _womenExclusiveError = null;
+    });
+
+    Map<String, dynamic> parameters = {
+      "page": 1,
+      if (HiveUtils.getCityName() != null) 'city': HiveUtils.getCityName(),
+      if (HiveUtils.getAreaId() != null) 'area_id': HiveUtils.getAreaId(),
+      if (HiveUtils.getCountryName() != null)
+        'country': HiveUtils.getCountryName(),
+      if (HiveUtils.getStateName() != null) 'state': HiveUtils.getStateName(),
+    };
+
+    Api.get(url: Api.getExclusiveWomenItemsApi, queryParameters: parameters)
+        .then((response) {
+      if (!response[Api.error] && response['data'] != null) {
+        List<ItemModel> items = [];
+        if (response['data'] is List) {
+          items = (response['data'] as List)
+              .map((e) => ItemModel.fromJson(e))
+              .toList();
+        } else if (response['data']['data'] is List) {
+          items = (response['data']['data'] as List)
+              .map((e) => ItemModel.fromJson(e))
+              .toList();
+        } else if (response['data']['items'] is List) {
+          items = (response['data']['items'] as List)
+              .map((e) => ItemModel.fromJson(e))
+              .toList();
+        }
+
+        if (mounted) {
+          setState(() {
+            _womenExclusiveItems.clear();
+            _womenExclusiveItems.addAll(items);
+            _isLoadingWomenExclusive = false;
+          });
+        }
+      }
+    }).catchError((error) {
+      if (mounted) {
+        setState(() {
+          _isLoadingWomenExclusive = false;
+          _womenExclusiveError = error.toString();
+        });
+      }
+    });
+  }
+
+  // Add new method for fetching corporate package items
+  void _fetchCorporatePackageItems() {
+    setState(() {
+      _isLoadingCorporatePackages = true;
+      _corporatePackagesError = null;
+    });
+
+    Map<String, dynamic> parameters = {
+      "page": 1,
+      if (HiveUtils.getCityName() != null) 'city': HiveUtils.getCityName(),
+      if (HiveUtils.getAreaId() != null) 'area_id': HiveUtils.getAreaId(),
+      if (HiveUtils.getCountryName() != null)
+        'country': HiveUtils.getCountryName(),
+      if (HiveUtils.getStateName() != null) 'state': HiveUtils.getStateName(),
+    };
+
+    Api.get(url: Api.getCorporatePackageItemsApi, queryParameters: parameters)
+        .then((response) {
+      if (!response[Api.error] && response['data'] != null) {
+        List<ItemModel> items = [];
+        if (response['data'] is List) {
+          items = (response['data'] as List)
+              .map((e) => ItemModel.fromJson(e))
+              .toList();
+        } else if (response['data']['data'] is List) {
+          items = (response['data']['data'] as List)
+              .map((e) => ItemModel.fromJson(e))
+              .toList();
+        } else if (response['data']['items'] is List) {
+          items = (response['data']['items'] as List)
+              .map((e) => ItemModel.fromJson(e))
+              .toList();
+        }
+
+        if (mounted) {
+          setState(() {
+            _corporatePackageItems.clear();
+            _corporatePackageItems.addAll(items);
+            _isLoadingCorporatePackages = false;
+          });
+        }
+      }
+    }).catchError((error) {
+      if (mounted) {
+        setState(() {
+          _isLoadingCorporatePackages = false;
+          _corporatePackagesError = error.toString();
+        });
+      }
+    });
+  }
+
+  // Add a new method to build exclusive experiences section
+  Widget _buildExclusiveExperiences(BuildContext context) {
+    if (_isLoadingExperiences) {
+      return SizedBox(
+        height: 200,
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+          scrollDirection: Axis.horizontal,
+          itemCount: 3,
+          separatorBuilder: (context, index) => const SizedBox(width: 14),
+          itemBuilder: (context, index) {
+            return CustomShimmer(
+              width: 300,
+              height: 200,
+              borderRadius: 10,
+            );
+          },
+        ),
+      );
+    }
+
+    if (_experienceError != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+        child: Text("Failed to load experiences: $_experienceError"),
+      );
+    }
+
+    if (_experienceItems.isEmpty) {
+      return const SliderWidget(); // Fall back to the slider if no experience items
+    }
+
+    return SizedBox(
+      height: 236, // Increased height to fix overflow
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+        scrollDirection: Axis.horizontal,
+        itemCount: _experienceItems.length > 3 ? 3 : _experienceItems.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 14),
+        itemBuilder: (context, index) {
+          final experience = _experienceItems[index];
+          return GestureDetector(
+            onTap: () {
+              Navigator.pushNamed(context, Routes.adDetailsScreen, arguments: {
+                "model": experience,
+              });
+            },
+            child: Container(
+              width: 300,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: context.color.secondaryColor,
+              ),
+              child: Stack(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(10),
+                          topRight: Radius.circular(10),
+                        ),
+                        child: UiUtils.getImage(
+                          experience.image ?? "",
+                          height: 150,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "\$${experience.price?.toStringAsFixed(2) ?? '0.00'}",
+                              style: TextStyle(
+                                fontSize: context.font.large,
+                                fontWeight: FontWeight.w700,
+                                color: context.color.territoryColor,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              experience.name ?? "",
+                              style: TextStyle(
+                                fontSize: context.font.small * 1.2,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (experience.expirationDate != null)
+                              Text(
+                                "Available until: ${experience.expirationDate?.toString().split(' ')[0] ?? 'N/A'}",
+                                style: TextStyle(
+                                  fontSize: context.font.small,
+                                  color: context.color.textLightColor,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Experience badge
+                  PositionedDirectional(
+                    start: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: context.color.territoryColor,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        "Experience",
+                        style: TextStyle(
+                          fontSize: context.font.small * 0.8,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Like button
+                  PositionedDirectional(
+                    end: 8,
+                    top: 8,
+                    child: BlocBuilder<FavoriteCubit, FavoriteState>(
+                      builder: (context, state) {
+                        bool isLike = context
+                            .read<FavoriteCubit>()
+                            .isItemFavorite(experience.id!);
+                        return GestureDetector(
+                          onTap: () {
+                            UiUtils.checkUser(
+                              context: context,
+                              onNotGuest: () {
+                                context
+                                    .read<UpdateFavoriteCubit>()
+                                    .setFavoriteItem(
+                                      item: experience,
+                                      type: isLike ? 0 : 1,
+                                    );
+                              },
+                            );
+                          },
+                          child: Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: context.color.secondaryColor,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Icon(
+                                isLike ? Icons.favorite : Icons.favorite_border,
+                                size: 18,
+                                color: context.color.territoryColor,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // Fetch newest items
+  void _fetchNewestItems() {
+    setState(() {
+      _isLoadingNewestItems = true;
+      _newestItemsError = null;
+    });
+
+    Map<String, dynamic> parameters = {
+      "page": 1,
+      if (HiveUtils.getCityName() != null) 'city': HiveUtils.getCityName(),
+      if (HiveUtils.getAreaId() != null) 'area_id': HiveUtils.getAreaId(),
+      if (HiveUtils.getCountryName() != null)
+        'country': HiveUtils.getCountryName(),
+      if (HiveUtils.getStateName() != null) 'state': HiveUtils.getStateName(),
+    };
+
+    Api.get(url: Api.getNewestItemsApi, queryParameters: parameters)
+        .then((response) {
+      if (!response[Api.error] && response['data'] != null) {
+        List<ItemModel> items = [];
+        if (response['data'] is List) {
+          items = (response['data'] as List)
+              .map((e) => ItemModel.fromJson(e))
+              .toList();
+        } else if (response['data']['data'] is List) {
+          items = (response['data']['data'] as List)
+              .map((e) => ItemModel.fromJson(e))
+              .toList();
+        } else if (response['data']['items'] is List) {
+          items = (response['data']['items'] as List)
+              .map((e) => ItemModel.fromJson(e))
+              .toList();
+        }
+
+        if (mounted) {
+          setState(() {
+            _newestItems.clear();
+            _newestItems.addAll(items);
+            _isLoadingNewestItems = false;
+          });
+        }
+      }
+    }).catchError((error) {
+      if (mounted) {
+        setState(() {
+          _isLoadingNewestItems = false;
+          _newestItemsError = error.toString();
+        });
+      }
+    });
   }
 }
 

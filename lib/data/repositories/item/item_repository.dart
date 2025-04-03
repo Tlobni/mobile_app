@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:developer';
 
 import 'package:dio/dio.dart';
 import 'package:tlobni/data/model/data_output.dart';
@@ -112,20 +113,42 @@ class ItemRepository {
   }
 
   Future<DataOutput<ItemModel>> fetchItemFromItemSlug(String slug) async {
-    Map<String, dynamic> parameters = {
-      "slug": slug,
-    };
+    try {
+      Map<String, dynamic> parameters = {
+        "slug": slug,
+      };
 
-    Map<String, dynamic> response = await Api.get(
-      url: Api.getItemApi,
-      queryParameters: parameters,
-    );
+      Map<String, dynamic> response = await Api.get(
+        url: Api.getItemApi,
+        queryParameters: parameters,
+      );
 
-    List<ItemModel> modelList = (response['data']['data'] as List)
-        .map((e) => ItemModel.fromJson(e))
-        .toList();
+      // Check if data is properly structured
+      if (response['data'] == null ||
+          (response['data'] is Map && response['data']['data'] == null)) {
+        return DataOutput(total: 0, modelList: []);
+      }
 
-    return DataOutput(total: modelList.length, modelList: modelList);
+      List<ItemModel> modelList = [];
+      try {
+        if (response['data'] is Map && response['data']['data'] is List) {
+          modelList = (response['data']['data'] as List)
+              .map((e) => ItemModel.fromJson(e))
+              .toList();
+        } else if (response['data'] is List) {
+          modelList = (response['data'] as List)
+              .map((e) => ItemModel.fromJson(e))
+              .toList();
+        }
+      } catch (e) {
+        log('Error parsing item data: $e');
+      }
+
+      return DataOutput(total: modelList.length, modelList: modelList);
+    } catch (e) {
+      log('Error fetching item from slug: $e');
+      rethrow;
+    }
   }
 
   Future<Map> changeMyItemStatus(

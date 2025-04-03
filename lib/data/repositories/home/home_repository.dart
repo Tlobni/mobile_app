@@ -35,7 +35,9 @@ class HomeRepository {
       double? latitude,
       double? longitude,
       int? areaId,
-      int? radius}) async {
+      int? radius,
+      String? postType,
+      bool? isFeatured}) async {
     try {
       Map<String, dynamic> parameters = {
         "page": page,
@@ -48,6 +50,8 @@ class HomeRepository {
         if (radius != null && radius != "") 'radius': radius,
         if (latitude != null && latitude != "") 'latitude': latitude,
         if (longitude != null && longitude != "") 'longitude': longitude,
+        if (postType != null && postType != "") 'post_type': postType,
+        if (isFeatured != null && isFeatured) 'is_feature': "1",
         "sort_by": "new-to-old"
       };
 
@@ -70,7 +74,11 @@ class HomeRepository {
       String? country,
       String? state,
       String? city,
-      int? areaId}) async {
+      int? areaId,
+      String? postType,
+      bool? isFeatured,
+      String? endpoint,
+      Map<String, dynamic>? filter}) async {
     try {
       Map<String, dynamic> parameters = {
         "page": page,
@@ -79,17 +87,44 @@ class HomeRepository {
         if (areaId != null && areaId != "") 'area_id': areaId,
         if (country != null && country != "") 'country': country,
         if (state != null && state != "") 'state': state,
+        if (postType != null && postType != "") 'post_type': postType,
+        if (isFeatured != null && isFeatured) 'is_feature': "1",
+        if (filter != null) ...filter,
       };
 
-      Map<String, dynamic> response =
-          await Api.get(url: Api.getItemApi, queryParameters: parameters);
-      List<ItemModel> items = (response['data']['data'] as List)
-          .map((e) => ItemModel.fromJson(e))
-          .toList();
+      print(
+          'Fetching section items with endpoint: ${endpoint ?? Api.getItemApi}');
+      print('Parameters: $parameters');
 
+      Map<String, dynamic> response = await Api.get(
+          url: endpoint ?? Api.getItemApi, queryParameters: parameters);
+
+      print('Response structure: ${response.keys.join(', ')}');
+      if (response['data'] != null) {
+        print(
+            'Data structure: ${response['data'] is List ? 'List' : response['data'].keys.join(', ')}');
+      }
+
+      List<ItemModel> items = [];
+      if (response['data'] is List) {
+        items = (response['data'] as List)
+            .map((e) => ItemModel.fromJson(e))
+            .toList();
+      } else if (response['data']['data'] is List) {
+        items = (response['data']['data'] as List)
+            .map((e) => ItemModel.fromJson(e))
+            .toList();
+      } else if (response['data']['items'] is List) {
+        items = (response['data']['items'] as List)
+            .map((e) => ItemModel.fromJson(e))
+            .toList();
+      }
+
+      print('Found ${items.length} items');
       return DataOutput(
-          total: response['data']['total'] ?? 0, modelList: items);
+          total: response['data']['total'] ?? items.length, modelList: items);
     } catch (error) {
+      print('Error fetching section items: $error');
       rethrow;
     }
   }

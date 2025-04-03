@@ -255,6 +255,13 @@ class Api {
   static String sellerReviewId = "seller_review_id";
   static String reportReason = "report_reason";
 
+  // New specialized endpoints
+  static String getExperienceItemsApi = "experience-items";
+  static String getExclusiveWomenItemsApi = "exclusive-women-items";
+  static String getCorporatePackageItemsApi = "corporate-package-items";
+  static String getNewestItemsApi = "newest-items";
+  static String featuredItemsApi = "featured-items";
+
   static Future<Map<String, dynamic>> post({
     required String url,
     dynamic parameter,
@@ -440,7 +447,12 @@ class Api {
         // Only call userExpired if user is authenticated
         // This prevents redirection to login when browsing as guest
         if (HiveUtils.isUserAuthenticated()) {
-          userExpired();
+          // Don't call userExpired during refresh to prevent navigating away
+          if (url != Api.getItemApi) {
+            userExpired();
+          } else {
+            throw ApiException("session-expired");
+          }
         } else {
           // For unauthenticated users, simply throw an auth error
           log("User not authenticated, throwing 'authentication-required' error");
@@ -449,7 +461,7 @@ class Api {
       }
       if (e.response?.statusCode == 503) {
         log("Server not available (503)");
-        throw "server-not-available";
+        throw ApiException("server-not-available");
       }
 
       throw ApiException(e.error is SocketException
@@ -461,7 +473,7 @@ class Api {
     } catch (e, st) {
       log("Unexpected error in API.get: $e");
       log("Stack trace: $st");
-      throw ApiException(st.toString());
+      throw ApiException("unexpected-error");
     }
   }
 }

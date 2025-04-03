@@ -17,7 +17,7 @@ class AppIcons {
   //static String bin = _svgPath("bin");
   static String update = _svgPath("update");
   static String companyLogo = _svgPath("Logo/company_logo");
-  static String home = _svgPath("home");
+  static String home = _svgPath("bottomnav/home");
   static String profile = _svgPath("profile");
   static String search = _svgPath("search");
   static String items = _svgPath("items");
@@ -49,6 +49,9 @@ class AppIcons {
   static String defaultPersonLogo = _svgPath("defaultProfileIcon");
   static String arrowLeft = _svgPath("arrow_left");
   static String warning = _svgPath("warning");
+
+  // Image placeholder
+  static String imagePlaceholder = _svgPath("Logo/placeholder");
 
   //static String done = _svgPath("done");
   static String promoted = _svgPath("promoted");
@@ -127,6 +130,8 @@ class AppIcons {
   static String _svgPath(String name) {
     return "$_basePath$name.svg";
   }
+
+  static const String viewProfileIcon = "assets/icons/view_profile.svg";
 }
 
 class MainIcons {

@@ -54,10 +54,6 @@ class MyItemState extends State<ItemsScreen> with TickerProviderStateMixin {
         "status": "review",
       },
       {
-        "title": "soldOut".translate(context),
-        "status": "sold out",
-      },
-      {
         "title": "rejected".translate(context),
         "status": "rejected",
       },

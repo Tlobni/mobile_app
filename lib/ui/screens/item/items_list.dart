@@ -749,7 +749,7 @@ class ItemsListState extends State<ItemsList> {
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCountAndFixedHeight(
           crossAxisCount: 2,
-          height: MediaQuery.of(context).size.height / 3.5,
+          height: MediaQuery.of(context).size.height / 3,
           mainAxisSpacing: 7,
           crossAxisSpacing: 10),
       itemCount: itemCount,

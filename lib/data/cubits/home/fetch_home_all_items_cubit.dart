@@ -58,7 +58,9 @@ class FetchHomeAllItemsCubit extends Cubit<FetchHomeAllItemsState> {
       int? areaId,
       int? radius,
       double? latitude,
-      double? longitude}) async {
+      double? longitude,
+      String? postType,
+      bool? isFeatured}) async {
     try {
       emit(FetchHomeAllItemsInProgress());
       DataOutput<ItemModel> result = await _homeRepository.fetchHomeAllItems(
@@ -69,7 +71,9 @@ class FetchHomeAllItemsCubit extends Cubit<FetchHomeAllItemsState> {
           state: state,
           radius: radius,
           longitude: longitude,
-          latitude: latitude);
+          latitude: latitude,
+          postType: postType,
+          isFeatured: isFeatured);
 
       emit(
         FetchHomeAllItemsSuccess(
@@ -108,36 +112,41 @@ class FetchHomeAllItemsCubit extends Cubit<FetchHomeAllItemsState> {
       int? areaId,
       int? radius,
       double? latitude,
-      double? longitude}) async {
-    try {
-      if (state is FetchHomeAllItemsSuccess) {
-        if ((state as FetchHomeAllItemsSuccess).isLoadingMore) {
-          return;
-        }
-        emit((state as FetchHomeAllItemsSuccess).copyWith(isLoadingMore: true));
+      double? longitude,
+      String? postType,
+      bool? isFeatured}) async {
+    if (state is FetchHomeAllItemsSuccess) {
+      FetchHomeAllItemsSuccess currentState = state as FetchHomeAllItemsSuccess;
+      try {
+        if (currentState.isLoadingMore) return;
+
+        emit(currentState.copyWith(isLoadingMore: true));
+
         DataOutput<ItemModel> result = await _homeRepository.fetchHomeAllItems(
-            page: (state as FetchHomeAllItemsSuccess).page + 1,
+            page: currentState.page + 1,
             city: city,
             areaId: areaId,
-            state: stateName,
-            country: country,
             radius: radius,
+            longitude: longitude,
             latitude: latitude,
-            longitude: longitude);
+            country: country,
+            state: stateName,
+            postType: postType,
+            isFeatured: isFeatured);
 
-        FetchHomeAllItemsSuccess itemModelState =
-            (state as FetchHomeAllItemsSuccess);
-        itemModelState.items.addAll(result.modelList);
-        emit(FetchHomeAllItemsSuccess(
-            isLoadingMore: false,
-            loadingMoreError: false,
-            items: itemModelState.items,
-            page: (state as FetchHomeAllItemsSuccess).page + 1,
-            total: result.total));
+        FetchHomeAllItemsSuccess newUpdate = currentState.copyWith(
+          page: currentState.page + 1,
+          isLoadingMore: false,
+          loadingMoreError: false,
+          items: [...currentState.items, ...result.modelList],
+          total: result.total,
+        );
+
+        emit(newUpdate);
+      } catch (e) {
+        emit(currentState.copyWith(
+            isLoadingMore: false, loadingMoreError: true));
       }
-    } catch (e) {
-      emit((state as FetchHomeAllItemsSuccess)
-          .copyWith(isLoadingMore: false, loadingMoreError: true));
     }
   }
 

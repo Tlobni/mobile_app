@@ -13,6 +13,7 @@ import 'package:tlobni/data/cubits/seller/fetch_verification_request_cubit.dart'
 import 'package:tlobni/data/cubits/system/app_theme_cubit.dart';
 import 'package:tlobni/data/cubits/system/fetch_system_settings_cubit.dart';
 import 'package:tlobni/data/cubits/system/user_details.dart';
+import 'package:tlobni/data/model/item/item_model.dart' as item_model;
 import 'package:tlobni/data/model/system_settings_model.dart';
 import 'package:tlobni/ui/screens/main_activity.dart';
 import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
@@ -189,49 +190,146 @@ class _ProfileScreenState extends State<ProfileScreen>
                               shape: BoxShape.circle,
                               border: Border.all(
                                   color: context.color.territoryColor)),
-                          child: CircleAvatar(
-                              backgroundColor: context.color.backgroundColor,
-                              radius: 30,
-                              child: HiveUtils.isUserAuthenticated()
-                                  ? (HiveUtils.getUserDetails().profile ?? "")
-                                          .isEmpty
-                                      ? UiUtils.getSvg(
-                                          AppIcons.defaultPersonLogo,
-                                          color: context.color.territoryColor,
-                                          fit: BoxFit.none,
-                                        )
-                                      : UiUtils.getImage(
-                                          height: 100,
-                                          width: 100,
-                                          HiveUtils.getUserDetails().profile!,
-                                          fit: BoxFit.cover,
-                                        )
-                                  : UiUtils.getSvg(
-                                      AppIcons.defaultPersonLogo,
-                                      color: context.color.territoryColor,
-                                      fit: BoxFit.none,
-                                    ))),
+                          child: GestureDetector(
+                            onTap: () {
+                              if (HiveUtils.isUserAuthenticated()) {
+                                final userDetails = HiveUtils.getUserDetails();
+                                if (userDetails != null) {
+                                  Navigator.pushNamed(
+                                    context,
+                                    Routes.sellerProfileScreen,
+                                    arguments: {
+                                      "model": item_model.User(
+                                        id: userDetails.id,
+                                        name: userDetails.name,
+                                        email: userDetails.email,
+                                        mobile: userDetails.mobile,
+                                        type: userDetails.type,
+                                        profile: userDetails.profile,
+                                        fcmId: userDetails.fcmId,
+                                        firebaseId: userDetails.firebaseId,
+                                        status: userDetails.isActive,
+                                        apiToken: userDetails.token,
+                                        address: userDetails.address,
+                                        createdAt: userDetails.createdAt,
+                                        updatedAt: userDetails.updatedAt,
+                                        isVerified: userDetails.isVerified,
+                                        showPersonalDetails:
+                                            userDetails.isPersonalDetailShow,
+                                      ),
+                                      "rating": 0.0,
+                                      "total": 0,
+                                      "from": "profile",
+                                      "viewOnly": true
+                                    },
+                                  );
+                                }
+                              }
+                            },
+                            child: CircleAvatar(
+                                backgroundColor: context.color.backgroundColor,
+                                radius: 30,
+                                child: HiveUtils.isUserAuthenticated()
+                                    ? (HiveUtils.getUserDetails().profile ?? "")
+                                            .isEmpty
+                                        ? UiUtils.getSvg(
+                                            AppIcons.defaultPersonLogo,
+                                            color: context.color.territoryColor,
+                                            fit: BoxFit.none,
+                                          )
+                                        : UiUtils.getImage(
+                                            height: 100,
+                                            width: 100,
+                                            HiveUtils.getUserDetails().profile!,
+                                            fit: BoxFit.cover,
+                                          )
+                                    : UiUtils.getSvg(
+                                        AppIcons.defaultPersonLogo,
+                                        color: context.color.territoryColor,
+                                        fit: BoxFit.none,
+                                      )),
+                          )),
                       if (HiveUtils.isUserAuthenticated())
                         Positioned(
                           right: 0,
                           bottom: 0,
-                          child: InkWell(
-                            onTap: () {
-                              HelperUtils.goToNextPage(
-                                  Routes.completeProfile, context, false,
-                                  args: {"from": "profile"});
-                            },
-                            child: Container(
-                              padding: EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                  color: context.color.territoryColor,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                      color: context.color.secondaryColor)),
-                              //alignment: Alignment.center,
-                              child: UiUtils.getSvg(AppIcons.editProfileIcon,
-                                  width: 18, height: 18, fit: BoxFit.fill),
-                            ),
+                          child: Row(
+                            children: [
+                              InkWell(
+                                onTap: () {
+                                  if (HiveUtils.isUserAuthenticated()) {
+                                    final userDetails =
+                                        HiveUtils.getUserDetails();
+                                    if (userDetails != null) {
+                                      Navigator.pushNamed(
+                                        context,
+                                        Routes.sellerProfileScreen,
+                                        arguments: {
+                                          "model": item_model.User(
+                                            id: userDetails.id,
+                                            name: userDetails.name,
+                                            email: userDetails.email,
+                                            mobile: userDetails.mobile,
+                                            type: userDetails.type,
+                                            profile: userDetails.profile,
+                                            fcmId: userDetails.fcmId,
+                                            firebaseId: userDetails.firebaseId,
+                                            status: userDetails.isActive,
+                                            apiToken: userDetails.token,
+                                            address: userDetails.address,
+                                            createdAt: userDetails.createdAt,
+                                            updatedAt: userDetails.updatedAt,
+                                            isVerified: userDetails.isVerified,
+                                            showPersonalDetails: userDetails
+                                                .isPersonalDetailShow,
+                                          ),
+                                          "rating": 0.0,
+                                          "total": 0,
+                                          "from": "profile",
+                                          "viewOnly": true
+                                        },
+                                      );
+                                    }
+                                  }
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: context.color.territoryColor,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: context.color.secondaryColor),
+                                  ),
+                                  child: Icon(
+                                    Icons.person_outline,
+                                    color: context.color.secondaryColor,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              InkWell(
+                                onTap: () {
+                                  HelperUtils.goToNextPage(
+                                      Routes.completeProfile, context, false,
+                                      args: {"from": "profile"});
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: context.color.territoryColor,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: context.color.secondaryColor),
+                                  ),
+                                  child: UiUtils.getSvg(
+                                      AppIcons.editProfileIcon,
+                                      width: 18,
+                                      height: 18,
+                                      fit: BoxFit.fill),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                     ],
