@@ -32,6 +32,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart' as path_provider;
+import 'package:path/path.dart' as p;
 
 class AddItemDetails extends StatefulWidget {
   final List<CategoryModel>? breadCrumbItems;
@@ -73,6 +76,28 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
   List<dynamic> mixedItemImageList = [];
   List<int> deleteItemImageList = [];
   late final GlobalKey<FormState> _formKey;
+
+  // Compression method moved to correct position
+  Future<File?> compressImage(File file) async {
+    try {
+      final dir = await path_provider.getTemporaryDirectory();
+      final targetPath =
+          p.join(dir.path, '${DateTime.now().millisecondsSinceEpoch}.jpg');
+
+      var result = await FlutterImageCompress.compressAndGetFile(
+        file.absolute.path,
+        targetPath,
+        quality: 70, // Adjust quality (0-100)
+        minWidth: 1024,
+        minHeight: 1024,
+      );
+
+      return result != null ? File(result.path) : null;
+    } catch (e) {
+      print('Error compressing image: $e');
+      return file; // Return original file if compression fails
+    }
+  }
 
   // Variables for service and experience fields
   Map<String, bool> _specialTags = {
@@ -352,13 +377,15 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
           // Navigate based on edit or new item
           if (widget.isEdit == true) {
-            // Just show success message without navigation for edit mode
+            // For edit mode, return to previous screen with refresh value
             setState(() {
               _isSubmitting = false;
             });
-            // Don't navigate - just stay on this screen
+
+            // Pop and return refresh value to trigger update in ad_details_screen
+            Navigator.of(context).pop("refresh");
           } else {
-            // For new item, navigate to the service details page
+            // For new item, navigate to the details page of the newly created service
             WidgetsBinding.instance.addPostFrameCallback((_) {
               Navigator.of(context).popUntil((route) => route.isFirst);
 
@@ -593,27 +620,57 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                             cloudData['area_id'] = formatedAddress!.areaId;
                         }
 
-                        // Get main image
+                        // Get main image with compression
                         File? mainImage;
                         if (_pickTitleImage.pickedFile != null) {
-                          // Check if pickedFile is a List<File> or a single File
-                          if (_pickTitleImage.pickedFile is List<File> &&
-                              (_pickTitleImage.pickedFile as List<File>)
-                                  .isNotEmpty) {
-                            mainImage =
+                          try {
+                            // Check if pickedFile is a List<File> or a single File
+                            if (_pickTitleImage.pickedFile is List<File> &&
                                 (_pickTitleImage.pickedFile as List<File>)
-                                    .first;
-                          } else if (_pickTitleImage.pickedFile is File) {
-                            mainImage = _pickTitleImage.pickedFile as File;
+                                    .isNotEmpty) {
+                              File originalFile =
+                                  (_pickTitleImage.pickedFile as List<File>)
+                                      .first;
+                              mainImage = await compressImage(originalFile);
+                            } else if (_pickTitleImage.pickedFile is File) {
+                              File originalFile =
+                                  _pickTitleImage.pickedFile as File;
+                              mainImage = await compressImage(originalFile);
+                            }
+
+                            if (mainImage == null) {
+                              throw Exception("Failed to process main image");
+                            }
+                          } catch (e) {
+                            print("Error processing main image: $e");
+                            setState(() {
+                              _isSubmitting = false;
+                            });
+                            HelperUtils.showSnackBarMessage(context,
+                                "Failed to process main image. Try a different image.");
+                            return;
                           }
                         }
 
-                        // Get other images
+                        // Get other images with compression
                         List<File> otherImages = [];
-                        for (var item in mixedItemImageList) {
-                          if (item is File) {
-                            otherImages.add(item);
+                        try {
+                          for (var item in mixedItemImageList) {
+                            if (item is File) {
+                              File? compressed = await compressImage(item);
+                              if (compressed != null) {
+                                otherImages.add(compressed);
+                              }
+                            }
                           }
+                        } catch (e) {
+                          print("Error processing additional images: $e");
+                          setState(() {
+                            _isSubmitting = false;
+                          });
+                          HelperUtils.showSnackBarMessage(context,
+                              "Failed to process some additional images.");
+                          return;
                         }
 
                         // Add deleted image IDs if editing
@@ -622,21 +679,32 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                           cloudData['deleted_images'] = deleteItemImageList;
                         }
 
-                        if (widget.isEdit == true) {
-                          // Add item ID for editing
-                          cloudData['id'] = item?.id;
+                        // Add error handling for the cubit call
+                        try {
+                          if (widget.isEdit == true) {
+                            // Add item ID for editing
+                            cloudData['id'] = item?.id;
 
-                          context.read<ManageItemCubit>().manage(
-                              ManageItemType.edit,
-                              cloudData,
-                              mainImage,
-                              otherImages);
-                        } else {
-                          context.read<ManageItemCubit>().manage(
-                              ManageItemType.add,
-                              cloudData,
-                              mainImage,
-                              otherImages);
+                            context.read<ManageItemCubit>().manage(
+                                ManageItemType.edit,
+                                cloudData,
+                                mainImage,
+                                otherImages);
+                          } else {
+                            context.read<ManageItemCubit>().manage(
+                                ManageItemType.add,
+                                cloudData,
+                                mainImage,
+                                otherImages);
+                          }
+                        } catch (e) {
+                          print("Error during API call: $e");
+                          setState(() {
+                            _isSubmitting = false;
+                          });
+                          HelperUtils.showSnackBarMessage(
+                              context, "Failed to upload. Please try again.");
+                          return;
                         }
                       } catch (e, st) {
                         print("Error submitting form: $e");

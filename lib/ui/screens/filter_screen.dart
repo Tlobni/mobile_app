@@ -652,7 +652,7 @@ class FilterScreenState extends State<FilterScreen> {
               color: context.color.textDefaultColor.withOpacity(0.5),
             ),
           ),
-          items: ["male", "female"].map((String value) {
+          items: ["Male", "Female"].map((String value) {
             return DropdownMenuItem<String>(
               value: value,
               child: Padding(

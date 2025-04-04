@@ -13,6 +13,12 @@ class UserModel {
   String? type;
   String? mobile;
   String? name;
+  String? bio;
+  String? website;
+  String? facebook;
+  String? twitter;
+  String? instagram;
+  String? tiktok;
   int? isPersonalDetailShow;
   int? notification;
   String? profile;
@@ -33,6 +39,12 @@ class UserModel {
       this.type,
       this.mobile,
       this.name,
+      this.bio,
+      this.website,
+      this.facebook,
+      this.twitter,
+      this.instagram,
+      this.tiktok,
       this.notification,
       this.profile,
       this.token,
@@ -51,6 +63,12 @@ class UserModel {
     isActive = json['isActive'] as int?;
     isProfileCompleted = json['isProfileCompleted'];
     type = json['type'];
+    bio = json['bio'];
+    website = json['website'];
+    facebook = json['facebook'];
+    twitter = json['twitter'];
+    instagram = json['instagram'];
+    tiktok = json['tiktok'];
     mobile = json['mobile'];
     name = json['name'];
 

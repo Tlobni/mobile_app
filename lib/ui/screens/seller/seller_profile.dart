@@ -31,13 +31,48 @@ import 'package:url_launcher/url_launcher.dart';
 
 // Extended User model with additional fields used in profile screen
 extension UserExt on User {
-  String? get categories => null;
-  String? get website => null;
-  String? get bio => null;
-  String? get facebook => null;
-  String? get twitter => null;
-  String? get instagram => null;
-  String? get tiktok => null;
+  static const String _bioKey = 'bio';
+  static const String _websiteKey = 'website';
+  static const String _categoriesKey = 'categories';
+  static const String _facebookKey = 'facebook';
+  static const String _twitterKey = 'twitter';
+  static const String _instagramKey = 'instagram';
+  static const String _tiktokKey = 'tiktok';
+
+  // Map to store extended properties
+  static final Map<int, Map<String, dynamic>> _extendedProps = {};
+
+  // Getters
+  String? get categories => _getExtProp(_categoriesKey);
+  String? get website => _getExtProp(_websiteKey);
+  String? get bio => _getExtProp(_bioKey);
+  String? get facebook => _getExtProp(_facebookKey);
+  String? get twitter => _getExtProp(_twitterKey);
+  String? get instagram => _getExtProp(_instagramKey);
+  String? get tiktok => _getExtProp(_tiktokKey);
+
+  // Setters
+  set categories(String? value) => _setExtProp(_categoriesKey, value);
+  set website(String? value) => _setExtProp(_websiteKey, value);
+  set bio(String? value) => _setExtProp(_bioKey, value);
+  set facebook(String? value) => _setExtProp(_facebookKey, value);
+  set twitter(String? value) => _setExtProp(_twitterKey, value);
+  set instagram(String? value) => _setExtProp(_instagramKey, value);
+  set tiktok(String? value) => _setExtProp(_tiktokKey, value);
+
+  // Helper methods
+  String? _getExtProp(String key) {
+    if (id == null) return null;
+    final userId = id!; // Handle null safely
+    return _extendedProps[userId]?[key] as String?;
+  }
+
+  void _setExtProp(String key, String? value) {
+    if (id == null) return;
+    final userId = id!; // Handle null safely
+    _extendedProps[userId] = _extendedProps[userId] ?? {};
+    _extendedProps[userId]![key] = value;
+  }
 }
 
 class SellerProfileScreen extends StatefulWidget {
@@ -114,6 +149,11 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
         context
             .read<FetchSellerRatingsCubit>()
             .fetch(sellerId: widget.model.id!);
+
+        // Check if this is the current user's own profile and fetch latest data
+        if (widget.model.id.toString() == HiveUtils.getUserId()) {
+          _fetchLatestUserData();
+        }
       } else {
         print("Error: widget.model.id is null in seller profile");
       }
@@ -141,6 +181,68 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
       context
           .read<FetchSellerRatingsCubit>()
           .fetchMore(sellerId: widget.model.id!);
+    }
+  }
+
+  // Fetch latest user data for own profile
+  void _fetchLatestUserData() async {
+    try {
+      print("Fetching latest user data for own profile");
+
+      // Get the latest user data from HiveUtils
+      final userDetails = HiveUtils.getUserDetails();
+
+      // Update the widget model with the latest data
+      setState(() {
+        // Update the current model with the latest data
+        if (widget.model.id.toString() == userDetails.id.toString()) {
+          print("Updating user model with latest data from Hive");
+
+          // Use reflection or dynamic access to get properties from UserModel
+          final dynamic userModelMap = userDetails.toJson();
+
+          // Set basic properties that exist in both models
+          widget.model.name = userDetails.name;
+          widget.model.bio = userDetails.bio;
+          widget.model.website = userDetails.website;
+          widget.model.facebook = userDetails.facebook;
+          widget.model.twitter = userDetails.twitter;
+          widget.model.instagram = userDetails.instagram;
+          widget.model.tiktok = userDetails.tiktok;
+          widget.model.profile = userDetails.profile;
+          widget.model.email = userDetails.email;
+          widget.model.mobile = userDetails.mobile;
+          widget.model.showPersonalDetails = userDetails.isPersonalDetailShow;
+
+          // Set extended properties using our extension methods
+          // These will only be set if they exist in the UserModel JSON
+          if (userModelMap['bio'] != null) {
+            widget.model.bio = userModelMap['bio'];
+          }
+          if (userModelMap['website'] != null) {
+            widget.model.website = userModelMap['website'];
+          }
+          if (userModelMap['categories'] != null) {
+            widget.model.categories = userModelMap['categories'];
+          }
+          if (userModelMap['facebook'] != null) {
+            widget.model.facebook = userModelMap['facebook'];
+          }
+          if (userModelMap['twitter'] != null) {
+            widget.model.twitter = userModelMap['twitter'];
+          }
+          if (userModelMap['instagram'] != null) {
+            widget.model.instagram = userModelMap['instagram'];
+          }
+          if (userModelMap['tiktok'] != null) {
+            widget.model.tiktok = userModelMap['tiktok'];
+          }
+
+          print("Updated bio: ${widget.model.bio}");
+        }
+      });
+    } catch (e) {
+      print("Error fetching latest user data: $e");
     }
   }
 
@@ -510,7 +612,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
                     gridDelegate:
                         SliverGridDelegateWithFixedCrossAxisCountAndFixedHeight(
                             crossAxisCount: 2,
-                            height: MediaQuery.of(context).size.height / 3.5,
+                            height: MediaQuery.of(context).size.height / 3,
                             mainAxisSpacing: 7,
                             crossAxisSpacing: 10),
                     itemCount: state.items.length,
@@ -634,6 +736,11 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
           // If there are no ratings, show a centered message with review button
           if (state.ratings.isEmpty) {
             print("No ratings found");
+
+            // Check if this is the current user's own profile
+            bool isOwnProfile =
+                widget.model.id.toString() == HiveUtils.getUserId();
+
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -645,11 +752,11 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
                   ),
                   SizedBox(height: 10),
                   CustomText(
-                    "noRatingsAvailableYet".translate(context),
+                    "No ratings available yet".translate(context),
                     color: context.color.textLightColor,
                     fontWeight: FontWeight.w500,
                   ),
-                  if (HiveUtils.isUserAuthenticated())
+                  if (HiveUtils.isUserAuthenticated() && !isOwnProfile)
                     Padding(
                       padding: const EdgeInsets.only(top: 15),
                       child: ElevatedButton(
@@ -896,7 +1003,6 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
           children: [
             ratings.buyer!.profile == "" || ratings.buyer!.profile == null
                 ? CircleAvatar(
-                    backgroundColor: context.color.territoryColor,
                     child: SvgPicture.asset(
                       AppIcons.profile,
                       colorFilter: ColorFilter.mode(
@@ -1307,7 +1413,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Bio Section - only show if bio exists
+          // Bio Section - always show if bio exists, even for own profile
           if (hasBio)
             _buildSectionCard(
               title: "Bio",
@@ -1320,41 +1426,38 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
           if (hasBio) SizedBox(height: 16),
 
           // Contact Buttons - only show if not viewing own profile
-          if (!isOwnProfile)
+          if (!isOwnProfile && hasPhone)
             Row(
               children: [
-                // Only show Call Button if phone is available and enabled
-                if (hasPhone) ...[
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: Container(
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          _launchURL("tel:${widget.model.mobile}");
-                        },
-                        icon: Icon(Icons.phone,
-                            color: context.color.textDefaultColor),
-                        label: CustomText(
-                          "Call",
-                          color: context.color.textDefaultColor,
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: context.color.secondaryColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: Container(
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        _launchURL("tel:${widget.model.mobile}");
+                      },
+                      icon: Icon(Icons.phone,
+                          color: context.color.textDefaultColor),
+                      label: CustomText(
+                        "Call",
+                        color: context.color.textDefaultColor,
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: context.color.secondaryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
                   ),
-                ],
+                ),
               ],
             ),
 
-          if (!isOwnProfile) SizedBox(height: 24),
+          if (!isOwnProfile && hasPhone) SizedBox(height: 24),
 
-          // Social Media Links
+          // Social Media Links - show for all profiles including own
           _buildSocialMediaLinks(),
         ],
       ),

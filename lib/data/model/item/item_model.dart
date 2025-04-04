@@ -423,6 +423,12 @@ class User {
   String? mobile;
   String? email;
   String? type;
+  String? bio;
+  String? website;
+  String? facebook;
+  String? twitter;
+  String? instagram;
+  String? tiktok;
   String? profile;
   String? fcmId;
   String? firebaseId;
@@ -440,6 +446,12 @@ class User {
       this.mobile,
       this.email,
       this.type,
+      this.bio,
+      this.website,
+      this.facebook,
+      this.twitter,
+      this.instagram,
+      this.tiktok,
       this.profile,
       this.fcmId,
       this.firebaseId,
@@ -457,6 +469,12 @@ class User {
     mobile = json['mobile'];
     email = json['email'];
     type = json['type'];
+    bio = json['bio'];
+    website = json['website'];
+    facebook = json['facebook'];
+    twitter = json['twitter'];
+    instagram = json['instagram'];
+    tiktok = json['tiktok'];
     profile = json['profile'];
     fcmId = json['fcm_id'];
     firebaseId = json['firebase_id'];
@@ -476,6 +494,12 @@ class User {
     data['mobile'] = mobile;
     data['email'] = email;
     data['type'] = type;
+    data['bio'] = bio;  
+    data['website'] = website;
+    data['facebook'] = facebook;
+    data['twitter'] = twitter;
+    data['instagram'] = instagram;
+    data['tiktok'] = tiktok;
     data['profile'] = profile;
     data['fcm_id'] = fcmId;
     data['firebase_id'] = firebaseId;

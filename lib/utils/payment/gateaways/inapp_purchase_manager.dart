@@ -315,34 +315,74 @@ class InAppPurchaseManager {
           packageId: int.parse(packageId!),
           method: "apple",
           purchaseToken: purchase.purchaseID!);
+      // Show bottom modal message for purchase review
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isDismissible: true,
+        builder: (BuildContext context) {
+          return Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            padding: EdgeInsets.only(left: 20, right: 20, bottom: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.check_circle,
+                  color: context.color.buttonColor,
+                  size: 60,
+                ),
+                CustomText(
+                  "Purchase Submitted",
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+                SizedBox(height: 10),
+                CustomText(
+                  "Your purchase is being processed and waiting for review. An admin will contact you soon.",
+                  textAlign: TextAlign.center,
+                  color: context.color.textColorDark.withOpacity(0.7),
+                ),
+                SizedBox(height: 10),
+              ],
+            ),
+          );
+        },
+      );
 
       // Show the dialog
-      UiUtils.showBlurredDialoge(context,
-          dialoge: BlurredDialogBox(
-            title: "Pending Approval",
-            showCancelButton: false,
-            acceptTextColor: context.color.buttonColor,
-            content: const CustomText(
-                "Your request is pending approval. An admin will contact you soon."),
-            isAcceptContainerPush: true,
-            onAccept: () => Future.value().then(
-              (_) {
-                // Close the dialog
+      // UiUtils.showBlurredDialoge(context,
+      //     dialoge: BlurredDialogBox(
+      //       title: "Pending Approval",
+      //       showCancelButton: false,
+      //       acceptTextColor: context.color.buttonColor,
+      //       content: const CustomText(
+      //           "Your request is pending approval. An admin will contact you soon."),
+      //       isAcceptContainerPush: true,
+      //       onAccept: () => Future.value().then(
+      //         (_) {
+      //           // Close the dialog
 
-                // Listen to the cubit state after the dialog is dismissed
-                final cubitState = context.read<InAppPurchaseCubit>().state;
-                if (cubitState is InAppPurchaseInSuccess) {
-                  HelperUtils.showSnackBarMessage(
-                      context, cubitState.responseMessage);
-                  Navigator.pop(Constant.navigatorKey.currentContext!);
-                } else if (cubitState is InAppPurchaseFailure) {
-                  HelperUtils.showSnackBarMessage(context, cubitState.error);
-                }
-                Navigator.pop(Constant.navigatorKey.currentContext!);
-                return;
-              },
-            ),
-          ));
+      //           // Listen to the cubit state after the dialog is dismissed
+      //           final cubitState = context.read<InAppPurchaseCubit>().state;
+      //           if (cubitState is InAppPurchaseInSuccess) {
+      //             HelperUtils.showSnackBarMessage(
+      //                 context, cubitState.responseMessage);
+      //             Navigator.pop(Constant.navigatorKey.currentContext!);
+      //           } else if (cubitState is InAppPurchaseFailure) {
+      //             HelperUtils.showSnackBarMessage(context, cubitState.error);
+      //           }
+      //           Navigator.pop(Constant.navigatorKey.currentContext!);
+      //           return;
+      //         },
+      //       ),
+      //     ));
     }
   }
 

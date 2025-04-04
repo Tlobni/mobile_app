@@ -1437,10 +1437,34 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                     arguments: {"isEdit": true}).then((value) {
                   // When we return from edit screen, refresh the detail view with the latest data
                   if (value == "refresh" || value == true) {
-                    // Refresh the current screen with updated data
-                    context.read<FetchItemFromSlugCubit>().fetchItemFromSlug(
-                          slug: model.slug ?? "",
-                        );
+                    // Force cache reset and refresh the current screen with updated data
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      print(
+                          "Refreshing item details after edit with slug: ${model.slug}");
+
+                      // Show loading indicator
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("Refreshing..."),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+
+                      // Get a reference to the current cubit
+                      final cubit = BlocProvider.of<FetchItemFromSlugCubit>(
+                          context,
+                          listen: false);
+
+                      // First set it to initial state to force a full refresh
+                      cubit.emit(FetchItemFromSlugInitial());
+
+                      // Then trigger a new fetch with a slight delay
+                      Future.delayed(Duration(milliseconds: 300), () {
+                        if (mounted) {
+                          cubit.fetchItemFromSlug(slug: model.slug ?? "");
+                        }
+                      });
+                    });
 
                     // Update related items cubit if needed
                     if (model.categoryId != null) {
@@ -1507,10 +1531,34 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                     arguments: {"isEdit": true}).then((value) {
                   // When we return from edit screen, refresh the detail view with the latest data
                   if (value == "refresh" || value == true) {
-                    // Refresh the current screen with updated data
-                    context.read<FetchItemFromSlugCubit>().fetchItemFromSlug(
-                          slug: model.slug ?? "",
-                        );
+                    // Force cache reset and refresh the current screen with updated data
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      print(
+                          "Refreshing item details after edit with slug: ${model.slug}");
+
+                      // Show loading indicator
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("Refreshing..."),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+
+                      // Get a reference to the current cubit
+                      final cubit = BlocProvider.of<FetchItemFromSlugCubit>(
+                          context,
+                          listen: false);
+
+                      // First set it to initial state to force a full refresh
+                      cubit.emit(FetchItemFromSlugInitial());
+
+                      // Then trigger a new fetch with a slight delay
+                      Future.delayed(Duration(milliseconds: 300), () {
+                        if (mounted) {
+                          cubit.fetchItemFromSlug(slug: model.slug ?? "");
+                        }
+                      });
+                    });
 
                     // Update related items cubit if needed
                     if (model.categoryId != null) {
@@ -1677,7 +1725,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                         itemOfferPrice: state.data['amount'] != null
                             ? double.parse(state.data['amount'].toString())
                             : null,
-                        isPurchased: model.isPurchased!,
+                        isPurchased: model.isPurchased ?? 0,
                         alreadyReview: model.review == null
                             ? false
                             : model.review!.isEmpty
@@ -1762,7 +1810,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                                     buyerId: chatedUser.buyerId.toString(),
                                     status: chatedUser.item!.status,
                                     from: "item",
-                                    isPurchased: model.isPurchased!,
+                                    isPurchased: model.isPurchased ?? 0,
                                     alreadyReview: model.review == null
                                         ? false
                                         : model.review!.isEmpty
