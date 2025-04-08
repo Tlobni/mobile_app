@@ -393,11 +393,14 @@ class FilterScreenState extends State<FilterScreen> {
             Map<String, dynamic> customFields =
                 convertToCustomFields(AbstractField.fieldsData);
 
-            // Format special tags as strings
-            Map<String, String> formattedSpecialTags = {};
-            _specialTags.forEach((key, value) {
-              formattedSpecialTags[key] = value.toString();
-            });
+            // Only include special tags if both service type and provider type are selected
+            Map<String, String>? formattedSpecialTags = null;
+            if (_serviceType != null && _userType != null) {
+              formattedSpecialTags = {};
+              _specialTags.forEach((key, value) {
+                formattedSpecialTags![key] = value.toString();
+              });
+            }
 
             print("DEBUG FILTER APPLY: Service type being set: $_serviceType");
             print("DEBUG FILTER APPLY: Gender being set: $_gender");

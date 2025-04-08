@@ -57,6 +57,7 @@ import 'package:tlobni/utils/constant.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/select_post_type.dart';
+import 'package:tlobni/ui/screens/home/featured_users_screen.dart';
 
 class Routes {
   static const splash = 'splash';
@@ -144,6 +145,9 @@ class Routes {
   static const playground = 'playground';
 
   static const selectPostTypeScreen = '/selectPostTypeScreen';
+
+  // Add the new route constant
+  static const featuredUsersScreen = '/featuredUsersScreen';
 
   static String currentRoute = '';
   static String previousRoute = '';
@@ -299,6 +303,10 @@ class Routes {
 
       case selectPostTypeScreen:
         return SelectPostTypeScreen.route(routeSettings);
+
+      // Add the new route case
+      case featuredUsersScreen:
+        return FeaturedUsersScreen.route(routeSettings);
 
       default:
         return CupertinoPageRoute(builder: (context) => const Scaffold());

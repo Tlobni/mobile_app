@@ -111,6 +111,11 @@ class HomeScreenState extends State<HomeScreen>
   bool _isLoadingNewestItems = true;
   String? _newestItemsError;
 
+  // Add these new properties for featured users
+  final List<dynamic> _featuredUsers = [];
+  bool _isLoadingFeaturedUsers = true;
+  String? _featuredUsersError;
+
   @override
   void initState() {
     super.initState();
@@ -142,7 +147,7 @@ class HomeScreenState extends State<HomeScreen>
 
     // Fetch items for each specialized section
     _fetchExperienceItems();
-    _fetchFeaturedItems();
+    _fetchFeaturedUsers();
     _fetchWomenExclusiveItems();
     _fetchCorporatePackageItems();
     _fetchNewestItems();
@@ -305,7 +310,7 @@ class HomeScreenState extends State<HomeScreen>
 
             // Refresh all specialized sections
             _fetchExperienceItems();
-            _fetchFeaturedItems();
+            _fetchFeaturedUsers();
             _fetchWomenExclusiveItems();
             _fetchCorporatePackageItems();
             _fetchNewestItems();
@@ -334,7 +339,7 @@ class HomeScreenState extends State<HomeScreen>
                 _buildNewestListings(context),
 
                 // Featured Experts & Businesses
-                _buildSectionHeader(context, "Featured"),
+                _buildSectionHeader(context, "Featured Experts & Businesses"),
                 _buildFeaturedExperts(context),
 
                 // Women-Exclusive Services
@@ -382,13 +387,11 @@ class HomeScreenState extends State<HomeScreen>
                       "endpoint": Api.getExperienceItemsApi,
                       "filter": {"post_type": "experience"},
                     });
-              } else if (title == "Featured") {
-                Navigator.pushNamed(context, Routes.sectionWiseItemsScreen,
+              } else if (title == "Featured Experts & Businesses") {
+                // Use the dedicated featured users screen instead of the section items screen
+                Navigator.pushNamed(context, Routes.featuredUsersScreen,
                     arguments: {
-                      "title": "Featured",
-                      "sectionId": 2,
-                      "endpoint": Api.featuredItemsApi,
-                      "filter": {},
+                      "title": "Featured Experts & Businesses",
                     });
               } else if (title == "Women-Exclusive Services") {
                 Navigator.pushNamed(context, Routes.sectionWiseItemsScreen,
@@ -639,7 +642,7 @@ class HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildFeaturedExperts(BuildContext context) {
-    if (_isLoadingFeatured) {
+    if (_isLoadingFeaturedUsers) {
       return SizedBox(
         height: 210,
         child: ListView.separated(
@@ -658,14 +661,14 @@ class HomeScreenState extends State<HomeScreen>
       );
     }
 
-    if (_featuredError != null) {
+    if (_featuredUsersError != null) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: sidePadding),
-        child: Text("Failed to load featured items: $_featuredError"),
+        child: Text("Failed to load featured experts: $_featuredUsersError"),
       );
     }
 
-    if (_featuredItems.isEmpty) {
+    if (_featuredUsers.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: sidePadding),
         child: Text("No featured experts or businesses found"),
@@ -677,15 +680,58 @@ class HomeScreenState extends State<HomeScreen>
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: sidePadding),
         scrollDirection: Axis.horizontal,
-        itemCount: _featuredItems.length > 3 ? 3 : _featuredItems.length,
+        itemCount: _featuredUsers.length > 3 ? 3 : _featuredUsers.length,
         separatorBuilder: (context, index) => const SizedBox(width: 14),
         itemBuilder: (context, index) {
-          final item = _featuredItems[index];
+          final user = _featuredUsers[index];
+          // Get categories as a formatted string
+          String categoryName = "Category";
+          if (user['categories'] != null) {
+            try {
+              List<String> categories =
+                  user['categories'].toString().split(',');
+              if (categories.isNotEmpty) {
+                categoryName = categories.first;
+              }
+            } catch (e) {
+              // Use default if there's an error parsing
+            }
+          }
+
           return GestureDetector(
             onTap: () {
-              Navigator.pushNamed(context, Routes.adDetailsScreen, arguments: {
-                "model": item,
-              });
+              // Navigate to user profile or listings
+              if (user['id'] != null) {
+                // Create a User object from the featured user data
+                User userModel = User(
+                  id: user['id'],
+                  name: user['name'],
+                  profile: user['profile'],
+                  type: user['type'],
+                  bio: user['bio'],
+                  email: user['email'],
+                  mobile: user['mobile'],
+                  address: user['address'] ?? user['location'],
+                  isVerified: user['is_verified'],
+                  createdAt: user['created_at'],
+                  facebook: user['facebook'],
+                  twitter: user['twitter'],
+                  instagram: user['instagram'],
+                  tiktok: user['tiktok'],
+                  showPersonalDetails: user['show_personal_details'],
+                );
+
+                // Navigate to seller profile with proper model
+                Navigator.pushNamed(
+                  context,
+                  Routes.sellerProfileScreen,
+                  arguments: {
+                    "model": userModel,
+                    "rating": 0.0, // Default rating
+                    "total": 0, // Default total reviews
+                  },
+                );
+              }
             },
             child: Container(
               width: 170,
@@ -699,53 +745,78 @@ class HomeScreenState extends State<HomeScreen>
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(10),
-                          topRight: Radius.circular(10),
-                        ),
-                        child: UiUtils.getImage(
-                          item.image ?? "",
-                          height: 120,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+                      // User Image
+                      user['profile'] != null &&
+                              user['profile'].toString().isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(10),
+                                topRight: Radius.circular(10),
+                              ),
+                              child: UiUtils.getImage(
+                                user['profile'] ?? "",
+                                height: 120,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : Container(
+                              height: 120,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: context.color.territoryColor
+                                    .withOpacity(0.1),
+                                borderRadius: BorderRadius.only(
+                                  topLeft: Radius.circular(10),
+                                  topRight: Radius.circular(10),
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.person,
+                                size: 60,
+                                color: context.color.territoryColor,
+                              ),
+                            ),
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // User Name
                             Text(
-                              "\$ ${item.price?.toStringAsFixed(2) ?? '0.00'}",
+                              user['name'] ?? "Name",
                               style: TextStyle(
-                                fontSize: context.font.large,
+                                fontSize: context.font.large * 0.9,
                                 fontWeight: FontWeight.w700,
-                                color: context.color.territoryColor,
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              item.name ?? "Name",
-                              style: TextStyle(
-                                fontSize: context.font.small * 1.2,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 2,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 4),
+                            // Category
+                            Text(
+                              categoryName,
+                              style: TextStyle(
+                                fontSize: context.font.small * 1.1,
+                                fontWeight: FontWeight.w500,
+                                color: context.color.territoryColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            // Location
                             Row(
                               children: [
                                 Icon(
                                   Icons.location_on,
-                                  size: 14,
+                                  size: 12,
                                   color: context.color.textLightColor,
                                 ),
                                 const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
-                                    item.address ?? "",
+                                    user['location'] ?? user['address'] ?? "",
                                     style: TextStyle(
                                       fontSize: context.font.small,
                                       color: context.color.textLightColor,
@@ -761,72 +832,24 @@ class HomeScreenState extends State<HomeScreen>
                       ),
                     ],
                   ),
-                  if (item.isFeature ?? false)
-                    PositionedDirectional(
-                      start: 8,
-                      top: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: context.color.territoryColor,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          "Featured",
-                          style: TextStyle(
-                            fontSize: context.font.small * 0.8,
-                            color: Colors.white,
-                          ),
+                  // Featured badge
+                  PositionedDirectional(
+                    start: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: context.color.territoryColor,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        "Featured",
+                        style: TextStyle(
+                          fontSize: context.font.small * 0.8,
+                          color: Colors.white,
                         ),
                       ),
-                    ),
-                  PositionedDirectional(
-                    end: 8,
-                    bottom: 46,
-                    child: BlocBuilder<FavoriteCubit, FavoriteState>(
-                      builder: (context, state) {
-                        bool isLike = context
-                            .read<FavoriteCubit>()
-                            .isItemFavorite(item.id!);
-                        return GestureDetector(
-                          onTap: () {
-                            UiUtils.checkUser(
-                              context: context,
-                              onNotGuest: () {
-                                context
-                                    .read<UpdateFavoriteCubit>()
-                                    .setFavoriteItem(
-                                      item: item,
-                                      type: isLike ? 0 : 1,
-                                    );
-                              },
-                            );
-                          },
-                          child: Container(
-                            width: 30,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              color: context.color.secondaryColor,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Icon(
-                                isLike ? Icons.favorite : Icons.favorite_border,
-                                size: 18,
-                                color: context.color.territoryColor,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
                     ),
                   ),
                 ],
@@ -1420,11 +1443,11 @@ class HomeScreenState extends State<HomeScreen>
     });
   }
 
-  // Fetch featured items for experts & businesses section
-  void _fetchFeaturedItems() {
+  // Fetch featured users
+  void _fetchFeaturedUsers() {
     setState(() {
-      _isLoadingFeatured = true;
-      _featuredError = null;
+      _isLoadingFeaturedUsers = true;
+      _featuredUsersError = null;
     });
 
     Map<String, dynamic> parameters = {
@@ -1436,37 +1459,29 @@ class HomeScreenState extends State<HomeScreen>
       if (HiveUtils.getStateName() != null) 'state': HiveUtils.getStateName(),
     };
 
-    Api.get(url: Api.featuredItemsApi, queryParameters: parameters)
+    Api.get(url: Api.featuredUsersApi, queryParameters: parameters)
         .then((response) {
       if (!response[Api.error] && response['data'] != null) {
-        List<ItemModel> items = [];
-        if (response['data'] is List) {
-          items = (response['data'] as List)
-              .map((e) => ItemModel.fromJson(e))
-              .toList();
-        } else if (response['data']['data'] is List) {
-          items = (response['data']['data'] as List)
-              .map((e) => ItemModel.fromJson(e))
-              .toList();
-        } else if (response['data']['items'] is List) {
-          items = (response['data']['items'] as List)
-              .map((e) => ItemModel.fromJson(e))
-              .toList();
+        List<dynamic> users = [];
+
+        // Parse the featured users data
+        if (response['data']['data'] is List) {
+          users = response['data']['data'];
         }
 
         if (mounted) {
           setState(() {
-            _featuredItems.clear();
-            _featuredItems.addAll(items);
-            _isLoadingFeatured = false;
+            _featuredUsers.clear();
+            _featuredUsers.addAll(users);
+            _isLoadingFeaturedUsers = false;
           });
         }
       }
     }).catchError((error) {
       if (mounted) {
         setState(() {
-          _isLoadingFeatured = false;
-          _featuredError = error.toString();
+          _isLoadingFeaturedUsers = false;
+          _featuredUsersError = error.toString();
         });
       }
     });

@@ -106,6 +106,40 @@ class HomeRepository {
       }
 
       List<ItemModel> items = [];
+
+      // Special handling for featured users endpoint
+      if (endpoint == Api.featuredUsersApi) {
+        print('Processing featured users endpoint');
+
+        // Extract users from the response
+        List<dynamic> users = [];
+        if (response['data'] is List) {
+          users = response['data'];
+        } else if (response['data']['data'] is List) {
+          users = response['data']['data'];
+        }
+
+        // For each user, extract their items
+        for (var user in users) {
+          if (user['items'] is List && user['items'].isNotEmpty) {
+            // Get approved items from the user
+            for (var item in user['items']) {
+              if (item['status'] == 'approved') {
+                ItemModel itemModel = ItemModel.fromJson(item);
+                // Add user info to the item
+                itemModel.sellerName = user['name'];
+                itemModel.sellerType = user['type'];
+                items.add(itemModel);
+              }
+            }
+          }
+        }
+
+        return DataOutput(
+            total: response['data']['total'] ?? items.length, modelList: items);
+      }
+
+      // Normal item endpoints processing
       if (response['data'] is List) {
         items = (response['data'] as List)
             .map((e) => ItemModel.fromJson(e))

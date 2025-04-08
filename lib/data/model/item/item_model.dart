@@ -48,6 +48,8 @@ class ItemModel {
   String? expirationTime;
   int? isPurchased;
   List<UserRatings>? review;
+  String? sellerName;
+  String? sellerType;
 
   double? get latitude => _latitude;
 
@@ -117,7 +119,9 @@ class ItemModel {
       this.expirationDate,
       this.expirationTime,
       this.review,
-      this.isPurchased}) {
+      this.isPurchased,
+      this.sellerName,
+      this.sellerType}) {
     this.latitude = latitude;
     this.longitude = longitude;
   }
@@ -165,7 +169,9 @@ class ItemModel {
       DateTime? expirationDate,
       String? expirationTime,
       int? isPurchased,
-      List<UserRatings>? review}) {
+      List<UserRatings>? review,
+      String? sellerName,
+      String? sellerType}) {
     return ItemModel(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -211,6 +217,8 @@ class ItemModel {
       expirationTime: expirationTime ?? this.expirationTime,
       isPurchased: isPurchased ?? this.isPurchased,
       review: review ?? this.review,
+      sellerName: sellerName ?? this.sellerName,
+      sellerType: sellerType ?? this.sellerType,
     );
   }
 
@@ -494,7 +502,7 @@ class User {
     data['mobile'] = mobile;
     data['email'] = email;
     data['type'] = type;
-    data['bio'] = bio;  
+    data['bio'] = bio;
     data['website'] = website;
     data['facebook'] = facebook;
     data['twitter'] = twitter;

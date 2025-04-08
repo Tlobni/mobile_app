@@ -261,6 +261,7 @@ class Api {
   static String getCorporatePackageItemsApi = "corporate-package-items";
   static String getNewestItemsApi = "newest-items";
   static String featuredItemsApi = "featured-items";
+  static String featuredUsersApi = "featured-users";
 
   static Future<Map<String, dynamic>> post({
     required String url,
