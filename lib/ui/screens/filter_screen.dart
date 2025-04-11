@@ -7,6 +7,8 @@ import 'package:tlobni/data/cubits/category/fetch_category_cubit.dart';
 import 'package:tlobni/data/cubits/custom_field/fetch_custom_fields_cubit.dart';
 import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/item_filter_model.dart';
+import 'package:tlobni/ui/screens/filter/provider_filter_screen.dart';
+import 'package:tlobni/ui/screens/filter/service_filter_screen.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/custom_filed_structure/custom_field.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
 import 'package:tlobni/ui/screens/main_activity.dart';
@@ -35,9 +37,13 @@ extension StringExtension on String {
 // Custom category filter screen that works with our filter page
 class FilterCategoryScreen extends StatefulWidget {
   final List<CategoryModel> categoryList;
+  final CategoryType categoryType;
 
-  const FilterCategoryScreen({Key? key, required this.categoryList})
-      : super(key: key);
+  const FilterCategoryScreen({
+    Key? key,
+    required this.categoryList,
+    this.categoryType = CategoryType.serviceExperience,
+  }) : super(key: key);
 
   @override
   State<FilterCategoryScreen> createState() => _FilterCategoryScreenState();
@@ -46,6 +52,12 @@ class FilterCategoryScreen extends StatefulWidget {
 class _FilterCategoryScreenState extends State<FilterCategoryScreen>
     with TickerProviderStateMixin {
   final ScrollController _pageScrollController = ScrollController();
+  List<CategoryModel> allCategories = [];
+  List<CategoryModel> filteredCategories = [];
+  List<bool> expandedPanels = [];
+  TextEditingController searchController = TextEditingController();
+  bool isLoading = true;
+  Map<int, bool> expandedSubcategories = {};
 
   @override
   void initState() {
@@ -58,16 +70,116 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen>
       }
     });
 
-    // Fetch categories with type service_experience (don't try to read state directly)
+    // Fetch categories with the type specified by the widget
     context.read<FetchCategoryCubit>().fetchCategories(
-          type: CategoryType.serviceExperience,
+          type: widget.categoryType,
         );
   }
 
   @override
   void dispose() {
     _pageScrollController.dispose();
+    searchController.dispose();
     super.dispose();
+  }
+
+  bool isCategorySelected(int categoryId) {
+    return widget.categoryList.any((cat) => cat.id == categoryId);
+  }
+
+  void toggleCategorySelection(CategoryModel category, bool selected) {
+    setState(() {
+      if (selected) {
+        if (!widget.categoryList.any((cat) => cat.id == category.id)) {
+          widget.categoryList.add(category);
+        }
+
+        // Also select children if any
+        if (category.children != null && category.children!.isNotEmpty) {
+          for (var child in category.children!) {
+            if (!widget.categoryList.any((cat) => cat.id == child.id)) {
+              widget.categoryList.add(child);
+            }
+
+            // Add nested children if any
+            if (child.children != null && child.children!.isNotEmpty) {
+              for (var nestedChild in child.children!) {
+                if (!widget.categoryList
+                    .any((cat) => cat.id == nestedChild.id)) {
+                  widget.categoryList.add(nestedChild);
+                }
+              }
+            }
+          }
+        }
+      } else {
+        widget.categoryList.removeWhere((cat) => cat.id == category.id);
+
+        // Also remove children if any
+        if (category.children != null && category.children!.isNotEmpty) {
+          for (var child in category.children!) {
+            widget.categoryList.removeWhere((cat) => cat.id == child.id);
+
+            // Remove nested children if any
+            if (child.children != null && child.children!.isNotEmpty) {
+              for (var nestedChild in child.children!) {
+                widget.categoryList
+                    .removeWhere((cat) => cat.id == nestedChild.id);
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  void filterCategories(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        filteredCategories = allCategories;
+      } else {
+        query = query.toLowerCase();
+        filteredCategories = allCategories.where((category) {
+          final matchesMainCategory =
+              category.name?.toLowerCase().contains(query) ?? false;
+
+          // Check if any subcategory matches
+          final hasMatchingSubcategory = category.children?.any((subcategory) =>
+                  subcategory.name?.toLowerCase().contains(query) ?? false) ??
+              false;
+
+          return matchesMainCategory || hasMatchingSubcategory;
+        }).toList();
+
+        // Auto-expand categories with matching subcategories
+        for (int i = 0; i < filteredCategories.length; i++) {
+          final category = filteredCategories[i];
+          final originalIndex = allCategories.indexOf(category);
+          if (originalIndex >= 0 && originalIndex < expandedPanels.length) {
+            final hasMatchingSubcategory = category.children?.any(
+                    (subcategory) =>
+                        subcategory.name?.toLowerCase().contains(query) ??
+                        false) ??
+                false;
+
+            if (hasMatchingSubcategory) {
+              expandedPanels[originalIndex] = true;
+            }
+          }
+        }
+      }
+    });
+  }
+
+  bool isSubcategoryExpanded(int subCategoryId) {
+    return expandedSubcategories[subCategoryId] ?? false;
+  }
+
+  void toggleSubcategoryExpansion(int subCategoryId) {
+    setState(() {
+      expandedSubcategories[subCategoryId] =
+          !(expandedSubcategories[subCategoryId] ?? false);
+    });
   }
 
   @override
@@ -77,66 +189,276 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen>
         context,
         showBackButton: true,
         title: "categories".translate(context),
-      ),
-      body: BlocBuilder<FetchCategoryCubit, FetchCategoryState>(
-        builder: (context, state) {
-          if (state is FetchCategoryInProgress) {
-            return Center(
-              child: CircularProgressIndicator(
-                color: Theme.of(context).colorScheme.territoryColor,
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: Text(
+              "Done",
+              style: TextStyle(
+                color: context.color.territoryColor,
+                fontWeight: FontWeight.w600,
               ),
-            );
-          }
-          if (state is FetchCategoryFailure) {
-            return Center(
-              child: Text(state.errorMessage),
-            );
-          }
-          if (state is FetchCategorySuccess) {
-            // Filter out any provider categories, only show serviceExperience
-            final categories = state.categories
-                .where((category) =>
-                    category.type == CategoryType.serviceExperience)
-                .toList();
+            ),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Search field
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              controller: searchController,
+              decoration: InputDecoration(
+                hintText: "Search categories".translate(context),
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 16,
+                ),
+              ),
+              onChanged: filterCategories,
+            ),
+          ),
 
-            if (categories.isEmpty) {
-              return Center(
-                child: CustomText("No Data Found".translate(context)),
-              );
-            }
-            return ListView.builder(
-              controller: _pageScrollController,
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-              itemCount: categories.length + (state.isLoadingMore ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == categories.length) {
+          // Category list
+          Expanded(
+            child: BlocConsumer<FetchCategoryCubit, FetchCategoryState>(
+              listener: (context, state) {
+                if (state is FetchCategorySuccess) {
+                  // Initialize data when categories are fetched
+                  setState(() {
+                    allCategories = state.categories
+                        .where(
+                            (category) => category.type == widget.categoryType)
+                        .toList();
+
+                    // If the search field has text, apply filter
+                    if (searchController.text.isNotEmpty) {
+                      filterCategories(searchController.text);
+                    } else {
+                      filteredCategories = allCategories;
+                    }
+
+                    // Initialize expansion state for all categories
+                    expandedPanels = List.generate(
+                      allCategories.length,
+                      (index) => false,
+                    );
+
+                    isLoading = false;
+                  });
+                }
+              },
+              builder: (context, state) {
+                if (state is FetchCategoryInProgress) {
                   return Center(
                     child: CircularProgressIndicator(
                       color: Theme.of(context).colorScheme.territoryColor,
                     ),
                   );
                 }
-                return InkWell(
-                  onTap: () {
-                    widget.categoryList.add(categories[index]);
-                    Navigator.pop(context);
-                  },
-                  child: ListTile(
-                    leading: SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: UiUtils.getImage(categories[index].url ?? "",
-                          fit: BoxFit.contain),
-                    ),
-                    title: CustomText(categories[index].name ?? ""),
-                  ),
-                );
+
+                if (state is FetchCategoryFailure) {
+                  return Center(
+                    child: Text(state.errorMessage),
+                  );
+                }
+
+                if (state is FetchCategorySuccess) {
+                  if (filteredCategories.isEmpty) {
+                    return Center(
+                      child: CustomText("No Data Found".translate(context)),
+                    );
+                  }
+
+                  return ListView.builder(
+                    controller: _pageScrollController,
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 10),
+                    itemCount: filteredCategories.length +
+                        (state.isLoadingMore ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index == filteredCategories.length) {
+                        return Center(
+                          child: CircularProgressIndicator(
+                            color: Theme.of(context).colorScheme.territoryColor,
+                          ),
+                        );
+                      }
+
+                      final category = filteredCategories[index];
+                      final originalIndex = allCategories.indexOf(category);
+                      final hasSubcategories = category.children != null &&
+                          category.children!.isNotEmpty;
+
+                      return Column(
+                        children: [
+                          // Parent category
+                          Container(
+                            decoration: BoxDecoration(
+                              color: context.color.secondaryColor,
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: context.color.borderColor.darken(10),
+                                  width: 0.5,
+                                ),
+                              ),
+                            ),
+                            child: ListTile(
+                              title: Text(
+                                category.name ?? "Unknown",
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w500),
+                              ),
+                              leading: Checkbox(
+                                value: isCategorySelected(category.id ?? 0),
+                                onChanged: (bool? value) {
+                                  if (category.id != null && value != null) {
+                                    toggleCategorySelection(category, value);
+                                  }
+                                },
+                              ),
+                              trailing: hasSubcategories
+                                  ? Icon(
+                                      expandedPanels[originalIndex]
+                                          ? Icons.keyboard_arrow_up
+                                          : Icons.keyboard_arrow_down,
+                                      color: context.color.textDefaultColor,
+                                    )
+                                  : null,
+                              onTap: hasSubcategories
+                                  ? () {
+                                      setState(() {
+                                        expandedPanels[originalIndex] =
+                                            !expandedPanels[originalIndex];
+                                      });
+                                    }
+                                  : null,
+                            ),
+                          ),
+
+                          // Subcategories (if expanded and has subcategories)
+                          if (hasSubcategories && expandedPanels[originalIndex])
+                            Container(
+                              color:
+                                  context.color.secondaryColor.withOpacity(0.5),
+                              child: Column(
+                                children: category.children!.map((subcategory) {
+                                  // Filter subcategories if search is active
+                                  if (searchController.text.isNotEmpty) {
+                                    final query =
+                                        searchController.text.toLowerCase();
+                                    if (!(subcategory.name
+                                            ?.toLowerCase()
+                                            .contains(query) ??
+                                        false)) {
+                                      return Container(); // Skip non-matching subcategories
+                                    }
+                                  }
+
+                                  final hasNestedSubcategories =
+                                      subcategory.children != null &&
+                                          subcategory.children!.isNotEmpty;
+
+                                  return Column(
+                                    children: [
+                                      Padding(
+                                        padding:
+                                            const EdgeInsets.only(left: 20.0),
+                                        child: ListTile(
+                                          title: Text(
+                                              subcategory.name ?? "Unknown"),
+                                          leading: Checkbox(
+                                            value: isCategorySelected(
+                                                subcategory.id ?? 0),
+                                            onChanged: (bool? value) {
+                                              if (subcategory.id != null &&
+                                                  value != null) {
+                                                toggleCategorySelection(
+                                                    subcategory, value);
+                                              }
+                                            },
+                                          ),
+                                          trailing: hasNestedSubcategories
+                                              ? Icon(
+                                                  isSubcategoryExpanded(
+                                                          subcategory.id ?? 0)
+                                                      ? Icons.keyboard_arrow_up
+                                                      : Icons
+                                                          .keyboard_arrow_down,
+                                                  color: context
+                                                      .color.textDefaultColor,
+                                                )
+                                              : null,
+                                          onTap: hasNestedSubcategories
+                                              ? () {
+                                                  toggleSubcategoryExpansion(
+                                                      subcategory.id ?? 0);
+                                                }
+                                              : null,
+                                        ),
+                                      ),
+
+                                      // Nested subcategories
+                                      if (hasNestedSubcategories &&
+                                          isSubcategoryExpanded(
+                                              subcategory.id ?? 0))
+                                        Container(
+                                          color: context.color.secondaryColor
+                                              .withOpacity(0.3),
+                                          child: Column(
+                                            children: subcategory.children!
+                                                .map((nestedSubcategory) {
+                                              return Padding(
+                                                padding: const EdgeInsets.only(
+                                                    left: 40.0),
+                                                child: ListTile(
+                                                  title: Text(
+                                                      nestedSubcategory.name ??
+                                                          "Unknown"),
+                                                  leading: Checkbox(
+                                                    value: isCategorySelected(
+                                                        nestedSubcategory.id ??
+                                                            0),
+                                                    onChanged: (bool? value) {
+                                                      if (nestedSubcategory
+                                                                  .id !=
+                                                              null &&
+                                                          value != null) {
+                                                        toggleCategorySelection(
+                                                            nestedSubcategory,
+                                                            value);
+                                                      }
+                                                    },
+                                                  ),
+                                                ),
+                                              );
+                                            }).toList(),
+                                          ),
+                                        ),
+                                    ],
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  );
+                }
+
+                return const SizedBox();
               },
-            );
-          }
-          return const SizedBox();
-        },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -384,73 +706,6 @@ class FilterScreenState extends State<FilterScreen> {
             )
           ],
         ),
-        bottomNavigationBar: BottomAppBar(
-          color: context.color.secondaryColor,
-          elevation: 3,
-          child: UiUtils.buildButton(context,
-              outerPadding: const EdgeInsets.all(12),
-              height: 50, onPressed: () {
-            Map<String, dynamic> customFields =
-                convertToCustomFields(AbstractField.fieldsData);
-
-            // Only include special tags if both service type and provider type are selected
-            Map<String, String>? formattedSpecialTags = null;
-            if (_serviceType != null && _userType != null) {
-              formattedSpecialTags = {};
-              _specialTags.forEach((key, value) {
-                formattedSpecialTags![key] = value.toString();
-              });
-            }
-
-            print("DEBUG FILTER APPLY: Service type being set: $_serviceType");
-            print("DEBUG FILTER APPLY: Gender being set: $_gender");
-
-            Constant.itemFilter = ItemFilterModel(
-                maxPrice: maxController.text,
-                minPrice: minController.text,
-                categoryId: selectedCategories.isNotEmpty
-                    ? selectedCategories.last
-                    : "",
-                postedSince: postedOn,
-                city: city,
-                areaId: areaId,
-                radius: radius,
-                state: _state,
-                country: country,
-                latitude: latitude,
-                longitude: longitude,
-                userType: _userType,
-                gender: _gender,
-                serviceType: _serviceType,
-                specialTags: formattedSpecialTags,
-                customFields: customFields);
-
-            widget.update(ItemFilterModel(
-                maxPrice: maxController.text,
-                minPrice: minController.text,
-                categoryId: widget.from == "search"
-                    ? selectedCategories.isNotEmpty
-                        ? selectedCategories.last
-                        : ""
-                    : '',
-                postedSince: postedOn,
-                city: city,
-                areaId: areaId,
-                radius: radius,
-                state: _state,
-                country: country,
-                longitude: longitude,
-                latitude: latitude,
-                area: area,
-                userType: _userType,
-                gender: _gender,
-                serviceType: _serviceType,
-                specialTags: formattedSpecialTags,
-                customFields: customFields));
-
-            Navigator.pop(context, true);
-          }, buttonTitle: "applyFilter".translate(context), radius: 8),
-        ),
         body: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -473,64 +728,6 @@ class FilterScreenState extends State<FilterScreen> {
                     fontWeight: FontWeight.w600),
                 const SizedBox(height: 5),
                 _buildUserTypeFilter(context),
-
-                // Only show additional filters if both service type and provider type are selected
-                if (_serviceType != null && _userType != null) ...[
-                  const SizedBox(height: 15),
-
-                  // Category Filter
-                  if (widget.categoryIds == null ||
-                      widget.categoryIds!.isEmpty) ...[
-                    CustomText('category'.translate(context),
-                        fontWeight: FontWeight.w600),
-                    const SizedBox(height: 5),
-                    categoryWidget(context),
-                    const SizedBox(height: 15),
-                  ],
-
-                  // Gender Filter (only if Expert is selected)
-                  if (_userType == 'expert') ...[
-                    CustomText('Gender'.translate(context),
-                        color: context.color.textDefaultColor,
-                        fontWeight: FontWeight.w600),
-                    const SizedBox(height: 5),
-                    _buildGenderFilter(context),
-                    const SizedBox(height: 15),
-                  ],
-
-                  // Location Filter
-                  CustomText('locationLbl'.translate(context),
-                      color: context.color.textDefaultColor,
-                      fontWeight: FontWeight.w600),
-                  const SizedBox(height: 5),
-                  locationWidget(context),
-                  const SizedBox(height: 15),
-
-                  // Special Tags Filter
-                  CustomText('Special Tags'.translate(context),
-                      color: context.color.textDefaultColor,
-                      fontWeight: FontWeight.w600),
-                  const SizedBox(height: 5),
-                  _buildSpecialTagsFilter(context),
-                  const SizedBox(height: 15),
-
-                  // Budget Filter
-                  CustomText('budgetLbl'.translate(context),
-                      fontWeight: FontWeight.w600),
-                  const SizedBox(height: 15),
-                  budgetOption(),
-                  const SizedBox(height: 15),
-
-                  // Posted Since Filter
-                  CustomText('postedSinceLbl'.translate(context),
-                      fontWeight: FontWeight.w600),
-                  const SizedBox(height: 5),
-                  postedSinceOption(context),
-                  const SizedBox(height: 15),
-
-                  // Custom Fields
-                  _buildCustomFields()
-                ],
               ],
             ),
           ),
@@ -543,7 +740,6 @@ class FilterScreenState extends State<FilterScreen> {
   Widget _buildFilterOption(
     BuildContext context, {
     required String label,
-    required bool selected,
     required Function() onTap,
   }) {
     return InkWell(
@@ -551,18 +747,16 @@ class FilterScreenState extends State<FilterScreen> {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-          color: selected ? context.color.territoryColor : Colors.white,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(25),
           border: Border.all(
-            color: selected
-                ? context.color.territoryColor
-                : context.color.borderColor,
+            color: context.color.borderColor,
             width: 1,
           ),
         ),
         child: CustomText(
           label,
-          color: selected ? Colors.white : context.color.textColorDark,
+          color: context.color.textColorDark,
         ),
       ),
     );
@@ -576,21 +770,31 @@ class FilterScreenState extends State<FilterScreen> {
         _buildFilterOption(
           context,
           label: "Service",
-          selected: _serviceType == 'service',
           onTap: () {
-            setState(() {
-              _serviceType = _serviceType == 'service' ? null : 'service';
-            });
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ServiceFilterScreen(
+                  update: widget.update,
+                  fromServiceType: 'service',
+                ),
+              ),
+            );
           },
         ),
         _buildFilterOption(
           context,
           label: "Exclusive Experience",
-          selected: _serviceType == 'experience',
           onTap: () {
-            setState(() {
-              _serviceType = _serviceType == 'experience' ? null : 'experience';
-            });
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ServiceFilterScreen(
+                  update: widget.update,
+                  fromServiceType: 'experience',
+                ),
+              ),
+            );
           },
         ),
       ],
@@ -605,515 +809,34 @@ class FilterScreenState extends State<FilterScreen> {
         _buildFilterOption(
           context,
           label: "Expert",
-          selected: _userType == 'expert',
           onTap: () {
-            setState(() {
-              _userType = _userType == 'expert' ? null : 'expert';
-              if (_userType != 'expert') {
-                _gender = null;
-              }
-            });
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ProviderFilterScreen(
+                  update: widget.update,
+                  providerType: 'expert',
+                ),
+              ),
+            );
           },
         ),
         _buildFilterOption(
           context,
           label: "Business",
-          selected: _userType == 'business',
           onTap: () {
-            setState(() {
-              _userType = _userType == 'business' ? null : 'business';
-              if (_userType == 'business') {
-                _gender = null;
-              }
-            });
-          },
-        ),
-      ],
-    );
-  }
-
-  // Gender filter with dropdown
-  Widget _buildGenderFilter(BuildContext context) {
-    return Container(
-      height: 55,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: context.color.borderColor,
-          width: 1,
-        ),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          isExpanded: true,
-          value: _gender,
-          hint: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 15),
-            child: CustomText(
-              "Choose one",
-              color: context.color.textDefaultColor.withOpacity(0.5),
-            ),
-          ),
-          items: ["Male", "Female"].map((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 15),
-                child: CustomText(
-                  value.capitalize(),
-                  color: context.color.textColorDark,
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ProviderFilterScreen(
+                  update: widget.update,
+                  providerType: 'business',
                 ),
               ),
             );
-          }).toList(),
-          onChanged: (newValue) {
-            setState(() {
-              _gender = newValue;
-            });
-          },
-        ),
-      ),
-    );
-  }
-
-  // Special Tags filter with switches
-  Widget _buildSpecialTagsFilter(BuildContext context) {
-    return Column(
-      children: [
-        _buildSwitchOption(
-          context,
-          label: "Exclusive for Women",
-          value: _specialTags["exclusive_women"] ?? false,
-          onChanged: (value) {
-            setState(() {
-              _specialTags["exclusive_women"] = value;
-            });
-          },
-        ),
-        SizedBox(height: 10),
-        _buildSwitchOption(
-          context,
-          label: "Corporate Package",
-          value: _specialTags["corporate_package"] ?? false,
-          onChanged: (value) {
-            setState(() {
-              _specialTags["corporate_package"] = value;
-            });
           },
         ),
       ],
-    );
-  }
-
-  // Helper method to build switch options
-  Widget _buildSwitchOption(
-    BuildContext context, {
-    required String label,
-    required bool value,
-    required Function(bool) onChanged,
-  }) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 5),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          CustomText(
-            label,
-            color: context.color.textColorDark,
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: context.color.territoryColor,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Custom LocationAutocomplete with styling to match filter inputs
-  Widget locationWidget(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 10.0),
-      child: Container(
-        height: 55,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: context.color.secondaryColor,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: context.color.borderColor.darken(30),
-            width: 1,
-          ),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(9),
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              inputDecorationTheme: InputDecorationTheme(
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-              ),
-              iconTheme: IconThemeData(
-                color: context.color.textDefaultColor,
-                size: 20,
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 9),
-              child: LocationAutocomplete(
-                controller: locationController,
-                hintText: "allCities".translate(context),
-                onSelected: (String location) {
-                  // Basic handling when only the string is returned
-                },
-                onLocationSelected: (Map<String, String> locationData) {
-                  setState(() {
-                    city = locationData['city'] ?? "";
-                    _state = locationData['state'] ?? "";
-                    country = locationData['country'] ?? "";
-                    area =
-                        ""; // Reset area as it's not in the autocomplete data
-                    areaId = null; // Reset areaId
-                    radius = null; // Reset radius
-                    // We don't have lat/lng in the autocomplete data
-                    latitude = null;
-                    longitude = null;
-                  });
-                },
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget categoryWidget(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        categoryList.clear();
-        // Use MaterialPageRoute with BlocProvider to ensure the FetchCategoryCubit is available
-        Navigator.of(context)
-            .push(
-          MaterialPageRoute(
-            builder: (context) => BlocProvider(
-              create: (context) {
-                final cubit = FetchCategoryCubit();
-                // No need to fetch here, the screen will do it properly now
-                return cubit;
-              },
-              child: FilterCategoryScreen(
-                categoryList: categoryList,
-              ),
-            ),
-          ),
-        )
-            .then((value) {
-          if (categoryList.isNotEmpty) {
-            setState(() {});
-            selectedCategories.clear();
-            selectedCategories.addAll(
-                categoryList.map<String>((e) => e.id.toString()).toList());
-            getCustomFieldsData();
-          }
-        });
-      },
-      child: Padding(
-        padding: const EdgeInsets.only(top: 10.0),
-        child: Container(
-          height: 55,
-          width: double.infinity,
-          decoration: BoxDecoration(
-              color: context.color.secondaryColor,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: context.color.borderColor.darken(30),
-                width: 1,
-              )),
-          child: Padding(
-            padding: const EdgeInsetsDirectional.only(start: 14.0),
-            child: Row(
-              children: [
-                categoryList.isNotEmpty
-                    ? UiUtils.getImage(categoryList[0].url!,
-                        height: 20, width: 20, fit: BoxFit.contain)
-                    : UiUtils.getSvg(AppIcons.categoryIcon,
-                        color: context.color.textDefaultColor),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsetsDirectional.only(start: 15.0),
-                    child: categoryList.isNotEmpty
-                        ? CustomText(
-                            "${categoryList.map((e) => e.name).join(' - ')}",
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis)
-                        : CustomText("allInClassified".translate(context),
-                            color: context.color.textDefaultColor
-                                .withOpacity(0.3)),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsetsDirectional.only(end: 14.0),
-                  child: UiUtils.getSvg(AppIcons.downArrow,
-                      color: context.color.textDefaultColor),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget saveFilter() {
-    //save prefs & validate fields & call API
-    return IconButton(
-        onPressed: () {
-          Constant.itemFilter = ItemFilterModel(
-            maxPrice: maxController.text,
-            city: city,
-            areaId: areaId,
-            radius: radius,
-            state: _state,
-            country: country,
-            longitude: longitude,
-            latitude: latitude,
-            minPrice: minController.text,
-            categoryId:
-                selectedCategories.isNotEmpty ? selectedCategories.last : "",
-            postedSince: postedOn,
-          );
-
-          Navigator.pop(context, true);
-        },
-        icon: const Icon(Icons.check));
-  }
-
-  Widget budgetOption() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: <Widget>[
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              minMaxTFF(
-                "minLbl".translate(context),
-              )
-            ],
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              minMaxTFF("maxLbl".translate(context)),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget minMaxTFF(String minMax) {
-    return Container(
-        /*  padding: EdgeInsetsDirectional.only(
-            end: minMax == "minLbl".translate(context) ? 5 :),*/
-        alignment: AlignmentDirectional.center,
-        decoration: BoxDecoration(
-            borderRadius: const BorderRadius.all(Radius.circular(10)),
-            color: Theme.of(context).colorScheme.secondaryColor),
-        child: TextFormField(
-            controller: (minMax == "minLbl".translate(context))
-                ? minController
-                : maxController,
-            onChanged: ((value) {
-              bool isEmpty = value.trim().isEmpty;
-              if (minMax == "minLbl".translate(context)) {
-                if (isEmpty && searchBody.containsKey(Api.minPrice)) {
-                  searchBody.remove(Api.minPrice);
-                } else {
-                  searchBody[Api.minPrice] = value;
-                }
-              } else {
-                if (isEmpty && searchBody.containsKey(Api.maxPrice)) {
-                  searchBody.remove(Api.maxPrice);
-                } else {
-                  searchBody[Api.maxPrice] = value;
-                }
-              }
-            }),
-            textInputAction: TextInputAction.done,
-            decoration: InputDecoration(
-                isDense: true,
-                focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide:
-                        BorderSide(color: context.color.territoryColor)),
-                enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                        color: context.color.borderColor.darken(30))),
-                labelStyle: TextStyle(
-                    color: context.color.textDefaultColor.withOpacity(0.3)),
-                hintText: "00",
-                label: CustomText(
-                  minMax,
-                ),
-                prefixText: '${Constant.currencySymbol} ',
-                prefixStyle: TextStyle(
-                    color: Theme.of(context).colorScheme.territoryColor),
-                fillColor: Theme.of(context).colorScheme.secondaryColor,
-                border: const OutlineInputBorder()),
-            keyboardType: TextInputType.number,
-            style:
-                TextStyle(color: Theme.of(context).colorScheme.territoryColor),
-            /* onSubmitted: () */
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly]));
-  }
-
-  void postedSinceUpdate(String value) {
-    setState(() {
-      postedOn = value;
-    });
-  }
-
-  Widget postedSinceOption(BuildContext context) {
-    int index =
-        Constant.postedSince.indexWhere((item) => item.value == postedOn);
-
-    return InkWell(
-      onTap: () {
-        Navigator.pushNamed(context, Routes.postedSinceFilterScreen,
-            arguments: {
-              "list": Constant.postedSince,
-              "postedSince": postedOn,
-              "update": postedSinceUpdate
-            }).then((value) {});
-      },
-      child: Padding(
-        padding: const EdgeInsets.only(top: 10.0),
-        child: Container(
-          height: 55,
-          width: double.infinity,
-          decoration: BoxDecoration(
-              color: context.color.secondaryColor,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: context.color.borderColor.darken(30),
-                width: 1,
-              )),
-          child: Padding(
-            padding: const EdgeInsetsDirectional.only(start: 14.0),
-            child: Row(
-              children: [
-                UiUtils.getSvg(AppIcons.sinceIcon,
-                    color: context.color.textDefaultColor),
-                Padding(
-                    padding: const EdgeInsetsDirectional.only(start: 15.0),
-                    child: CustomText(Constant.postedSince[index].status,
-                        color:
-                            context.color.textDefaultColor.withOpacity(0.3))),
-                Spacer(),
-                Padding(
-                  padding: EdgeInsetsDirectional.only(end: 14.0),
-                  child: UiUtils.getSvg(AppIcons.downArrow,
-                      color: context.color.textDefaultColor),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void onClickPosted(String val) {
-    if (val == Constant.postedSince[0].value &&
-        searchBody.containsKey(Api.postedSince)) {
-      searchBody[Api.postedSince] = "";
-    } else {
-      searchBody[Api.postedSince] = val;
-    }
-
-    postedOn = val;
-    setState(() {});
-  }
-
-  // This method handles the custom field state updates in a safe way
-  void _safeUpdateCustomFieldStates() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      for (var customFieldBuilder in moreDetailDynamicFields) {
-        customFieldBuilder.stateUpdater(setState);
-      }
-    });
-  }
-
-  // Use this method instead of direct calls in build methods
-  Widget _buildCustomFields() {
-    // Don't call _safeUpdateCustomFieldStates() directly during build
-    // Use post-frame callback to schedule it after build completes
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _safeUpdateCustomFieldStates();
-    });
-
-    return BlocConsumer<FetchCustomFieldsCubit, FetchCustomFieldState>(
-      listener: (context, state) {
-        if (state is FetchCustomFieldSuccess) {
-          final updatedFields = context
-              .read<FetchCustomFieldsCubit>()
-              .getFields()
-              .where((field) =>
-                  field.type != "fileinput" &&
-                  field.type != "textbox" &&
-                  field.type != "number")
-              .map((field) {
-            Map<String, dynamic> fieldData = field.toMap();
-
-            // Prefill value from Constant.itemFilter!.customFields
-            if (Constant.itemFilter != null &&
-                Constant.itemFilter!.customFields != null) {
-              String customFieldKey = 'custom_fields[${fieldData['id']}]';
-              if (Constant.itemFilter!.customFields!
-                  .containsKey(customFieldKey)) {
-                fieldData['value'] =
-                    Constant.itemFilter!.customFields![customFieldKey];
-                fieldData['isEdit'] = true;
-              }
-            }
-
-            CustomFieldBuilder customFieldBuilder =
-                CustomFieldBuilder(fieldData);
-            // Don't set state updater here
-            customFieldBuilder.init();
-            return customFieldBuilder;
-          }).toList();
-
-          // Update safely outside of build
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              moreDetailDynamicFields = updatedFields;
-              setState(() {});
-            }
-          });
-        }
-      },
-      builder: (context, state) {
-        return Column(
-          children: moreDetailDynamicFields.map((customFieldBuilder) {
-            // Don't update state here - pass the builder directly
-            return Padding(
-              padding: EdgeInsets.only(top: 16),
-              child: customFieldBuilder.build(context),
-            );
-          }).toList(),
-        );
-      },
     );
   }
 }

@@ -6,10 +6,12 @@ import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/item/fetch_popular_items_cubit.dart';
 import 'package:tlobni/data/cubits/item/search_item_cubit.dart';
 import 'package:tlobni/data/cubits/system/app_theme_cubit.dart';
+import 'package:tlobni/data/cubits/user/search_providers_cubit.dart';
 import 'package:tlobni/data/helper/designs.dart';
 import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/data/model/item_filter_model.dart';
+import 'package:tlobni/data/model/user_model.dart';
 import 'package:tlobni/ui/screens/home/home_screen.dart';
 import 'package:tlobni/ui/screens/home/widgets/item_horizontal_card.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
@@ -41,18 +43,45 @@ class SearchScreen extends StatefulWidget {
   static Route route(RouteSettings settings) {
     Map? arguments = settings.arguments as Map?;
 
+    // Extract the filter if it's passed in the arguments
+    ItemFilterModel? itemFilter =
+        arguments != null && arguments.containsKey('itemFilter')
+            ? arguments['itemFilter'] as ItemFilterModel
+            : null;
+
+    // Debug log to trace filter passing
+    print(
+        "DEBUG ROUTE: Creating search route with filter: ${itemFilter?.toJson()}");
+
     return BlurredRouter(
       builder: (context) => MultiBlocProvider(
           providers: [
             BlocProvider(
-              create: (context) => SearchItemCubit(),
+              create: (context) {
+                final cubit = SearchItemCubit();
+                // Don't trigger search here, let initState handle it
+                // This prevents double API calls
+                print(
+                    "DEBUG ROUTE: Created SearchItemCubit (search will be triggered in initState)");
+                return cubit;
+              },
+            ),
+            BlocProvider(
+              create: (context) {
+                final cubit = SearchProvidersCubit();
+                // Don't trigger search here, let initState handle it
+                // This prevents double API calls
+                print(
+                    "DEBUG ROUTE: Created SearchProvidersCubit (search will be triggered in initState)");
+                return cubit;
+              },
             ),
             BlocProvider(
               create: (context) => FetchPopularItemsCubit(),
             ),
           ],
           child: SearchScreen(
-            autoFocus: arguments?['autoFocus'],
+            autoFocus: arguments?['autoFocus'] ?? false,
           )),
     );
   }
@@ -70,8 +99,12 @@ class SearchScreenState extends State<SearchScreen>
   static TextEditingController searchController = TextEditingController();
   final ScrollController controller = ScrollController();
   final ScrollController popularController = ScrollController();
+  final ScrollController providerController = ScrollController();
   Timer? _searchDelay;
   ItemFilterModel? filter;
+
+  // To determine if we're showing providers or services
+  bool get isProviderSearch => filter != null && filter!.userType != null;
 
   //to store selected filter categories
   List<CategoryModel> categoryList = [];
@@ -79,13 +112,56 @@ class SearchScreenState extends State<SearchScreen>
   @override
   void initState() {
     super.initState();
-    Constant.itemFilter = null;
+    // Initialize filter from Constant if it exists
+    filter = Constant.itemFilter;
+
+    print("DEBUG: Search screen initialized with filter: ${filter?.toJson()}");
+
     context.read<FetchPopularItemsCubit>().fetchPopularItems();
     searchController = TextEditingController();
 
     searchController.addListener(searchItemListener);
     controller.addListener(pageScrollListen);
     popularController.addListener(pagePopularScrollListen);
+    providerController.addListener(pageProviderScrollListen);
+
+    // If we have a filter, initiate a search immediately
+    if (filter != null) {
+      // Prevent double initialization
+      bool shouldInitiateSearch = true;
+
+      print(
+          "DEBUG: Preparing to search with filter. Provider search: $isProviderSearch");
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!shouldInitiateSearch) {
+          print("DEBUG: Search already initiated, skipping duplicate search");
+          return;
+        }
+
+        shouldInitiateSearch = false;
+
+        if (isProviderSearch) {
+          // Provider search
+          print(
+              "DEBUG: Initiating provider search with filter: ${filter?.toJson()}");
+          context.read<SearchProvidersCubit>().searchProviders(
+                searchController.text,
+                page: 1,
+                filter: filter,
+              );
+        } else {
+          // Service search
+          print(
+              "DEBUG: Initiating service search with filter: ${filter?.toJson()}");
+          context.read<SearchItemCubit>().searchItem(
+                searchController.text,
+                page: 1,
+                filter: filter,
+              );
+        }
+      });
+    }
   }
 
   void pageScrollListen() {
@@ -98,6 +174,16 @@ class SearchScreenState extends State<SearchScreen>
     }
   }
 
+  void pageProviderScrollListen() {
+    if (providerController.isEndReached()) {
+      if (context.read<SearchProvidersCubit>().hasMoreData()) {
+        context
+            .read<SearchProvidersCubit>()
+            .fetchMoreProviders(searchController.text, Constant.itemFilter);
+      }
+    }
+  }
+
   void pagePopularScrollListen() {
     if (popularController.isEndReached()) {
       if (context.read<FetchPopularItemsCubit>().hasMoreData()) {
@@ -106,33 +192,39 @@ class SearchScreenState extends State<SearchScreen>
     }
   }
 
-//this will listen and manage search
+  //this will listen and manage search
   void searchItemListener() {
     _searchDelay?.cancel();
     searchCallAfterDelay();
     setState(() {});
   }
 
-//This will create delay so we don't face rapid api call
+  //This will create delay so we don't face rapid api call
   void searchCallAfterDelay() {
     _searchDelay = Timer(const Duration(milliseconds: 500), itemSearch);
   }
 
   ///This will call api after some delay
   void itemSearch() {
-    // if (searchController.text.isNotEmpty) {
     if (previousSearchQuery != searchController.text) {
-      context.read<SearchItemCubit>().searchItem(
-            searchController.text,
-            page: 1,
-            filter: filter,
-          );
+      if (isProviderSearch) {
+        // Provider search
+        context.read<SearchProvidersCubit>().searchProviders(
+              searchController.text,
+              page: 1,
+              filter: filter,
+            );
+      } else {
+        // Service search
+        context.read<SearchItemCubit>().searchItem(
+              searchController.text,
+              page: 1,
+              filter: filter,
+            );
+      }
       previousSearchQuery = searchController.text;
       setState(() {});
     }
-    // } else {
-    // context.read<SearchItemCubit>().clearSearch();
-    // }
   }
 
   PreferredSizeWidget appBarWidget() {
@@ -183,10 +275,22 @@ class SearchScreenState extends State<SearchScreen>
                                   "categoryList": categoryList,
                                 }).then((value) {
                               if (value == true) {
-                                context.read<SearchItemCubit>().searchItem(
-                                    searchController.text,
-                                    page: 1,
-                                    filter: filter);
+                                if (isProviderSearch) {
+                                  // Provider search
+                                  context
+                                      .read<SearchProvidersCubit>()
+                                      .searchProviders(
+                                        searchController.text,
+                                        page: 1,
+                                        filter: filter,
+                                      );
+                                } else {
+                                  // Service search
+                                  context.read<SearchItemCubit>().searchItem(
+                                      searchController.text,
+                                      page: 1,
+                                      filter: filter);
+                                }
                               }
                             });
                           },
@@ -348,48 +452,68 @@ class SearchScreenState extends State<SearchScreen>
     );
   }
 
-/*  Widget bodyData() {
-    return SingleChildScrollView(
-      controller:
-          searchController.text.isNotEmpty ? controller : popularController,
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        buildHistoryItemList(),
-        searchController.text.isNotEmpty
-            ? searchItemsWidget()
-            : popularItemsWidget(),
-      ]),
-    );
-  }*/
-
   Widget bodyData() {
-    return BlocConsumer<SearchItemCubit, SearchItemState>(
-      listener: (context, searchState) {
-        // Add any specific listener logic for SearchItemCubit state changes if needed
-      },
-      builder: (context, searchState) {
-        bool hasSearchResults = searchState is SearchItemSuccess &&
-            searchState.searchedItems.isNotEmpty;
+    if (isProviderSearch) {
+      // Provider search content
+      return BlocConsumer<SearchProvidersCubit, SearchProvidersState>(
+        listener: (context, searchState) {
+          // Add any specific listener logic for SearchProvidersCubit state changes if needed
+        },
+        builder: (context, searchState) {
+          bool hasSearchResults = searchState is SearchProvidersSuccess &&
+              searchState.searchedProviders.isNotEmpty;
 
-        ScrollController activeController =
-            hasSearchResults ? controller : popularController;
+          ScrollController activeController =
+              hasSearchResults ? providerController : popularController;
 
-        return SingleChildScrollView(
-          controller: activeController,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              buildHistoryItemList(),
-              if (searchController.text.isNotEmpty ||
-                  hasSearchResults ||
-                  filter != null)
-                searchItemsWidget()
-              else
-                popularItemsWidget(),
-            ],
-          ),
-        );
-      },
-    );
+          return SingleChildScrollView(
+            controller: activeController,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                buildHistoryItemList(),
+                if (searchController.text.isNotEmpty ||
+                    hasSearchResults ||
+                    filter != null)
+                  providersItemsWidget()
+                else
+                  popularItemsWidget(),
+              ],
+            ),
+          );
+        },
+      );
+    } else {
+      // Service search content
+      return BlocConsumer<SearchItemCubit, SearchItemState>(
+        listener: (context, searchState) {
+          // Add any specific listener logic for SearchItemCubit state changes if needed
+        },
+        builder: (context, searchState) {
+          bool hasSearchResults = searchState is SearchItemSuccess &&
+              searchState.searchedItems.isNotEmpty;
+
+          ScrollController activeController =
+              hasSearchResults ? controller : popularController;
+
+          return SingleChildScrollView(
+            controller: activeController,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                buildHistoryItemList(),
+                if (searchController.text.isNotEmpty ||
+                    hasSearchResults ||
+                    filter != null)
+                  searchItemsWidget()
+                else
+                  popularItemsWidget(),
+              ],
+            ),
+          );
+        },
+      );
+    }
   }
 
   void clearBoxData() async {
@@ -490,18 +614,6 @@ class SearchScreenState extends State<SearchScreen>
     );
   }
 
-/*  void insertNewItem(ItemModel model) {
-    var box = Hive.box(HiveKeys.historyBox);
-
-    if (box.length >= 5) {
-      box.deleteAt(0);
-    }
-
-    box.add(jsonEncode(model.toJson()));
-
-    setState(() {});
-  }*/
-
   void insertNewItem(ItemModel model) {
     var box = Hive.box(HiveKeys.historyBox);
 
@@ -526,6 +638,127 @@ class SearchScreenState extends State<SearchScreen>
     }
 
     setState(() {});
+  }
+
+  // Widget to show provider search results
+  Widget providersItemsWidget() {
+    return BlocBuilder<SearchProvidersCubit, SearchProvidersState>(
+      builder: (context, state) {
+        if (state is SearchProvidersFetchProgress) {
+          return shimmerEffect();
+        }
+
+        if (state is SearchProvidersFailure) {
+          if (state.errorMessage == "no-internet") {
+            return SingleChildScrollView(
+              child: NoInternet(
+                onRetry: () {
+                  context.read<SearchProvidersCubit>().searchProviders(
+                        searchController.text.toString(),
+                        page: 1,
+                        filter: filter,
+                      );
+                },
+              ),
+            );
+          }
+
+          return Center(child: const SomethingWentWrong());
+        }
+
+        if (state is SearchProvidersSuccess) {
+          if (state.searchedProviders.isEmpty) {
+            return SingleChildScrollView(
+              child: NoDataFound(
+                onTap: () {
+                  context.read<SearchProvidersCubit>().searchProviders(
+                        searchController.text.toString(),
+                        page: 1,
+                        filter: filter,
+                      );
+                },
+              ),
+            );
+          }
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: sidePadding,
+              vertical: 8,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: EdgeInsetsDirectional.only(start: 5.0),
+                  child: CustomText(
+                    filter?.userType == 'expert'
+                        ? "Experts".translate(context)
+                        : "Businesses".translate(context),
+                    color: context.color.textDefaultColor.withOpacity(0.3),
+                    fontSize: context.font.normal,
+                  ),
+                ),
+                SizedBox(height: 3),
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  separatorBuilder: (context, index) {
+                    return Container(height: 8);
+                  },
+                  itemBuilder: (context, index) {
+                    UserModel provider = state.searchedProviders[index];
+
+                    return InkWell(
+                      onTap: () {
+                        // Create a User object from the UserModel provider
+                        Navigator.pushNamed(
+                          context,
+                          Routes.sellerProfileScreen,
+                          arguments: {
+                            'model': User(
+                              id: provider.id,
+                              name: provider.name,
+                              email: provider.email,
+                              mobile: provider.mobile,
+                              type: provider.type,
+                              profile: provider.profile,
+                              bio: provider.bio,
+                              website: provider.website,
+                              facebook: provider.facebook,
+                              twitter: provider.twitter,
+                              instagram: provider.instagram,
+                              tiktok: provider.tiktok,
+                              address: provider.address,
+                              isVerified: provider.isVerified,
+                              showPersonalDetails:
+                                  provider.isPersonalDetailShow,
+                              createdAt: provider.createdAt,
+                              updatedAt: provider.updatedAt,
+                            ),
+                          },
+                        );
+                      },
+                      child: ProviderCard(
+                        provider: provider,
+                      ),
+                    );
+                  },
+                  itemCount: state.searchedProviders.length,
+                ),
+                if (state.isLoadingMore)
+                  Center(
+                    child: UiUtils.progress(
+                      normalProgressColor: context.color.territoryColor,
+                    ),
+                  )
+              ],
+            ),
+          );
+        }
+        return Container();
+      },
+    );
   }
 
   Widget searchItemsWidget() {
@@ -680,11 +913,6 @@ class SearchScreenState extends State<SearchScreen>
                 ),
                 ListView.separated(
                   shrinkWrap: true,
-                  /*  padding: const EdgeInsets.symmetric(
-                    horizontal: sidePadding,
-                    vertical: 8,
-                  ),*/
-
                   physics: NeverScrollableScrollPhysics(),
                   separatorBuilder: (context, index) {
                     return Container(
@@ -796,6 +1024,125 @@ class SearchScreenState extends State<SearchScreen>
   @override
   void dispose() {
     searchController.dispose();
+    controller.dispose();
+    popularController.dispose();
+    providerController.dispose();
     super.dispose();
+  }
+}
+
+// Provider card widget to display provider search results
+class ProviderCard extends StatelessWidget {
+  final UserModel provider;
+
+  const ProviderCard({
+    Key? key,
+    required this.provider,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.color.secondaryColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: context.color.borderColor.withOpacity(0.5),
+          width: 1,
+        ),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Profile image
+          ClipRRect(
+            borderRadius: BorderRadius.circular(50),
+            child: provider.profile != null && provider.profile!.isNotEmpty
+                ? UiUtils.getImage(
+                    provider.profile!,
+                    height: 60,
+                    width: 60,
+                    fit: BoxFit.cover,
+                  )
+                : Container(
+                    height: 60,
+                    width: 60,
+                    color: context.color.territoryColor.withOpacity(0.2),
+                    child: Icon(
+                      Icons.person,
+                      color: context.color.territoryColor,
+                      size: 30,
+                    ),
+                  ),
+          ),
+          const SizedBox(width: 12),
+          // Provider details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Name and type
+                Row(
+                  children: [
+                    Expanded(
+                      child: CustomText(
+                        provider.name ?? "Unknown",
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: context.color.textColorDark,
+                      ),
+                    ),
+                    if (provider.isVerified == 1)
+                      Icon(
+                        Icons.verified,
+                        color: Colors.blue,
+                        size: 18,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                // Provider type
+                CustomText(
+                  provider.type ?? "",
+                  fontSize: 14,
+                  color: context.color.textDefaultColor.withOpacity(0.7),
+                ),
+                const SizedBox(height: 8),
+                // Location
+                if (provider.address != null &&
+                    provider.address.toString().isNotEmpty)
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: 14,
+                        color: context.color.territoryColor,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: CustomText(
+                          provider.address.toString(),
+                          fontSize: 12,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          color:
+                              context.color.textDefaultColor.withOpacity(0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+          // Arrow icon
+          Icon(
+            Icons.arrow_forward_ios,
+            size: 16,
+            color: context.color.textDefaultColor.withOpacity(0.5),
+          ),
+        ],
+      ),
+    );
   }
 }

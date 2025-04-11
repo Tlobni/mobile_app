@@ -60,7 +60,7 @@ class UserModel {
     fcmId = json['fcm_id'];
     firebaseId = json['firebase_id'];
     id = json['id'];
-    isActive = json['isActive'] as int?;
+    isActive = json['isActive'] as int? ?? json['status'] as int?;
     isProfileCompleted = json['isProfileCompleted'];
     type = json['type'];
     bio = json['bio'];
@@ -75,7 +75,7 @@ class UserModel {
     notification = (json['notification'] != null
         ? (json['notification'] is int)
             ? json['notification']
-            : int.parse(json['notification'])
+            : int.parse(json['notification'].toString())
         : null);
     profile = json['profile'];
     token = json['token'];
@@ -84,7 +84,7 @@ class UserModel {
     isPersonalDetailShow = (json['show_personal_details'] != null
         ? (json['show_personal_details'] is int)
             ? json['show_personal_details']
-            : int.parse(json['show_personal_details'])
+            : int.parse(json['show_personal_details'].toString())
         : null);
   }
 

@@ -1620,7 +1620,46 @@ class HomeScreenState extends State<HomeScreen>
     }
 
     if (_experienceItems.isEmpty) {
-      return const SliderWidget(); // Fall back to the slider if no experience items
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: sidePadding),
+        height: 200,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: context.color.secondaryColor.withOpacity(0.5),
+          border: Border.all(color: context.color.borderColor.withOpacity(0.3)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.event_available_outlined,
+              size: 48,
+              color: context.color.territoryColor.withOpacity(0.7),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              "No Exclusive Experiences Available",
+              style: TextStyle(
+                fontSize: context.font.large,
+                fontWeight: FontWeight.w600,
+                color: context.color.textColorDark,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                "Check back soon for unique experiences",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: context.font.small,
+                  color: context.color.textLightColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     return SizedBox(

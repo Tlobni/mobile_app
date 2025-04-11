@@ -18,6 +18,9 @@ class ItemFilterModel {
   final String? gender;
   final String? serviceType;
   final Map<String, String>? specialTags;
+  final double? rating;
+  final double? minRating;
+  final double? maxRating;
 
   ItemFilterModel({
     this.maxPrice,
@@ -37,6 +40,9 @@ class ItemFilterModel {
     this.gender,
     this.serviceType,
     this.specialTags,
+    this.rating,
+    this.minRating,
+    this.maxRating,
   });
 
   ItemFilterModel copyWith({
@@ -57,6 +63,9 @@ class ItemFilterModel {
     String? gender,
     String? serviceType,
     Map<String, String>? specialTags,
+    double? rating,
+    double? minRating,
+    double? maxRating,
   }) {
     return ItemFilterModel(
       maxPrice: maxPrice ?? this.maxPrice,
@@ -76,6 +85,9 @@ class ItemFilterModel {
       gender: gender ?? this.gender,
       serviceType: serviceType ?? this.serviceType,
       specialTags: specialTags ?? this.specialTags,
+      rating: rating ?? this.rating,
+      minRating: minRating ?? this.minRating,
+      maxRating: maxRating ?? this.maxRating,
     );
   }
 
@@ -99,6 +111,9 @@ class ItemFilterModel {
       'gender': gender,
       'provider_item_type': serviceType,
       'special_tags': specialTags,
+      'rating': rating,
+      'min_rating': minRating,
+      'max_rating': maxRating,
     };
   }
 
@@ -126,6 +141,15 @@ class ItemFilterModel {
       specialTags: map['special_tags'] != null
           ? Map<String, String>.from(map['special_tags'])
           : null,
+      rating: map['rating'] != null
+          ? double.tryParse(map['rating'].toString())
+          : null,
+      minRating: map['min_rating'] != null
+          ? double.tryParse(map['min_rating'].toString())
+          : null,
+      maxRating: map['max_rating'] != null
+          ? double.tryParse(map['max_rating'].toString())
+          : null,
     );
   }
 
@@ -136,7 +160,7 @@ class ItemFilterModel {
 
   @override
   String toString() {
-    return 'ItemFilterModel(maxPrice: $maxPrice, minPrice: $minPrice, categoryId: $categoryId, postedSince: $postedSince, city: $city, state: $state, country: $country, area: $area, areaId: $areaId, custom_fields: $customFields, radius: $radius, latitude: $latitude, longitude: $longitude, userType: $userType, gender: $gender, serviceType: $serviceType, specialTags: $specialTags)';
+    return 'ItemFilterModel(maxPrice: $maxPrice, minPrice: $minPrice, categoryId: $categoryId, postedSince: $postedSince, city: $city, state: $state, country: $country, area: $area, areaId: $areaId, custom_fields: $customFields, radius: $radius, latitude: $latitude, longitude: $longitude, userType: $userType, gender: $gender, serviceType: $serviceType, specialTags: $specialTags, rating: $rating, minRating: $minRating, maxRating: $maxRating)';
   }
 
   factory ItemFilterModel.createEmpty() {
@@ -158,6 +182,9 @@ class ItemFilterModel {
       gender: null,
       serviceType: null,
       specialTags: {},
+      rating: null,
+      minRating: null,
+      maxRating: null,
     );
   }
 
@@ -181,7 +208,10 @@ class ItemFilterModel {
         other.userType == userType &&
         other.gender == gender &&
         other.serviceType == serviceType &&
-        other.specialTags.toString() == specialTags.toString();
+        other.specialTags.toString() == specialTags.toString() &&
+        other.rating == rating &&
+        other.minRating == minRating &&
+        other.maxRating == maxRating;
   }
 
   @override
@@ -202,6 +232,9 @@ class ItemFilterModel {
         userType.hashCode ^
         gender.hashCode ^
         serviceType.hashCode ^
-        specialTags.hashCode;
+        specialTags.hashCode ^
+        rating.hashCode ^
+        minRating.hashCode ^
+        maxRating.hashCode;
   }
 }
