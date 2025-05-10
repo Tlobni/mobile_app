@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/theme/theme.dart';
@@ -6,7 +7,6 @@ import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
 
 class AccountTypeScreen extends StatefulWidget {
   const AccountTypeScreen({Key? key}) : super(key: key);
@@ -52,8 +52,7 @@ class _AccountTypeScreenState extends State<AccountTypeScreen> {
         Routes.signup,
         arguments: {
           'userType': _selectedAccountType == 'Client' ? 'Client' : 'Provider',
-          'providerType':
-              _selectedAccountType == 'Client' ? null : _selectedAccountType,
+          'providerType': _selectedAccountType == 'Client' ? null : _selectedAccountType,
         },
       );
     }
@@ -163,7 +162,7 @@ class _AccountTypeScreenState extends State<AccountTypeScreen> {
         });
       },
       child: Container(
-        margin: EdgeInsets.only(bottom: index == 0 ? 30 : 10),
+        margin: EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
           color: const Color(0xFFE6CBA8),
@@ -191,8 +190,7 @@ class _AccountTypeScreenState extends State<AccountTypeScreen> {
                     color: const Color(0xFF0F2137),
                     width: 2,
                   ),
-                  color:
-                      isSelected ? const Color(0xFF0F2137) : Colors.transparent,
+                  color: isSelected ? const Color(0xFF0F2137) : Colors.transparent,
                 ),
                 child: isSelected
                     ? const Center(
