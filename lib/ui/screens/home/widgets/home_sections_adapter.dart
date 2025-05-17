@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/favorite/favorite_cubit.dart';
@@ -15,8 +17,6 @@ import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/extensions/lib/currency_formatter.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class HomeSectionsAdapter extends StatelessWidget {
   final HomeScreenSection section;
@@ -35,11 +35,10 @@ class HomeSectionsAdapter extends StatelessWidget {
                 TitleHeader(
                   title: section.title ?? "",
                   onTap: () {
-                    Navigator.pushNamed(context, Routes.sectionWiseItemsScreen,
-                        arguments: {
-                          "title": section.title,
-                          "sectionId": section.sectionId,
-                        });
+                    Navigator.pushNamed(context, Routes.sectionWiseItemsScreen, arguments: {
+                      "title": section.title,
+                      "sectionId": section.sectionId,
+                    });
                   },
                   // section: section,
                 ),
@@ -70,11 +69,10 @@ class HomeSectionsAdapter extends StatelessWidget {
                 TitleHeader(
                   title: section.title ?? "",
                   onTap: () {
-                    Navigator.pushNamed(context, Routes.sectionWiseItemsScreen,
-                        arguments: {
-                          "title": section.title,
-                          "sectionId": section.sectionId,
-                        });
+                    Navigator.pushNamed(context, Routes.sectionWiseItemsScreen, arguments: {
+                      "title": section.title,
+                      "sectionId": section.sectionId,
+                    });
                   },
                 ),
                 GridListAdapter(
@@ -104,11 +102,10 @@ class HomeSectionsAdapter extends StatelessWidget {
                 TitleHeader(
                   title: section.title ?? "",
                   onTap: () {
-                    Navigator.pushNamed(context, Routes.sectionWiseItemsScreen,
-                        arguments: {
-                          "title": section.title,
-                          "sectionId": section.sectionId,
-                        });
+                    Navigator.pushNamed(context, Routes.sectionWiseItemsScreen, arguments: {
+                      "title": section.title,
+                      "sectionId": section.sectionId,
+                    });
                   },
                 ),
                 GridListAdapter(
@@ -135,11 +132,10 @@ class HomeSectionsAdapter extends StatelessWidget {
                 TitleHeader(
                   title: section.title ?? "",
                   onTap: () {
-                    Navigator.pushNamed(context, Routes.sectionWiseItemsScreen,
-                        arguments: {
-                          "title": section.title,
-                          "sectionId": section.sectionId,
-                        });
+                    Navigator.pushNamed(context, Routes.sectionWiseItemsScreen, arguments: {
+                      "title": section.title,
+                      "sectionId": section.sectionId,
+                    });
                   },
                 ),
                 GridListAdapter(
@@ -183,8 +179,7 @@ class TitleHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsetsDirectional.only(
-          top: 18, bottom: 12, start: sidePadding, end: sidePadding),
+      padding: EdgeInsetsDirectional.only(top: 18, bottom: 12, start: sidePadding, end: sidePadding),
       child: Row(
         children: [
           Expanded(
@@ -200,8 +195,7 @@ class TitleHeader extends StatelessWidget {
             GestureDetector(
                 onTap: onTap,
                 child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 4, vertical: 2.2),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2.2),
                     child: CustomText(
                       "seeAll".translate(context),
                       fontSize: context.font.smaller + 1,
@@ -274,10 +268,7 @@ class _ItemCardState extends State<ItemCard> {
                       ),
                     ),
                     if (widget.item?.isFeature ?? false)
-                      const PositionedDirectional(
-                          start: 10,
-                          top: 5,
-                          child: PromotedCard(type: PromoteCardType.icon)),
+                      const PositionedDirectional(start: 10, top: 5, child: PromotedCard(type: PromoteCardType.icon)),
                   ],
                 ),
                 Expanded(
@@ -296,15 +287,20 @@ class _ItemCardState extends State<ItemCard> {
                               fontSize: context.font.large,
                             ),
                             if (widget.item?.priceType != null)
-                              Row(
-                                children: [
-                                  SizedBox(width: 4),
-                                  CustomText(
-                                    "/ ${_formatPriceType(widget.item?.priceType)}",
-                                    fontSize: context.font.small,
-                                    color: context.color.textLightColor,
-                                  ),
-                                ],
+                              Flexible(
+                                child: Row(
+                                  children: [
+                                    SizedBox(width: 4),
+                                    Flexible(
+                                      child: CustomText(
+                                        "/ ${_formatPriceType(widget.item?.priceType)}",
+                                        fontSize: context.font.small,
+                                        color: context.color.textLightColor,
+                                        maxLines: 1,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                           ],
                         ),
@@ -324,15 +320,11 @@ class _ItemCardState extends State<ItemCard> {
                               ),
                               Expanded(
                                 child: Padding(
-                                  padding:
-                                      EdgeInsetsDirectional.only(start: 3.0),
+                                  padding: EdgeInsetsDirectional.only(start: 3.0),
                                   child: CustomText(
                                     widget.item?.address ?? "",
-                                    fontSize: (widget.bigCard == true)
-                                        ? context.font.small
-                                        : context.font.smaller,
-                                    color: context.color.textDefaultColor
-                                        .withOpacity(0.3),
+                                    fontSize: (widget.bigCard == true) ? context.font.small : context.font.smaller,
+                                    color: context.color.textDefaultColor.withOpacity(0.3),
                                     maxLines: 1,
                                   ),
                                 ),
@@ -353,19 +345,14 @@ class _ItemCardState extends State<ItemCard> {
   }
 
   Widget favButton() {
-    bool isLike =
-        context.read<FavoriteCubit>().isItemFavorite(widget.item!.id!);
-
     return BlocProvider(
         create: (context) => UpdateFavoriteCubit(FavoriteRepository()),
         child: BlocConsumer<FavoriteCubit, FavoriteState>(
             bloc: context.read<FavoriteCubit>(),
             listener: ((context, state) {
-              if (state is FavoriteFetchSuccess) {
-                isLike = context
-                    .read<FavoriteCubit>()
-                    .isItemFavorite(widget.item!.id!);
-              }
+              // if (state is FavoriteFetchSuccess) {
+              //   isLike = context.read<FavoriteCubit>().isItemFavorite(widget.item!.id!);
+              // }
             }),
             builder: (context, likeAndDislikeState) {
               return BlocConsumer<UpdateFavoriteCubit, UpdateFavoriteState>(
@@ -373,13 +360,9 @@ class _ItemCardState extends State<ItemCard> {
                   listener: ((context, state) {
                     if (state is UpdateFavoriteSuccess) {
                       if (state.wasProcess) {
-                        context
-                            .read<FavoriteCubit>()
-                            .addFavoriteitem(state.item);
+                        context.read<FavoriteCubit>().addFavoriteitem(state.item);
                       } else {
-                        context
-                            .read<FavoriteCubit>()
-                            .removeFavoriteItem(state.item);
+                        context.read<FavoriteCubit>().removeFavoriteItem(state.item);
                       }
                     }
                   }),
@@ -391,11 +374,9 @@ class _ItemCardState extends State<ItemCard> {
                         onTap: () {
                           UiUtils.checkUser(
                               onNotGuest: () {
-                                context
-                                    .read<UpdateFavoriteCubit>()
-                                    .setFavoriteItem(
+                                context.read<UpdateFavoriteCubit>().setFavoriteItem(
                                       item: widget.item!,
-                                      type: isLike ? 0 : 1,
+                                      type: context.read<FavoriteCubit>().isItemFavorite(widget.item!.id!) ? 0 : 1,
                                     );
                               },
                               context: context);
@@ -406,25 +387,23 @@ class _ItemCardState extends State<ItemCard> {
                           decoration: BoxDecoration(
                             color: context.color.secondaryColor,
                             shape: BoxShape.circle,
-                            boxShadow:
-                                context.watch<AppThemeCubit>().state.appTheme ==
-                                        AppTheme.dark
-                                    ? null
-                                    : [
-                                        BoxShadow(
-                                          color: Colors.grey[300]!,
-                                          offset: const Offset(0, 2),
-                                          spreadRadius: 2,
-                                          blurRadius: 4,
-                                        ),
-                                      ],
+                            boxShadow: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark
+                                ? null
+                                : [
+                                    BoxShadow(
+                                      color: Colors.grey[300]!,
+                                      offset: const Offset(0, 2),
+                                      spreadRadius: 2,
+                                      blurRadius: 4,
+                                    ),
+                                  ],
                           ),
                           child: FittedBox(
                             fit: BoxFit.none,
                             child: state is UpdateFavoriteInProgress
                                 ? Center(child: UiUtils.progress())
                                 : UiUtils.getSvg(
-                                    isLike ? AppIcons.like_fill : AppIcons.like,
+                                    context.read<FavoriteCubit>().isItemFavorite(widget.item!.id!) ? AppIcons.like_fill : AppIcons.like,
                                     width: 22,
                                     height: 22,
                                     color: context.color.territoryColor,

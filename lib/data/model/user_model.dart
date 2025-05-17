@@ -25,6 +25,8 @@ class UserModel {
   String? token;
   String? updatedAt;
   int? isVerified;
+  String? country, city, state;
+  List<int>? categoriesIds;
 
   UserModel(
       {this.address,
@@ -80,6 +82,10 @@ class UserModel {
     profile = json['profile'];
     token = json['token'];
     updatedAt = json['updated_at'];
+    categoriesIds = (json['categories'] as String?)?.split(',').map(int.parse).toList();
+    country = json['country'];
+    city = json['city'];
+    state = json['state'];
     isVerified = json['is_verified'];
     isPersonalDetailShow = (json['show_personal_details'] != null
         ? (json['show_personal_details'] is int)
@@ -87,6 +93,8 @@ class UserModel {
             : int.parse(json['show_personal_details'].toString())
         : null);
   }
+
+  String? get location => country == null || city == null ? null : '$city, $country';
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
@@ -106,6 +114,10 @@ class UserModel {
     data['profile'] = profile;
     data['token'] = token;
     data['updated_at'] = updatedAt;
+    data['country'] = country;
+    data['city'] = city;
+    data['state'] = state;
+    data['categories'] = categoriesIds?.join(',');
     data['show_personal_details'] = isPersonalDetailShow;
     data['is_verified'] = isVerified;
     return data;

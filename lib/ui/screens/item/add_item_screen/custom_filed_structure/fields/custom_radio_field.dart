@@ -66,10 +66,7 @@ class CustomRadioField extends CustomField {
                       child: FittedBox(
                         fit: BoxFit.none,
                         child: UiUtils.imageType(parameters['image'],
-                            width: 24,
-                            height: 24,
-                            fit: BoxFit.cover,
-                            color: context.color.textDefaultColor),
+                            width: 24, height: 24, fit: BoxFit.cover, color: context.color.textDefaultColor),
                       ),
                     ),
                   ),
@@ -126,17 +123,13 @@ class CustomRadioField extends CustomField {
                           },
                           child: Container(
                               decoration: BoxDecoration(
-                                  border: Border.all(
-                                      color: context.color.borderColor,
-                                      width: 1.5),
+                                  border: Border.all(color: context.color.borderColor, width: 1.5),
                                   color: selectedRadioValue == element
-                                      ? context.color.territoryColor
-                                          .withOpacity(0.1)
+                                      ? context.color.territoryColor.withOpacity(0.1)
                                       : context.color.secondaryColor,
                                   borderRadius: BorderRadius.circular(10)),
                               child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 10, horizontal: 15),
+                                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
                                   child: CustomText(values![index],
                                       color: (selectedRadioValue == element
                                           ? context.color.territoryColor
@@ -146,8 +139,7 @@ class CustomRadioField extends CustomField {
                     })),
                 if (state.hasError)
                   Padding(
-                      padding: const EdgeInsetsDirectional.symmetric(
-                          horizontal: 8.0),
+                      padding: const EdgeInsetsDirectional.symmetric(horizontal: 8.0),
                       child: CustomText(
                         state.errorText ?? "",
                         color: context.color.error,
@@ -162,8 +154,7 @@ class CustomRadioField extends CustomField {
         // Check if the field is required
 
         // Check if the value is null or empty (no selection made)
-        if (parameters['required'] == 1 &&
-            (selectedRadioValue == null || selectedRadioValue!.isEmpty)) {
+        if (parameters['required'] == 1 && (selectedRadioValue == null || selectedRadioValue!.isEmpty)) {
           return "Selecting this is required"; // Return the error message if no selection
         }
 

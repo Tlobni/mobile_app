@@ -21,7 +21,6 @@ import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/data/model/notification_data.dart';
 import 'package:tlobni/data/model/system_settings_model.dart';
-import 'package:tlobni/data/repositories/favourites_repository.dart';
 import 'package:tlobni/ui/screens/ad_banner_screen.dart';
 import 'package:tlobni/ui/screens/home/slider_widget.dart';
 import 'package:tlobni/ui/screens/home/widgets/category_widget_home.dart';
@@ -37,11 +36,11 @@ import 'package:tlobni/ui/theme/theme.dart';
 //import 'package:uni_links/uni_links.dart';
 
 import 'package:tlobni/utils/api.dart';
+import 'package:tlobni/utils/app_icon.dart';
 import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/notification/awsome_notification.dart';
-import 'package:tlobni/utils/notification/notification_service.dart';
 import 'package:tlobni/utils/ui_utils.dart';
 
 const double sidePadding = 10;
@@ -114,7 +113,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
     notificationPermissionChecker();
     LocalAwesomeNotification().init(context);
     ///////////////////////////////////////
-    NotificationService.init(context);
     context.read<SliderCubit>().fetchSlider(
           context,
         );
@@ -306,27 +304,37 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
                 const HomeSearchField(),
 
                 // Exclusive Experiences Section
-                _buildSectionHeader(context, "Exclusive Experiences"),
-                _buildExclusiveExperiences(context),
+                if (_isLoadingExperiences || _experienceError != null || _experienceItems.isNotEmpty) ...[
+                  _buildSectionHeader(context, "Exclusive Experiences"),
+                  _buildExclusiveExperiences(context),
+                ],
 
                 // Categories
                 const CategoryWidgetHome(),
 
                 // Newest Listings Section
-                _buildSectionHeader(context, "Newest Listings"),
-                _buildNewestListings(context),
+                if (_isLoadingNewestItems || _newestItemsError != null || _newestItems.isNotEmpty) ...[
+                  _buildSectionHeader(context, "Newest Listings"),
+                  _buildNewestListings(context),
+                ],
 
                 // Featured Experts & Businesses
-                _buildSectionHeader(context, "Featured Experts & Businesses"),
-                _buildFeaturedExperts(context),
+                if (_isLoadingFeaturedUsers || _featuredUsersError != null || _featuredUsers.isNotEmpty) ...[
+                  _buildSectionHeader(context, "Featured Experts & Businesses"),
+                  _buildFeaturedExperts(context),
+                ],
 
                 // Women-Exclusive Services
-                _buildSectionHeader(context, "Women-Exclusive Services"),
-                _buildWomenExclusiveServices(context),
+                if (_isLoadingWomenExclusive || _womenExclusiveError != null || _womenExclusiveItems.isNotEmpty) ...[
+                  _buildSectionHeader(context, "Women-Exclusive Services"),
+                  _buildWomenExclusiveServices(context),
+                ],
 
                 // Corporate & Business Packages
-                _buildSectionHeader(context, "Corporate & Business Packages"),
-                _buildCorporatePackages(context),
+                if (_isLoadingCorporatePackages || _corporatePackagesError != null || _corporatePackageItems.isNotEmpty) ...[
+                  _buildSectionHeader(context, "Corporate & Business Packages"),
+                  _buildCorporatePackages(context),
+                ],
 
                 const SizedBox(height: 20),
               ],
@@ -414,22 +422,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
 
   Widget _buildNewestListings(BuildContext context) {
     if (_isLoadingNewestItems) {
-      return SizedBox(
-        height: 210,
-        child: ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: sidePadding),
-          scrollDirection: Axis.horizontal,
-          itemCount: 4,
-          separatorBuilder: (context, index) => const SizedBox(width: 14),
-          itemBuilder: (context, index) {
-            return CustomShimmer(
-              width: 170,
-              height: 210,
-              borderRadius: 10,
-            );
-          },
-        ),
-      );
+      return _shimmerEffect(itemCount: 4, width: 170, height: 210);
     }
 
     if (_newestItemsError != null) {
@@ -555,48 +548,9 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
                       ),
                     ),
                   PositionedDirectional(
-                    end: 8,
+                    end: 0,
                     bottom: 50,
-                    child: BlocBuilder<FavoriteCubit, FavoriteState>(
-                      builder: (context, state) {
-                        bool isLike = context.read<FavoriteCubit>().isItemFavorite(item.id!);
-                        return GestureDetector(
-                          onTap: () {
-                            UiUtils.checkUser(
-                              context: context,
-                              onNotGuest: () {
-                                context.read<UpdateFavoriteCubit>().setFavoriteItem(
-                                      item: item,
-                                      type: isLike ? 0 : 1,
-                                    );
-                              },
-                            );
-                          },
-                          child: Container(
-                            width: 30,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              color: context.color.secondaryColor,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Icon(
-                                isLike ? Icons.favorite : Icons.favorite_border,
-                                size: 18,
-                                color: context.color.territoryColor,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                    child: favouriteButton(context, item),
                   ),
                 ],
               ),
@@ -609,22 +563,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
 
   Widget _buildFeaturedExperts(BuildContext context) {
     if (_isLoadingFeaturedUsers) {
-      return SizedBox(
-        height: 210,
-        child: ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: sidePadding),
-          scrollDirection: Axis.horizontal,
-          itemCount: 3,
-          separatorBuilder: (context, index) => const SizedBox(width: 14),
-          itemBuilder: (context, index) {
-            return CustomShimmer(
-              width: 170,
-              height: 210,
-              borderRadius: 10,
-            );
-          },
-        ),
-      );
+      return _shimmerEffect(itemCount: 3, width: 170, height: 210);
     }
 
     if (_featuredUsersError != null) {
@@ -825,22 +764,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
 
   Widget _buildWomenExclusiveServices(BuildContext context) {
     if (_isLoadingWomenExclusive) {
-      return SizedBox(
-        height: 210,
-        child: ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: sidePadding),
-          scrollDirection: Axis.horizontal,
-          itemCount: 3,
-          separatorBuilder: (context, index) => const SizedBox(width: 14),
-          itemBuilder: (context, index) {
-            return CustomShimmer(
-              width: 170,
-              height: 210,
-              borderRadius: 10,
-            );
-          },
-        ),
-      );
+      return _shimmerEffect(itemCount: 3, width: 170, height: 210);
     }
 
     if (_womenExclusiveError != null) {
@@ -965,51 +889,9 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
                       ),
                     ),
                   PositionedDirectional(
-                    end: 8,
+                    end: 0,
                     bottom: 45,
-                    child: BlocProvider(
-                      create: (context) => UpdateFavoriteCubit(FavoriteRepository()),
-                      child: BlocBuilder<FavoriteCubit, FavoriteState>(
-                        builder: (context, state) {
-                          bool isLike = context.read<FavoriteCubit>().isItemFavorite(item.id!);
-                          return GestureDetector(
-                            onTap: () {
-                              UiUtils.checkUser(
-                                context: context,
-                                onNotGuest: () {
-                                  context.read<UpdateFavoriteCubit>().setFavoriteItem(
-                                        item: item,
-                                        type: isLike ? 0 : 1,
-                                      );
-                                },
-                              );
-                            },
-                            child: Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                color: context.color.secondaryColor,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  isLike ? Icons.favorite : Icons.favorite_border,
-                                  size: 18,
-                                  color: context.color.territoryColor,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                    child: favouriteButton(context, item),
                   ),
                 ],
               ),
@@ -1022,22 +904,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
 
   Widget _buildCorporatePackages(BuildContext context) {
     if (_isLoadingCorporatePackages) {
-      return SizedBox(
-        height: 210,
-        child: ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: sidePadding),
-          scrollDirection: Axis.horizontal,
-          itemCount: 3,
-          separatorBuilder: (context, index) => const SizedBox(width: 14),
-          itemBuilder: (context, index) {
-            return CustomShimmer(
-              width: 170,
-              height: 210,
-              borderRadius: 10,
-            );
-          },
-        ),
-      );
+      return _shimmerEffect(itemCount: 3, width: 170, height: 210);
     }
 
     if (_corporatePackagesError != null) {
@@ -1162,51 +1029,9 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
                       ),
                     ),
                   PositionedDirectional(
-                    end: 8,
+                    end: 0,
                     bottom: 45,
-                    child: BlocProvider(
-                      create: (context) => UpdateFavoriteCubit(FavoriteRepository()),
-                      child: BlocBuilder<FavoriteCubit, FavoriteState>(
-                        builder: (context, state) {
-                          bool isLike = context.read<FavoriteCubit>().isItemFavorite(item.id!);
-                          return GestureDetector(
-                            onTap: () {
-                              UiUtils.checkUser(
-                                context: context,
-                                onNotGuest: () {
-                                  context.read<UpdateFavoriteCubit>().setFavoriteItem(
-                                        item: item,
-                                        type: isLike ? 0 : 1,
-                                      );
-                                },
-                              );
-                            },
-                            child: Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                color: context.color.secondaryColor,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  isLike ? Icons.favorite : Icons.favorite_border,
-                                  size: 18,
-                                  color: context.color.territoryColor,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                    child: favouriteButton(context, item),
                   ),
                 ],
               ),
@@ -1498,22 +1323,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
   // Add a new method to build exclusive experiences section
   Widget _buildExclusiveExperiences(BuildContext context) {
     if (_isLoadingExperiences) {
-      return SizedBox(
-        height: 200,
-        child: ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: sidePadding),
-          scrollDirection: Axis.horizontal,
-          itemCount: 3,
-          separatorBuilder: (context, index) => const SizedBox(width: 14),
-          itemBuilder: (context, index) {
-            return CustomShimmer(
-              width: 300,
-              height: 200,
-              borderRadius: 10,
-            );
-          },
-        ),
-      );
+      return _shimmerEffect(itemCount: 3, width: 300, height: 200);
     }
 
     if (_experienceError != null) {
@@ -1665,46 +1475,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
                   PositionedDirectional(
                     end: 8,
                     top: 8,
-                    child: BlocBuilder<FavoriteCubit, FavoriteState>(
-                      builder: (context, state) {
-                        bool isLike = context.read<FavoriteCubit>().isItemFavorite(experience.id!);
-                        return GestureDetector(
-                          onTap: () {
-                            UiUtils.checkUser(
-                              context: context,
-                              onNotGuest: () {
-                                context.read<UpdateFavoriteCubit>().setFavoriteItem(
-                                      item: experience,
-                                      type: isLike ? 0 : 1,
-                                    );
-                              },
-                            );
-                          },
-                          child: Container(
-                            width: 30,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              color: context.color.secondaryColor,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Icon(
-                                isLike ? Icons.favorite : Icons.favorite_border,
-                                size: 18,
-                                color: context.color.territoryColor,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                    child: favouriteButton(context, experience),
                   ),
                 ],
               ),
@@ -1713,6 +1484,94 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
         },
       ),
     );
+  }
+
+  SizedBox _shimmerEffect({
+    required double width,
+    required double height,
+    required int itemCount,
+  }) {
+    return SizedBox(
+      height: 200,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+        scrollDirection: Axis.horizontal,
+        itemCount: 3,
+        separatorBuilder: (context, index) => const SizedBox(width: 14),
+        itemBuilder: (context, index) {
+          return CustomShimmer(
+            width: width,
+            height: height,
+            borderRadius: 10,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget favouriteButton(BuildContext context, ItemModel model) {
+    bool isAddedByMe = (model.user?.id != null ? model.user!.id.toString() : model.userId) == HiveUtils.getUserId();
+    if (!isAddedByMe) {
+      return BlocBuilder<FavoriteCubit, FavoriteState>(
+        bloc: context.read<FavoriteCubit>(),
+        builder: (context, favState) {
+          bool isLike = context.select((FavoriteCubit cubit) => cubit.isItemFavorite(model.id!));
+
+          return BlocConsumer<UpdateFavoriteCubit, UpdateFavoriteState>(
+            bloc: context.read<UpdateFavoriteCubit>(),
+            listener: (context, state) {
+              if (state is UpdateFavoriteSuccess) {
+                if (state.wasProcess) {
+                  context.read<FavoriteCubit>().addFavoriteitem(state.item);
+                } else {
+                  context.read<FavoriteCubit>().removeFavoriteItem(state.item);
+                }
+              }
+            },
+            builder: (context, state) {
+              return setTopRowItem(
+                  alignment: AlignmentDirectional.topEnd,
+                  marginVal: 10,
+                  backgroundColor: context.color.backgroundColor,
+                  cornerRadius: 30,
+                  childWidget: InkWell(
+                    onTap: () {
+                      UiUtils.checkUser(
+                          onNotGuest: () {
+                            context.read<UpdateFavoriteCubit>().setFavoriteItem(
+                                  item: model,
+                                  type: isLike ? 0 : 1,
+                                );
+                          },
+                          context: context);
+                    },
+                    child: UiUtils.getSvg(isLike ? AppIcons.like_fill : AppIcons.like,
+                        color: context.color.territoryColor, width: 22, height: 22),
+                  ));
+            },
+          );
+        },
+      );
+    } else {
+      return SizedBox.shrink();
+    }
+  }
+
+  Widget setTopRowItem(
+      {required AlignmentDirectional alignment,
+      required double marginVal,
+      required double cornerRadius,
+      required Color backgroundColor,
+      required Widget childWidget}) {
+    return Align(
+        alignment: alignment,
+        child: Container(
+            margin: EdgeInsets.all(marginVal),
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(cornerRadius), color: backgroundColor),
+            child: childWidget)
+        //TODO: swap icons according to liked and non-liked -- favorite_border_rounded and favorite_rounded
+        );
   }
 
   // Fetch newest items

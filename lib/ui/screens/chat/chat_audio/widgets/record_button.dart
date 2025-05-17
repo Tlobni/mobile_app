@@ -1,6 +1,11 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
+import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:record/record.dart';
 import 'package:tlobni/ui/screens/chat/chat_audio/audio_state.dart';
 import 'package:tlobni/ui/screens/chat/chat_audio/globals.dart';
 import 'package:tlobni/ui/screens/chat/chat_audio/widgets/flow_shader.dart';
@@ -8,17 +13,10 @@ import 'package:tlobni/ui/screens/chat/chat_audio/widgets/lottie_animation.dart'
 import 'package:tlobni/ui/theme/theme.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
-import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:record/record.dart';
 import 'package:vibration/vibration.dart';
 
 class RecordButton extends StatefulWidget {
-  const RecordButton(
-      {super.key,
-      required this.controller,
-      required this.callback,
-      required this.isSending});
+  const RecordButton({super.key, required this.controller, required this.callback, required this.isSending});
 
   final AnimationController controller;
   final Function(dynamic path)? callback;
@@ -41,7 +39,9 @@ class _RecordButtonState extends State<RecordButton> {
   DateTime? startTime;
   Timer? timer;
   String recordDuration = "00:00";
-  final record = AudioRecorder();
+  late AudioRecorder record;
+
+  //final record = AudioRecorder();
 
   bool isLocked = false;
   bool showLottie = false;
@@ -49,6 +49,7 @@ class _RecordButtonState extends State<RecordButton> {
   @override
   void initState() {
     super.initState();
+    record = AudioRecorder();
     buttonScaleAnimation = Tween<double>(begin: 1, end: 2).animate(
       CurvedAnimation(
         parent: widget.controller,
@@ -63,19 +64,14 @@ class _RecordButtonState extends State<RecordButton> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    timerWidth =
-        MediaQuery.of(context).size.width - 2 * ChatGlobals.defaultPadding - 4;
-    timerAnimation =
-        Tween<double>(begin: timerWidth + ChatGlobals.defaultPadding, end: 0)
-            .animate(
+    timerWidth = MediaQuery.of(context).size.width - 2 * ChatGlobals.defaultPadding - 4;
+    timerAnimation = Tween<double>(begin: timerWidth + ChatGlobals.defaultPadding, end: 0).animate(
       CurvedAnimation(
         parent: widget.controller,
         curve: const Interval(0.2, 1, curve: Curves.easeIn),
       ),
     );
-    lockerAnimation =
-        Tween<double>(begin: lockerHeight + ChatGlobals.defaultPadding, end: 0)
-            .animate(
+    lockerAnimation = Tween<double>(begin: lockerHeight + ChatGlobals.defaultPadding, end: 0).animate(
       CurvedAnimation(
         parent: widget.controller,
         curve: const Interval(0.2, 1, curve: Curves.easeIn),
@@ -160,10 +156,7 @@ class _RecordButtonState extends State<RecordButton> {
               showLottie ? const LottieAnimation() : CustomText(recordDuration),
               FlowShader(
                 duration: const Duration(seconds: 3),
-                flowColors: [
-                  context.color.territoryColor,
-                  const Color(0xFF9E9E9E)
-                ],
+                flowColors: [context.color.territoryColor, const Color(0xFF9E9E9E)],
                 child: Row(
                   children: [
                     const Icon(Icons.keyboard_arrow_left),
@@ -225,11 +218,6 @@ class _RecordButtonState extends State<RecordButton> {
                     size: 18,
                     color: Colors.green,
                   ),
-                  /*  child: FaIcon(
-                    FontAwesomeIcons.lock,
-                    size: 18,
-                    color: Colors.green,
-                  ), */
                 ),
               ],
             ),
@@ -243,17 +231,14 @@ class _RecordButtonState extends State<RecordButton> {
     return GestureDetector(
       onTap: () async {
         if (widget.isSending) return;
-        // Check if the app has permission to record audio
-        bool hasPermission = await record.hasPermission();
 
-        // Request permission to record audi
-        if (hasPermission) {
-          // Permission denied, handle accordingly (show a message, etc.)
+        bool hasPermission = await record.hasPermission();
+        if (!hasPermission) {
+          showPermissionDeniedSnackbar();
           return;
         }
 
-        // Start recording audio
-        //await startRecording();
+        await startRecording();
       },
       child: Transform.scale(
         scale: buttonScaleAnimation.value,
@@ -283,9 +268,7 @@ class _RecordButtonState extends State<RecordButton> {
 
         if (isCancelled(details.localPosition, context)) {
           // if (await Vibrate.canVibrate) Vibrate.feedback(FeedbackType.heavy);
-          if (await Vibration.hasVibrator() != null) {
-            Vibration.vibrate();
-          }
+          Vibration.vibrate();
           timer?.cancel();
           timer = null;
           //startTime = null;
@@ -299,7 +282,7 @@ class _RecordButtonState extends State<RecordButton> {
             widget.controller.reverse();
 
             var filePath = await record.stop();
-            debugPrint(filePath);
+
             File(filePath!).delete();
             showLottie = false;
           });
@@ -307,10 +290,7 @@ class _RecordButtonState extends State<RecordButton> {
           widget.controller.reverse();
 
           //if (await Vibrate.canVibrate) Vibrate.feedback(FeedbackType.heavy);
-          if (await Vibration.hasVibrator() != null) {
-            Vibration.vibrate();
-          }
-          debugPrint(details.localPosition.dy.toString());
+          Vibration.vibrate();
           setState(() {
             isLocked = true;
           });
@@ -321,34 +301,47 @@ class _RecordButtonState extends State<RecordButton> {
       },
       onLongPressCancel: () {
         if (widget.isSending) return;
-        debugPrint("onLongPressCancel");
         widget.controller.reverse();
       },
       onLongPress: () async {
         if (widget.isSending) return;
-        if (await Vibration.hasVibrator() != null) {
-          Vibration.vibrate();
+        bool hasPermission = await record.hasPermission();
+        if (!hasPermission) {
+          showPermissionDeniedSnackbar();
+          return;
         }
+        Vibration.vibrate();
         await startRecording();
       },
     );
   }
 
+  String _generateRandomId() {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    final random = Random();
+    return List.generate(
+      10,
+      (index) => chars[random.nextInt(chars.length)],
+      growable: false,
+    ).join();
+  }
+
   Future<void> startRecording() async {
     if (await record.hasPermission()) {
-      // Start recording to file
+      try {
+        String filePath = await getApplicationDocumentsDirectory().then((value) => '${value.path}/${_generateRandomId()}.wav');
 
-      String documentPath =
-          "${(await getApplicationDocumentsDirectory()).path}/";
-      await record.start(
-        const RecordConfig(
-          encoder: AudioEncoder.aacLc,
-          bitRate: 128000,
-          sampleRate: 44100,
-        ),
-        path:
-            "${documentPath}audio_${DateTime.now().millisecondsSinceEpoch}.mp3",
-      );
+        await record.start(
+          const RecordConfig(
+            // specify the codec to be `.wav`
+            encoder: AudioEncoder.wav,
+          ),
+          path: filePath,
+        );
+      } catch (e) {
+        debugPrint('ERROR WHILE RECORDING: $e');
+      }
+
       startTime = DateTime.now();
 
       timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -365,26 +358,41 @@ class _RecordButtonState extends State<RecordButton> {
   }
 
   Future<void> saveFile() async {
-    if (await Vibration.hasVibrator() != null) {
-      Vibration.vibrate();
-    }
+    Vibration.vibrate();
     timer?.cancel();
     timer = null;
     startTime = null;
     recordDuration = "00:00";
 
     var filePath = await record.stop();
+
+    // Reinitialize recorder to fix the issue for next recordings
+    setState(() {
+      record = AudioRecorder();
+    });
+
     AudioState.files.add(filePath!);
     if (ChatGlobals.audioListKey.currentState != null) {
-      ChatGlobals.audioListKey.currentState!
-          .insertItem(AudioState.files.length - 1);
+      ChatGlobals.audioListKey.currentState!.insertItem(AudioState.files.length - 1);
     }
-    debugPrint(filePath);
 
-    // if (widget.callback != Null) {
     final fileAudio = File(filePath);
     widget.callback!(fileAudio.path);
-    //}
+  }
+
+  void showPermissionDeniedSnackbar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('microphonePermissionIsDeniedEnableIt'.translate(context)),
+        action: SnackBarAction(
+          textColor: context.color.secondaryColor,
+          label: 'settingsLbl'.translate(context),
+          onPressed: () {
+            openAppSettings();
+          },
+        ),
+      ),
+    );
   }
 
   bool checkIsLocked(Offset offset) {

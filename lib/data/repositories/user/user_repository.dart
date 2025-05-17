@@ -1,12 +1,10 @@
 import 'package:tlobni/data/model/data_output.dart';
-import 'package:tlobni/data/model/user_model.dart';
 import 'package:tlobni/data/model/item_filter_model.dart';
+import 'package:tlobni/data/model/user_model.dart';
 import 'package:tlobni/utils/api.dart';
 
 class UserRepository {
-  Future<DataOutput<UserModel>> fetchProviders(
-      String query, ItemFilterModel? filter,
-      {required int page}) async {
+  Future<DataOutput<UserModel>> fetchProviders(String query, ItemFilterModel? filter, {required int page}) async {
     Map<String, dynamic> parameters = {
       'page': page,
     };
@@ -17,9 +15,7 @@ class UserRepository {
 
     if (filter != null) {
       // Add user type from filter
-      if (filter.userType != null) {
-        parameters['type'] = filter.userType;
-      }
+      parameters['type'] = filter.userType;
 
       // Add gender filter if provided
       if (filter.gender != null) {
@@ -33,8 +29,16 @@ class UserRepository {
       }
 
       // Add location filters
-      if (filter.city != null && filter.city!.isNotEmpty) {
-        parameters['location'] = filter.city;
+      if (filter.country != null) {
+        parameters['country'] = filter.country;
+      }
+
+      if (filter.city != null) {
+        parameters['city'] = filter.city;
+      }
+
+      if (filter.state != null) {
+        parameters['state'] = filter.state;
       }
 
       // Add rating range filters
@@ -56,9 +60,7 @@ class UserRepository {
 
     List<UserModel> users = [];
     if (response['data'] != null && response['data']['data'] != null) {
-      users = (response['data']['data'] as List)
-          .map((e) => UserModel.fromJson(e))
-          .toList();
+      users = (response['data']['data'] as List).map((e) => UserModel.fromJson(e)).toList();
     }
 
     return DataOutput(total: response['data']['total'] ?? 0, modelList: users);

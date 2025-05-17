@@ -1,13 +1,13 @@
 import 'dart:developer';
 
+import 'package:flutter/foundation.dart';
+import 'package:hive/hive.dart';
 import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/model/user_model.dart';
 import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_keys.dart';
-import 'package:flutter/foundation.dart';
-import 'package:hive/hive.dart';
 
 class HiveUtils {
   ///private constructor
@@ -57,8 +57,7 @@ class HiveUtils {
   }
 
   static void setProfileNotCompleted() async {
-    await Hive.box(HiveKeys.userDetailsBox)
-        .put(HiveKeys.isProfileCompleted, false);
+    await Hive.box(HiveKeys.userDetailsBox).put(HiveKeys.isProfileCompleted, false);
   }
 
   static dynamic setCurrentTheme(AppTheme theme) {
@@ -116,18 +115,15 @@ class HiveUtils {
   }
 
   static dynamic getCurrentCountryName() {
-    return Hive.box(HiveKeys.userDetailsBox)
-        .get(HiveKeys.currentLocationCountry);
+    return Hive.box(HiveKeys.userDetailsBox).get(HiveKeys.currentLocationCountry);
   }
 
   static dynamic getCurrentLatitude() {
-    return Hive.box(HiveKeys.userDetailsBox)
-        .get(HiveKeys.currentLocationLatitude);
+    return Hive.box(HiveKeys.userDetailsBox).get(HiveKeys.currentLocationLatitude);
   }
 
   static dynamic getCurrentLongitude() {
-    return Hive.box(HiveKeys.userDetailsBox)
-        .get(HiveKeys.currentLocationLongitude);
+    return Hive.box(HiveKeys.userDetailsBox).get(HiveKeys.currentLocationLongitude);
   }
 
   static dynamic getLatitude() {
@@ -143,8 +139,7 @@ class HiveUtils {
   }
 
   static UserModel getUserDetails() {
-    return UserModel.fromJson(
-        Map.from(Hive.box(HiveKeys.userDetailsBox).toMap()));
+    return UserModel.fromJson(Map.from(Hive.box(HiveKeys.userDetailsBox).toMap()));
   }
 
   static void setUserIsAuthenticated(bool value) {
@@ -209,12 +204,7 @@ class HiveUtils {
   }
 
   static void setCurrentLocation(
-      {required String city,
-      required String state,
-      required String country,
-      latitude,
-      longitude,
-      String? area}) async {
+      {required String? city, required String? state, required String? country, latitude, longitude, String? area}) async {
     if (Constant.isDemoModeOn) {
       await Hive.box(HiveKeys.userDetailsBox).putAll({
         HiveKeys.currentLocationCity: "Bhuj",
@@ -274,8 +264,7 @@ class HiveUtils {
     return Hive.box(HiveKeys.authBox).get(HiveKeys.isUserSkip) ?? false;
   }
 
-  static void logoutUser(context,
-      {required VoidCallback onLogout, bool? isRedirect}) async {
+  static void logoutUser(context, {required VoidCallback onLogout, bool? isRedirect}) async {
     await Hive.box(HiveKeys.userDetailsBox).clear();
     HiveUtils.setUserIsAuthenticated(false);
 

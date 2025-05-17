@@ -1,8 +1,11 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nested/nested.dart';
 import 'package:tlobni/data/cubits/add_item_review_cubit.dart';
 import 'package:tlobni/data/cubits/auth/auth_cubit.dart';
 import 'package:tlobni/data/cubits/auth/authentication_cubit.dart';
 import 'package:tlobni/data/cubits/auth/delete_user_cubit.dart';
 import 'package:tlobni/data/cubits/auth/login_cubit.dart';
+import 'package:tlobni/data/cubits/category/fetch_all_categories_cubit.dart';
 import 'package:tlobni/data/cubits/category/fetch_category_cubit.dart';
 import 'package:tlobni/data/cubits/category/fetch_sub_categories_cubit.dart';
 import 'package:tlobni/data/cubits/chat/block_user_cubit.dart';
@@ -69,14 +72,11 @@ import 'package:tlobni/data/cubits/system/user_details.dart';
 import 'package:tlobni/data/cubits/utility/item_edit_global.dart';
 import 'package:tlobni/data/repositories/favourites_repository.dart';
 import 'package:tlobni/data/repositories/home/home_repository.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:nested/nested.dart';
 
 class RegisterCubits {
   List<SingleChildWidget> providers = [
     BlocProvider(create: (context) => FavoriteCubit(FavoriteRepository())),
-    BlocProvider(
-        create: (context) => UpdateFavoriteCubit(FavoriteRepository())),
+    BlocProvider(create: (context) => UpdateFavoriteCubit(FavoriteRepository())),
     BlocProvider(create: (context) => AuthCubit()),
     BlocProvider(create: (context) => LoginCubit()),
     BlocProvider(create: (context) => SliderCubit()),
@@ -93,8 +93,7 @@ class RegisterCubits {
     BlocProvider(create: (context) => UserDetailsCubit()),
     BlocProvider(create: (context) => FetchLanguageCubit()),
     BlocProvider(create: (context) => FetchMyPromotedItemsCubit()),
-    BlocProvider(
-        create: (context) => FetchAdsListingSubscriptionPackagesCubit()),
+    BlocProvider(create: (context) => FetchAdsListingSubscriptionPackagesCubit()),
     BlocProvider(create: (context) => FetchFeaturedSubscriptionPackagesCubit()),
     BlocProvider(create: (context) => GetApiKeysCubit()),
     BlocProvider(create: (context) => GetBuyerChatListCubit()),
@@ -146,5 +145,6 @@ class RegisterCubits {
     BlocProvider(create: (context) => FetchMyRatingsCubit()),
     BlocProvider(create: (context) => AddMyItemReviewReportCubit()),
     BlocProvider(create: (context) => RenewItemCubit()),
+    BlocProvider(create: (context) => FetchAllCategoriesCubit())
   ];
 }

@@ -1,7 +1,8 @@
+import 'dart:convert';
+
 import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/custom_field/custom_field_model.dart';
 import 'package:tlobni/data/model/seller_ratings_model.dart';
-import 'dart:convert';
 
 class ItemModel {
   int? id;
@@ -246,9 +247,7 @@ class ItemModel {
     id = json['id'];
     name = json['name'];
     slug = json['slug'];
-    category = json['category'] != null
-        ? CategoryModel.fromJson(json['category'])
-        : null;
+    category = json['category'] != null ? CategoryModel.fromJson(json['category']) : null;
     totalLikes = json['total_likes'];
     views = json['clicks'];
     description = json['description'];
@@ -259,8 +258,7 @@ class ItemModel {
       if (json['special_tags'] is String) {
         try {
           // If it's a string, try to parse it as JSON
-          specialTags = Map<String, dynamic>.from(
-              jsonDecode(json['special_tags'] as String));
+          specialTags = Map<String, dynamic>.from(jsonDecode(json['special_tags'] as String));
         } catch (e) {
           specialTags = null;
         }
@@ -298,11 +296,7 @@ class ItemModel {
     if (json['location_type'] != null) {
       if (json['location_type'] is String) {
         // If it's a comma separated string, split it
-        locationType = (json['location_type'] as String)
-            .split(',')
-            .map((e) => e.trim())
-            .where((e) => e.isNotEmpty)
-            .toList();
+        locationType = (json['location_type'] as String).split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
       } else if (json['location_type'] is List) {
         // If it's already a List, convert each element to String
         locationType = List<String>.from(json['location_type']);
@@ -405,7 +399,7 @@ class ItemModel {
         'name': area,
       };
     }
-    data['user'] = user!.toJson();
+    if (user != null) data['user'] = user!.toJson();
 
     if (galleryImages != null) {
       data['gallery_images'] = galleryImages!.map((v) => v.toJson()).toList();
@@ -447,6 +441,8 @@ class User {
   String? updatedAt;
   int? showPersonalDetails;
   int? isVerified;
+  String? country, state, city;
+  List<int>? categoriesIds;
 
   User(
       {this.id,
@@ -469,6 +465,10 @@ class User {
       this.createdAt,
       this.updatedAt,
       this.isVerified,
+      this.country,
+      this.state,
+      this.city,
+      this.categoriesIds,
       this.showPersonalDetails});
 
   User.fromJson(Map<String, dynamic> json) {
@@ -492,8 +492,16 @@ class User {
     createdAt = json['created_at'];
     updatedAt = json['updated_at'];
     isVerified = json['is_verified'];
+    country = json['country'];
+    city = json['city'];
+    state = json['state'];
+    categoriesIds = (json['categories'] as String?)?.split(',').map(int.parse).toList();
     showPersonalDetails = json['show_personal_details'];
   }
+
+  bool get hasLocation => country != null && city != null;
+
+  String? get location => hasLocation ? '$city, $country' : null;
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
@@ -517,7 +525,11 @@ class User {
     data['created_at'] = createdAt;
     data['updated_at'] = updatedAt;
     data['is_verified'] = isVerified;
+    data['country'] = country;
+    data['city'] = city;
+    data['state'] = state;
     data['show_personal_details'] = showPersonalDetails;
+    data['categories'] = categoriesIds?.join(',');
     return data;
   }
 }
@@ -529,8 +541,7 @@ class GalleryImages {
   String? updatedAt;
   int? itemId;
 
-  GalleryImages(
-      {this.id, this.image, this.createdAt, this.updatedAt, this.itemId});
+  GalleryImages({this.id, this.image, this.createdAt, this.updatedAt, this.itemId});
 
   GalleryImages.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -559,13 +570,7 @@ class ItemOffers {
   String? updatedAt;
   double? amount;
 
-  ItemOffers(
-      {this.id,
-      this.sellerId,
-      this.createdAt,
-      this.updatedAt,
-      this.buyerId,
-      this.amount});
+  ItemOffers({this.id, this.sellerId, this.createdAt, this.updatedAt, this.buyerId, this.amount});
 
   ItemOffers.fromJson(Map<String, dynamic> json) {
     id = json['id'];

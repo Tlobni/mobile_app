@@ -1,9 +1,13 @@
-import 'dart:developer';
 import 'dart:ui' as ui;
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:intl/intl.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/add_user_review_cubit.dart';
+import 'package:tlobni/data/cubits/category/fetch_all_categories_cubit.dart';
 import 'package:tlobni/data/cubits/seller/fetch_seller_item_cubit.dart';
 import 'package:tlobni/data/cubits/seller/fetch_seller_ratings_cubit.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
@@ -23,10 +27,6 @@ import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // Extended User model with additional fields used in profile screen
@@ -38,41 +38,6 @@ extension UserExt on User {
   static const String _twitterKey = 'twitter';
   static const String _instagramKey = 'instagram';
   static const String _tiktokKey = 'tiktok';
-
-  // Map to store extended properties
-  static final Map<int, Map<String, dynamic>> _extendedProps = {};
-
-  // Getters
-  String? get categories => _getExtProp(_categoriesKey);
-  String? get website => _getExtProp(_websiteKey);
-  String? get bio => _getExtProp(_bioKey);
-  String? get facebook => _getExtProp(_facebookKey);
-  String? get twitter => _getExtProp(_twitterKey);
-  String? get instagram => _getExtProp(_instagramKey);
-  String? get tiktok => _getExtProp(_tiktokKey);
-
-  // Setters
-  set categories(String? value) => _setExtProp(_categoriesKey, value);
-  set website(String? value) => _setExtProp(_websiteKey, value);
-  set bio(String? value) => _setExtProp(_bioKey, value);
-  set facebook(String? value) => _setExtProp(_facebookKey, value);
-  set twitter(String? value) => _setExtProp(_twitterKey, value);
-  set instagram(String? value) => _setExtProp(_instagramKey, value);
-  set tiktok(String? value) => _setExtProp(_tiktokKey, value);
-
-  // Helper methods
-  String? _getExtProp(String key) {
-    if (id == null) return null;
-    final userId = id!; // Handle null safely
-    return _extendedProps[userId]?[key] as String?;
-  }
-
-  void _setExtProp(String key, String? value) {
-    if (id == null) return;
-    final userId = id!; // Handle null safely
-    _extendedProps[userId] = _extendedProps[userId] ?? {};
-    _extendedProps[userId]![key] = value;
-  }
 }
 
 class SellerProfileScreen extends StatefulWidget {
@@ -119,8 +84,7 @@ class SellerProfileScreen extends StatefulWidget {
   }
 }
 
-class SellerProfileScreenState extends State<SellerProfileScreen>
-    with SingleTickerProviderStateMixin {
+class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   //bool isExpanded = false;
@@ -141,14 +105,14 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
       setState(() {});
     });
 
+    context.read<FetchAllCategoriesCubit>().fetchCategories();
+
     // Load data on initState
     Future.microtask(() {
       if (widget.model.id != null) {
         print("Initializing seller profile with ID: ${widget.model.id}");
         context.read<FetchSellerItemsCubit>().fetch(sellerId: widget.model.id!);
-        context
-            .read<FetchSellerRatingsCubit>()
-            .fetch(sellerId: widget.model.id!);
+        context.read<FetchSellerRatingsCubit>().fetch(sellerId: widget.model.id!);
 
         // Check if this is the current user's own profile and fetch latest data
         if (widget.model.id.toString() == HiveUtils.getUserId()) {
@@ -170,17 +134,13 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
     print("load more");
 
     if (context.read<FetchSellerItemsCubit>().hasMoreData()) {
-      context
-          .read<FetchSellerItemsCubit>()
-          .fetchMore(sellerId: widget.model.id!);
+      context.read<FetchSellerItemsCubit>().fetchMore(sellerId: widget.model.id!);
     }
   }
 
   void _reviewLoadMore() async {
     if (context.read<FetchSellerRatingsCubit>().hasMoreData()) {
-      context
-          .read<FetchSellerRatingsCubit>()
-          .fetchMore(sellerId: widget.model.id!);
+      context.read<FetchSellerRatingsCubit>().fetchMore(sellerId: widget.model.id!);
     }
   }
 
@@ -223,7 +183,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
             widget.model.website = userModelMap['website'];
           }
           if (userModelMap['categories'] != null) {
-            widget.model.categories = userModelMap['categories'];
+            widget.model.categoriesIds = (userModelMap['categories'] as String?)?.split(',').map(int.parse).toList();
           }
           if (userModelMap['facebook'] != null) {
             widget.model.facebook = userModelMap['facebook'];
@@ -266,32 +226,24 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
             ? FloatingActionButton(
                 onPressed: () {
                   print("FloatingActionButton pressed");
-                  if (context.read<FetchSellerRatingsCubit>().state
-                      is FetchSellerRatingsSuccess) {
-                    final state = context.read<FetchSellerRatingsCubit>().state
-                        as FetchSellerRatingsSuccess;
+                  if (context.read<FetchSellerRatingsCubit>().state is FetchSellerRatingsSuccess) {
+                    final state = context.read<FetchSellerRatingsCubit>().state as FetchSellerRatingsSuccess;
                     if (state.seller != null) {
                       _showReviewDialog(state.seller!);
                     } else {
                       print("Cannot show review dialog: seller is null");
-                      HelperUtils.showSnackBarMessage(
-                          context, "Cannot add review at this time",
-                          messageDuration: 3);
+                      HelperUtils.showSnackBarMessage(context, "Cannot add review at this time", messageDuration: 3);
                     }
                   } else {
                     // If the ratings state isn't loaded yet, use the widget.model
                     // to create a basic Seller object for the review dialog
                     print("Using widget.model for review dialog");
-                    Seller seller = Seller(
-                        id: widget.model.id,
-                        name: widget.model.name,
-                        profile: widget.model.profile);
+                    Seller seller = Seller(id: widget.model.id, name: widget.model.name, profile: widget.model.profile);
                     _showReviewDialog(seller);
                   }
                 },
                 backgroundColor: context.color.territoryColor,
-                child:
-                    Icon(Icons.rate_review, color: context.color.buttonColor),
+                child: Icon(Icons.rate_review, color: context.color.buttonColor),
               )
             : null,
         body: NestedScrollView(
@@ -310,13 +262,8 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
                     child: Directionality(
                       textDirection: Directionality.of(context),
                       child: RotatedBox(
-                        quarterTurns:
-                            Directionality.of(context) == ui.TextDirection.rtl
-                                ? 2
-                                : -4,
-                        child: UiUtils.getSvg(AppIcons.arrowLeft,
-                            fit: BoxFit.none,
-                            color: context.color.textDefaultColor),
+                        quarterTurns: Directionality.of(context) == ui.TextDirection.rtl ? 2 : -4,
+                        child: UiUtils.getSvg(AppIcons.arrowLeft, fit: BoxFit.none, color: context.color.textDefaultColor),
                       ),
                     ),
                   ),
@@ -325,161 +272,166 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
               //automaticallyImplyLeading: false,
               pinned: true,
 
-              expandedHeight: (widget.model.createdAt != null &&
-                      widget.model.createdAt != '')
+              expandedHeight: (widget.model.createdAt != null && widget.model.createdAt != '')
                   ? context.screenHeight / 2.3
                   : context.screenHeight / 2.9,
               backgroundColor: context.color.secondaryColor,
               flexibleSpace: FlexibleSpaceBar(
-                background: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                background: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                  SizedBox(
+                    height: 100,
+                  ),
+                  Stack(
+                    clipBehavior: Clip.none,
                     children: [
-                      SizedBox(
-                        height: 100,
+                      CircleAvatar(
+                        radius: 45,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(45),
+                          child: widget.model.profile != null
+                              ? UiUtils.getImage(widget.model.profile!, fit: BoxFit.fill, width: 95, height: 95)
+                              : UiUtils.getSvg(AppIcons.defaultPersonLogo,
+                                  color: context.color.territoryColor, fit: BoxFit.none, width: 95, height: 95),
+                        ),
                       ),
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          CircleAvatar(
-                            radius: 45,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(45),
-                              child: widget.model.profile != null
-                                  ? UiUtils.getImage(widget.model.profile!,
-                                      fit: BoxFit.fill, width: 95, height: 95)
-                                  : UiUtils.getSvg(AppIcons.defaultPersonLogo,
-                                      color: context.color.territoryColor,
-                                      fit: BoxFit.none,
-                                      width: 95,
-                                      height: 95),
-                            ),
-                          ),
-                          if (widget.model.isVerified == 1)
-                            Positioned(
-                              left: 0,
-                              right: 0,
-                              bottom: -10,
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(5),
-                                    color: context.color.forthColor),
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 5, vertical: 1),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      UiUtils.getSvg(AppIcons.verifiedIcon,
-                                          width: 14, height: 14),
-                                      SizedBox(
-                                        width: 4,
-                                      ),
-                                      CustomText(
-                                        "verifiedLbl".translate(context),
-                                        color: context.color.secondaryColor,
-                                        fontWeight: FontWeight.w500,
-                                      )
-                                    ],
+                      if (widget.model.isVerified == 1)
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: -10,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(borderRadius: BorderRadius.circular(5), color: context.color.forthColor),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  UiUtils.getSvg(AppIcons.verifiedIcon, width: 14, height: 14),
+                                  SizedBox(
+                                    width: 4,
                                   ),
-                                ),
+                                  CustomText(
+                                    "verifiedLbl".translate(context),
+                                    color: context.color.secondaryColor,
+                                    fontWeight: FontWeight.w500,
+                                  )
+                                ],
                               ),
                             ),
-                        ],
-                      ),
-                      SizedBox(
-                        height: 20,
-                      ),
-                      CustomText(
-                        widget.model.name!,
-                        color: context.color.textDefaultColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      SizedBox(height: 5),
-                      // Display category
-                      if (widget.model.categories != null &&
-                          widget.model.categories!.isNotEmpty)
-                        CustomText(
+                          ),
+                        ),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 20,
+                  ),
+                  CustomText(
+                    widget.model.name!,
+                    color: context.color.textDefaultColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  SizedBox(height: 5),
+                  // Display category
+                  if (widget.model.categoriesIds != null && widget.model.categoriesIds!.isNotEmpty)
+                    BlocBuilder<FetchAllCategoriesCubit, FetchAllCategoriesState>(
+                      builder: (context, state) {
+                        print('hihibyebye');
+                        if (state is FetchAllCategoriesFailure) print(state.errorMessage);
+                        if (state is! FetchAllCategoriesSuccess) return SizedBox();
+                        final categoryIds = widget.model.categoriesIds?.toSet() ?? {};
+                        print(categoryIds);
+                        print(state.categories);
+                        final categories = state.categories.where((e) => categoryIds.contains(e.id)).toList();
+                        print(categories);
+                        if (categories.isEmpty) return SizedBox();
+                        final first = categories.first;
+                        final second = categories.length > 1 ? categories[1] : null;
+                        final more = categories.length - 2;
+                        final text = '${first.name}${second != null ? ', ${second.name}' : ''}${more > 0 ? ' + $more more' : ''}';
+                        return CustomText(
                           // Show first category name or "Category"
-                          widget.model.categories!.split(',').first,
-                          color:
-                              context.color.textDefaultColor.withOpacity(0.7),
+                          text,
+                          color: context.color.textDefaultColor.withOpacity(0.7),
                           fontWeight: FontWeight.w400,
-                        ),
+                        );
+                      },
+                    ),
 
-                      // Website link
-                      if (widget.model.website != null &&
-                          widget.model.website!.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 5),
-                          child: GestureDetector(
-                            onTap: () {
-                              // Open website URL
-                              _launchURL(widget.model.website!);
-                            },
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.link,
-                                  size: 16,
-                                  color: context.color.territoryColor,
-                                ),
-                                SizedBox(width: 4),
-                                CustomText(
-                                  widget.model.website!,
-                                  color: context.color.territoryColor,
-                                  fontSize: context.font.small,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                  if (widget.model.hasLocation) ...[
+                    SizedBox(height: 5),
+                    CustomText(
+                      widget.model.location!,
+                      color: context.color.textDefaultColor.withOpacity(0.7),
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ],
 
-                      if (widget.rating != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: RichText(
-                            text: TextSpan(
-                              children: [
-                                WidgetSpan(
-                                  child: Icon(Icons.star_rounded,
-                                      size: 18,
-                                      color: context
-                                          .color.textDefaultColor), // Star icon
-                                ),
-                                TextSpan(
-                                  text:
-                                      '\t${widget.rating!.toStringAsFixed(2).toString()}',
-                                  // Rating value
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: context.color.textDefaultColor,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: '  |  ',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: context.color.textDefaultColor
-                                        .withOpacity(0.3),
-                                  ),
-                                ),
-                                TextSpan(
-                                  text:
-                                      '${widget.total}\t${"ratings".translate(context)}',
-                                  // Rating count text
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: context.color.textDefaultColor
-                                        .withOpacity(0.3),
-                                  ),
-                                ),
-                              ],
+                  // // Website link
+                  // if (widget.model.website != null && widget.model.website!.isNotEmpty)
+                  //   Padding(
+                  //     padding: const EdgeInsets.only(top: 5),
+                  //     child: GestureDetector(
+                  //       onTap: () {
+                  //         // Open website URL
+                  //         _launchURL(widget.model.website!);
+                  //       },
+                  //       child: Row(
+                  //         mainAxisSize: MainAxisSize.min,
+                  //         children: [
+                  //           Icon(
+                  //             Icons.link,
+                  //             size: 16,
+                  //             color: context.color.territoryColor,
+                  //           ),
+                  //           SizedBox(width: 4),
+                  //           CustomText(
+                  //             widget.model.website!,
+                  //             color: context.color.territoryColor,
+                  //             fontSize: context.font.small,
+                  //           ),
+                  //         ],
+                  //       ),
+                  //     ),
+                  //   ),
+
+                  if (widget.rating != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: RichText(
+                        text: TextSpan(
+                          children: [
+                            WidgetSpan(
+                              child: Icon(Icons.star_rounded, size: 18, color: context.color.textDefaultColor), // Star icon
                             ),
-                          ),
+                            TextSpan(
+                              text: '\t${widget.rating!.toStringAsFixed(2).toString()}',
+                              // Rating value
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: context.color.textDefaultColor,
+                              ),
+                            ),
+                            TextSpan(
+                              text: '  |  ',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: context.color.textDefaultColor.withOpacity(0.3),
+                              ),
+                            ),
+                            TextSpan(
+                              text: '${widget.total}\t${"ratings".translate(context)}',
+                              // Rating count text
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: context.color.textDefaultColor.withOpacity(0.3),
+                              ),
+                            ),
+                          ],
                         ),
-                    ]),
+                      ),
+                    ),
+                ]),
               ),
               bottom: PreferredSize(
                 preferredSize: Size.fromHeight(60.0),
@@ -487,8 +439,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
                   decoration: BoxDecoration(
                     color: context.color.secondaryColor,
                     border: Border(
-                      top: BorderSide(
-                          color: context.color.backgroundColor, width: 2.5),
+                      top: BorderSide(color: context.color.backgroundColor, width: 2.5),
                     ),
                   ),
                   child: Column(
@@ -497,16 +448,9 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
                         controller: _tabController,
                         indicatorColor: context.color.territoryColor,
                         labelColor: context.color.territoryColor,
-                        labelStyle: Theme.of(context)
-                            .textTheme
-                            .titleMedium!
-                            .copyWith(fontWeight: FontWeight.w500),
-                        unselectedLabelColor:
-                            context.color.textDefaultColor.withOpacity(0.7),
-                        unselectedLabelStyle: Theme.of(context)
-                            .textTheme
-                            .titleMedium!
-                            .copyWith(fontWeight: FontWeight.w500),
+                        labelStyle: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w500),
+                        unselectedLabelColor: context.color.textDefaultColor.withOpacity(0.7),
+                        unselectedLabelStyle: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w500),
                         tabs: isClientProfile
                             ?
                             // For client profiles, only show Live Ads and Ratings tabs
@@ -559,8 +503,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
   }
 
   Widget liveAdsWidget() {
-    return BlocBuilder<FetchSellerItemsCubit, FetchSellerItemsState>(
-        builder: (context, state) {
+    return BlocBuilder<FetchSellerItemsCubit, FetchSellerItemsState>(builder: (context, state) {
       if (state is FetchSellerItemsInProgress) {
         return buildItemsShimmer(context);
       }
@@ -576,9 +519,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
           return Center(
             child: NoDataFound(
               onTap: () {
-                context
-                    .read<FetchSellerItemsCubit>()
-                    .fetch(sellerId: widget.model.id!);
+                context.read<FetchSellerItemsCubit>().fetch(sellerId: widget.model.id!);
               },
             ),
           );
@@ -596,8 +537,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
               Expanded(
                 child: NotificationListener<ScrollNotification>(
                   onNotification: (ScrollNotification scrollInfo) {
-                    if (scrollInfo.metrics.pixels ==
-                        scrollInfo.metrics.maxScrollExtent) {
+                    if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
                       _loadMore();
                     }
                     return true;
@@ -609,12 +549,8 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
                     padding: EdgeInsets.only(top: 10),
                     shrinkWrap: true,
                     // Allow GridView to fit within the space
-                    gridDelegate:
-                        SliverGridDelegateWithFixedCrossAxisCountAndFixedHeight(
-                            crossAxisCount: 2,
-                            height: MediaQuery.of(context).size.height / 3,
-                            mainAxisSpacing: 7,
-                            crossAxisSpacing: 10),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCountAndFixedHeight(
+                        crossAxisCount: 2, height: MediaQuery.of(context).size.height / 3, mainAxisSpacing: 7, crossAxisSpacing: 10),
                     itemCount: state.items.length,
                     itemBuilder: (context, index) {
                       ItemModel item = state.items[index];
@@ -738,8 +674,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
             print("No ratings found");
 
             // Check if this is the current user's own profile
-            bool isOwnProfile =
-                widget.model.id.toString() == HiveUtils.getUserId();
+            bool isOwnProfile = widget.model.id.toString() == HiveUtils.getUserId();
 
             return Center(
               child: Column(
@@ -787,14 +722,12 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
           return Column(
             children: [
               // Always show the review banner at the top
-              if (state.seller != null)
-                _buildReviewButtonSection(state.seller!),
+              if (state.seller != null) _buildReviewButtonSection(state.seller!),
 
               Expanded(
                 child: NotificationListener<ScrollNotification>(
                   onNotification: (ScrollNotification scrollInfo) {
-                    if (scrollInfo.metrics.pixels ==
-                        scrollInfo.metrics.maxScrollExtent) {
+                    if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
                       _reviewLoadMore();
                     }
                     return true;
@@ -811,8 +744,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
               ),
 
               // Show progress indicator when loading more
-              if (state is FetchSellerRatingsSuccess && state.isLoadingMore)
-                Center(child: UiUtils.progress()),
+              if (state is FetchSellerRatingsSuccess && state.isLoadingMore) Center(child: UiUtils.progress()),
             ],
           );
         }
@@ -844,11 +776,8 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
                     minimumSize: Size(150, 45),
                   ),
                   onPressed: () {
-                    print(
-                        "Retrying ratings fetch for seller ID: ${widget.model.id}");
-                    context
-                        .read<FetchSellerRatingsCubit>()
-                        .fetch(sellerId: widget.model.id!);
+                    print("Retrying ratings fetch for seller ID: ${widget.model.id}");
+                    context.read<FetchSellerRatingsCubit>().fetch(sellerId: widget.model.id!);
                   },
                 ),
               ],
@@ -863,8 +792,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
   }
 
 // Rating summary widget (similar to the top section of your image)
-  Widget _buildSellerSummary(
-      Seller seller, int total, List<UserRatings> ratings) {
+  Widget _buildSellerSummary(Seller seller, int total, List<UserRatings> ratings) {
     Map<int, int> ratingCounts = getRatingCounts(ratings);
     return Card(
       color: context.color.secondaryColor,
@@ -884,9 +812,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
                         style: Theme.of(context)
                             .textTheme
                             .headlineMedium!
-                            .copyWith(
-                                color: context.color.textDefaultColor,
-                                fontWeight: FontWeight.bold)),
+                            .copyWith(color: context.color.textDefaultColor, fontWeight: FontWeight.bold)),
                     CustomRatingBar(
                       rating: seller.averageRating!,
                       itemSize: 25.0,
@@ -932,10 +858,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
       children: [
         SizedBox(
           width: 10.0,
-          child: CustomText("$starCount",
-              color: context.color.textDefaultColor,
-              textAlign: TextAlign.center,
-              fontWeight: FontWeight.w500),
+          child: CustomText("$starCount", color: context.color.textDefaultColor, textAlign: TextAlign.center, fontWeight: FontWeight.w500),
         ),
         SizedBox(
           width: 2,
@@ -957,9 +880,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
         SizedBox(
           width: 10.0,
           child: CustomText(ratingCount.toString(),
-              color: context.color.textDefaultColor.withOpacity(0.7),
-              textAlign: TextAlign.center,
-              fontWeight: FontWeight.w600),
+              color: context.color.textDefaultColor.withOpacity(0.7), textAlign: TextAlign.center, fontWeight: FontWeight.w600),
         ),
       ],
     );
@@ -976,9 +897,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
     DateFormat timeFormat = DateFormat('h:mm a');
 
     // Check if the given date is today
-    if (dateTime.year == now.year &&
-        dateTime.month == now.month &&
-        dateTime.day == now.day) {
+    if (dateTime.year == now.year && dateTime.month == now.month && dateTime.day == now.day) {
       // Return just the time if the date is today
       String formattedTime = timeFormat.format(dateTime);
       return formattedTime; // Example output: 10:16 AM
@@ -1005,8 +924,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
                 ? CircleAvatar(
                     child: SvgPicture.asset(
                       AppIcons.profile,
-                      colorFilter: ColorFilter.mode(
-                          context.color.buttonColor, BlendMode.srcIn),
+                      colorFilter: ColorFilter.mode(context.color.buttonColor, BlendMode.srcIn),
                     ),
                   )
                 : CustomImageHeroAnimation(
@@ -1037,8 +955,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
                             ratings.createdAt!,
                           ),
                           fontSize: context.font.small,
-                          color: context.color.textDefaultColor
-                            ..withOpacity(0.3),
+                          color: context.color.textDefaultColor..withOpacity(0.3),
                         )
                     ],
                   ),
@@ -1087,9 +1004,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
                                 "${ratings.review!}\t",
                                 maxLines: ratings.isExpanded! ? null : 2,
                                 softWrap: true,
-                                overflow: ratings.isExpanded!
-                                    ? TextOverflow.visible
-                                    : TextOverflow.ellipsis,
+                                overflow: ratings.isExpanded! ? TextOverflow.visible : TextOverflow.ellipsis,
                                 color: context.color.textDefaultColor,
                               ),
                             ),
@@ -1098,14 +1013,10 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
                                 padding: EdgeInsetsDirectional.only(start: 3),
                                 child: InkWell(
                                   onTap: () {
-                                    context
-                                        .read<FetchSellerRatingsCubit>()
-                                        .updateIsExpanded(index);
+                                    context.read<FetchSellerRatingsCubit>().updateIsExpanded(index);
                                   },
                                   child: CustomText(
-                                    ratings.isExpanded!
-                                        ? "readLessLbl".translate(context)
-                                        : "readMoreLbl".translate(context),
+                                    ratings.isExpanded! ? "readLessLbl".translate(context) : "readMoreLbl".translate(context),
                                     color: context.color.territoryColor,
                                     fontWeight: FontWeight.w400,
                                     fontSize: context.font.small,
@@ -1147,9 +1058,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
           create: (context) => AddUserReviewCubit(),
           child: ReviewDialog(
             targetId: seller.id!,
-            reviewType: getProfileTypeName().toLowerCase() == "business"
-                ? ReviewType.businessProfile
-                : ReviewType.expertProfile,
+            reviewType: getProfileTypeName().toLowerCase() == "business" ? ReviewType.businessProfile : ReviewType.expertProfile,
             name: seller.name ?? "",
             image: seller.profile,
           ),
@@ -1160,9 +1069,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
       if (value == true) {
         // Refresh the reviews after submitting a new one
         print("Refreshing reviews after submission");
-        context
-            .read<FetchSellerRatingsCubit>()
-            .fetch(sellerId: widget.model.id!);
+        context.read<FetchSellerRatingsCubit>().fetch(sellerId: widget.model.id!);
       }
     });
   }
@@ -1174,8 +1081,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: context.color.secondaryColor,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           title: Center(
             child: Text(
               "Login Required",
@@ -1294,8 +1200,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: context.color.primaryColor,
-        border:
-            Border.all(color: context.color.territoryColor.withOpacity(0.3)),
+        border: Border.all(color: context.color.territoryColor.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1402,9 +1307,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
     bool hasBio = widget.model.bio != null && widget.model.bio!.isNotEmpty;
 
     // Check if phone is available and enabled
-    bool hasPhone = widget.model.mobile != null &&
-        widget.model.mobile!.isNotEmpty &&
-        widget.model.showPersonalDetails == 1;
+    bool hasPhone = widget.model.mobile != null && widget.model.mobile!.isNotEmpty && widget.model.showPersonalDetails == 1;
 
     // Check if this is the current user's own profile
     bool isOwnProfile = widget.model.id.toString() == HiveUtils.getUserId();
@@ -1437,8 +1340,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen>
                       onPressed: () {
                         _launchURL("tel:${widget.model.mobile}");
                       },
-                      icon: Icon(Icons.phone,
-                          color: context.color.textDefaultColor),
+                      icon: Icon(Icons.phone, color: context.color.textDefaultColor),
                       label: CustomText(
                         "Call",
                         color: context.color.textDefaultColor,

@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:tlobni/utils/api.dart';
-import 'package:tlobni/utils/hive_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tlobni/utils/api.dart';
+import 'package:tlobni/utils/hive_utils.dart';
 
 abstract class AuthState {}
 
@@ -44,13 +44,14 @@ class AuthCubit extends Cubit<AuthState> {
   Future<Map<String, dynamic>> updateuserdata(BuildContext context,
       {String? name,
       String? email,
-      String? address,
       File? fileUserimg,
       String? fcmToken,
       String? notification,
       String? mobile,
       String? countryCode,
       String? country,
+      String? city,
+      String? state,
       String? categories,
       String? bio,
       String? facebook,
@@ -61,10 +62,12 @@ class AuthCubit extends Cubit<AuthState> {
     Map<String, dynamic> parameters = {
       Api.name: name ?? '',
       Api.email: email ?? '',
-      Api.address: address ?? '',
       Api.fcmId: fcmToken ?? '',
       Api.notification: notification,
       Api.mobile: mobile,
+      Api.city: city,
+      Api.country: country,
+      Api.state: state,
       Api.countryCode: countryCode,
       Api.personalDetail: personalDetail,
       Api.country: country ?? '',
@@ -80,8 +83,7 @@ class AuthCubit extends Cubit<AuthState> {
     }
 
     try {
-      var response =
-          await Api.post(url: Api.updateProfileApi, parameter: parameters);
+      var response = await Api.post(url: Api.updateProfileApi, parameter: parameters);
       if (!response[Api.error]) {
         HiveUtils.setUserData(response['data']);
         //checkIsAuthenticated();

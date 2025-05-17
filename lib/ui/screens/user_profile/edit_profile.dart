@@ -1,14 +1,20 @@
-import 'dart:io';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:country_picker/country_picker.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive/hive.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/auth/auth_cubit.dart';
 import 'package:tlobni/data/cubits/auth/authentication_cubit.dart';
 import 'package:tlobni/data/cubits/slider_cubit.dart';
 import 'package:tlobni/data/cubits/system/user_details.dart';
-import 'package:tlobni/data/model/user_model.dart';
 import 'package:tlobni/data/model/category_model.dart';
+import 'package:tlobni/data/model/user_model.dart';
 import 'package:tlobni/data/repositories/category_repository.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
@@ -20,15 +26,9 @@ import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
-import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/hive_keys.dart';
+import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_cropper/image_cropper.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:hive/hive.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String from;
@@ -67,26 +67,25 @@ class UserProfileScreenState extends State<UserProfileScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   // Common controllers
-  late final TextEditingController phoneController =
-      TextEditingController(text: widget.extraData?['email']);
-  late final TextEditingController nameController =
-      TextEditingController(text: widget.extraData?['username']);
-  late final TextEditingController emailController =
-      TextEditingController(text: widget.extraData?['email']);
+  late final TextEditingController phoneController = TextEditingController(text: widget.extraData?['email']);
+  late final TextEditingController nameController = TextEditingController(text: widget.extraData?['username']);
+  late final TextEditingController emailController = TextEditingController(text: widget.extraData?['email']);
   final TextEditingController addressController = TextEditingController();
 
   // Additional controllers for different user types
   final TextEditingController businessNameController = TextEditingController();
   final TextEditingController genderController = TextEditingController();
   final TextEditingController bioController = TextEditingController();
+
   // Social media controllers
   final TextEditingController facebookController = TextEditingController();
   final TextEditingController twitterController = TextEditingController();
   final TextEditingController instagramController = TextEditingController();
   final TextEditingController tiktokController = TextEditingController();
+  final TextEditingController locationController = TextEditingController();
 
   dynamic size;
-  dynamic city, _state, country;
+  String? city, state, country;
   double? latitude, longitude;
   String? name, email, address, gender;
   File? fileUserimg;
@@ -116,9 +115,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
     log("Initial user type from Hive: $userType");
 
     // If Provider, determine provider type (Expert or Business)
-    if (userType == "Provider" ||
-        userType == "Expert" ||
-        userType == "Business") {
+    if (userType == "Provider" || userType == "Expert" || userType == "Business") {
       providerType = userType == "Business" ? "Business" : "Expert";
     }
 
@@ -137,9 +134,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
     }
 
     // Set social media links from user data only for Expert and Business users
-    if (userType == "Provider" ||
-        userType == "Expert" ||
-        userType == "Business") {
+    if (userType == "Provider" || userType == "Expert" || userType == "Business") {
       if (userData['facebook'] != null) {
         facebookController.text = userData['facebook'].toString();
       }
@@ -156,7 +151,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
 
     // Get location data
     city = HiveUtils.getCityName();
-    _state = HiveUtils.getStateName();
+    state = HiveUtils.getStateName();
     country = HiveUtils.getCountryName();
     latitude = HiveUtils.getLatitude();
     longitude = HiveUtils.getLongitude();
@@ -182,11 +177,13 @@ class UserProfileScreenState extends State<UserProfileScreen> {
       }
     }
 
-    // Set country from user details if it's empty
-    if (country == null || country.isEmpty) {
-      country = userData['location'] ?? "";
-    }
+    country = userDetails.country;
+    city = userDetails.city;
+    state = userDetails.state;
 
+    if (city != null && country != null) {
+      locationController.text = "$city, $country";
+    }
     // Set address from user details if it's empty
     if (addressController.text.isEmpty) {
       addressController.text = userDetails.address ?? "";
@@ -196,30 +193,23 @@ class UserProfileScreenState extends State<UserProfileScreen> {
     if (widget.from == "login") {
       isNotificationsEnabled = true;
     } else {
-      isNotificationsEnabled =
-          HiveUtils.getUserDetails().notification == 1 ? true : false;
+      isNotificationsEnabled = HiveUtils.getUserDetails().notification == 1 ? true : false;
     }
 
     // Handle personal details visibility
     if (widget.from == "login") {
       isPersonalDetailShow = true;
     } else {
-      isPersonalDetailShow =
-          HiveUtils.getUserDetails().isPersonalDetailShow == 1 ? true : false;
+      isPersonalDetailShow = HiveUtils.getUserDetails().isPersonalDetailShow == 1 ? true : false;
     }
 
     // Set phone with country code
     if (HiveUtils.getCountryCode() != null) {
-      countryCode = (HiveUtils.getCountryCode() != null
-          ? HiveUtils.getCountryCode()!
-          : "");
-      phoneController.text = HiveUtils.getUserDetails().mobile != null
-          ? HiveUtils.getUserDetails().mobile!.replaceFirst("+$countryCode", "")
-          : "";
+      countryCode = (HiveUtils.getCountryCode() != null ? HiveUtils.getCountryCode()! : "");
+      phoneController.text =
+          HiveUtils.getUserDetails().mobile != null ? HiveUtils.getUserDetails().mobile!.replaceFirst("+$countryCode", "") : "";
     } else {
-      phoneController.text = HiveUtils.getUserDetails().mobile != null
-          ? HiveUtils.getUserDetails().mobile!
-          : "";
+      phoneController.text = HiveUtils.getUserDetails().mobile != null ? HiveUtils.getUserDetails().mobile! : "";
     }
 
     // Set gender
@@ -227,9 +217,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
     genderController.text = gender ?? "";
 
     // Load categories for Provider users
-    if (userType == "Provider" ||
-        userType == "Expert" ||
-        userType == "Business") {
+    if (userType == "Provider" || userType == "Expert" || userType == "Business") {
       _fetchCategories();
 
       // Get stored categories - handle both string and list formats
@@ -239,11 +227,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
           // Handle string format (comma-separated)
           _selectedCategories = categoriesData;
           if (_selectedCategories!.isNotEmpty) {
-            _selectedCategoryIds = _selectedCategories!
-                .split(',')
-                .map((id) => int.tryParse(id.trim()) ?? 0)
-                .where((id) => id > 0)
-                .toList();
+            _selectedCategoryIds = _selectedCategories!.split(',').map((id) => int.tryParse(id.trim()) ?? 0).where((id) => id > 0).toList();
           }
         } else if (categoriesData is List) {
           // Handle list format
@@ -255,9 +239,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
             }
           }
           // Convert to string format for consistency
-          _selectedCategories = _selectedCategoryIds.isNotEmpty
-              ? _selectedCategoryIds.map((id) => id.toString()).join(',')
-              : "";
+          _selectedCategories = _selectedCategoryIds.isNotEmpty ? _selectedCategoryIds.map((id) => id.toString()).join(',') : "";
         }
         log("Loaded categories: $_selectedCategoryIds");
       } else {
@@ -278,13 +260,10 @@ class UserProfileScreenState extends State<UserProfileScreen> {
 
     try {
       final CategoryRepository categoryRepository = CategoryRepository();
-      final result = await categoryRepository.fetchCategories(
-          page: 1, type: CategoryType.providers);
+      final result = await categoryRepository.fetchCategories(page: 1, type: CategoryType.providers);
 
       setState(() {
-        _categories = result.modelList
-            .where((category) => category.type == CategoryType.providers)
-            .toList();
+        _categories = result.modelList.where((category) => category.type == CategoryType.providers).toList();
         _expandedPanels = List.generate(_categories.length, (_) => false);
         _isLoadingCategories = false;
       });
@@ -320,9 +299,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
     }
 
     // Make sure providerType is also updated
-    if (userType == "Provider" ||
-        userType == "Expert" ||
-        userType == "Business") {
+    if (userType == "Provider" || userType == "Expert" || userType == "Business") {
       providerType = userType == "Business" ? "Business" : "Expert";
     } else {
       // Ensure client profiles don't show provider UI
@@ -336,9 +313,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
       child: safeAreaCondition(
         child: Scaffold(
           backgroundColor: context.color.primaryColor,
-          appBar: widget.from == "login"
-              ? null
-              : UiUtils.buildAppBar(context, showBackButton: true),
+          appBar: widget.from == "login" ? null : UiUtils.buildAppBar(context, showBackButton: true),
           body: Stack(
             children: [
               ScrollConfiguration(
@@ -349,67 +324,53 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                       padding: const EdgeInsets.all(20.0),
                       child: Form(
                           key: _formKey,
-                          child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Align(
-                                  alignment: AlignmentDirectional.center,
-                                  child: buildProfilePicture(),
-                                ),
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+                            Align(
+                              alignment: AlignmentDirectional.center,
+                              child: buildProfilePicture(),
+                            ),
 
-                                // Build the appropriate fields based on user type
-                                // Ensure only business/expert users see those specific fields
-                                userType == "Business" ||
-                                        providerType == "Business"
-                                    ? _buildBusinessFields()
-                                    : userType == "Expert" ||
-                                            providerType == "Expert"
-                                        ? _buildExpertFields()
-                                        : _buildClientFields(),
+                            // Build the appropriate fields based on user type
+                            // Ensure only business/expert users see those specific fields
+                            userType == "Business" || providerType == "Business"
+                                ? _buildBusinessFields()
+                                : userType == "Expert" || providerType == "Expert"
+                                    ? _buildExpertFields()
+                                    : _buildClientFields(),
 
-                                // Common fields and buttons
-                                SizedBox(height: 10),
-                                CustomText("notification".translate(context)),
-                                SizedBox(height: 10),
-                                buildNotificationEnableDisableSwitch(context),
-                                SizedBox(height: 10),
-                                CustomText(
-                                    "showContactInfo".translate(context)),
-                                SizedBox(height: 10),
-                                buildPersonalDetailEnableDisableSwitch(context),
-                                SizedBox(height: 25),
-                                UiUtils.buildButton(
-                                  context,
-                                  onPressed: () {
-                                    if (widget.from == 'login') {
-                                      validateData();
-                                    } else {
-                                      if (city != null && city != "") {
-                                        HiveUtils.setCurrentLocation(
-                                            city: city,
-                                            state: _state,
-                                            country: country,
-                                            latitude: latitude,
-                                            longitude: longitude);
+                            // Common fields and buttons
+                            SizedBox(height: 10),
+                            CustomText("notification".translate(context)),
+                            SizedBox(height: 10),
+                            buildNotificationEnableDisableSwitch(context),
+                            SizedBox(height: 10),
+                            CustomText("showContactInfo".translate(context)),
+                            SizedBox(height: 10),
+                            buildPersonalDetailEnableDisableSwitch(context),
+                            SizedBox(height: 25),
+                            UiUtils.buildButton(
+                              context,
+                              onPressed: () {
+                                if (widget.from == 'login') {
+                                  validateData();
+                                } else {
+                                  if (city != null && city != "") {
+                                    HiveUtils.setCurrentLocation(
+                                        city: city, state: state, country: country, latitude: latitude, longitude: longitude);
 
-                                        context
-                                            .read<SliderCubit>()
-                                            .fetchSlider(context);
-                                      } else {
-                                        HiveUtils.clearLocation();
+                                    context.read<SliderCubit>().fetchSlider(context);
+                                  } else {
+                                    HiveUtils.clearLocation();
 
-                                        context
-                                            .read<SliderCubit>()
-                                            .fetchSlider(context);
-                                      }
-                                      validateData();
-                                    }
-                                  },
-                                  height: 48,
-                                  buttonTitle:
-                                      "updateProfile".translate(context),
-                                )
-                              ])),
+                                    context.read<SliderCubit>().fetchSlider(context);
+                                  }
+                                  validateData();
+                                }
+                              },
+                              height: 48,
+                              buttonTitle: "updateProfile".translate(context),
+                            )
+                          ])),
                     )),
               ),
               if (isLoading != null && isLoading!)
@@ -447,12 +408,9 @@ class UserProfileScreenState extends State<UserProfileScreen> {
         // Email Address
         buildTextField(
           context,
-          readOnly: HiveUtils.getUserDetails().type ==
-                      AuthenticationType.email.name ||
-                  HiveUtils.getUserDetails().type ==
-                      AuthenticationType.google.name ||
-                  HiveUtils.getUserDetails().type ==
-                      AuthenticationType.apple.name
+          readOnly: HiveUtils.getUserDetails().type == AuthenticationType.email.name ||
+                  HiveUtils.getUserDetails().type == AuthenticationType.google.name ||
+                  HiveUtils.getUserDetails().type == AuthenticationType.apple.name
               ? true
               : false,
           title: "emailAddress",
@@ -469,12 +427,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
         ),
 
         // Country Selection
-        _buildCountrySelector(
-          context,
-          value: country,
-          onChanged: (val) => setState(() => country = val),
-          label: "Country",
-        ),
+        _buildLocationSelector(),
 
         // Location/City
         buildAddressTextField(
@@ -502,12 +455,9 @@ class UserProfileScreenState extends State<UserProfileScreen> {
         // Email Address
         buildTextField(
           context,
-          readOnly: HiveUtils.getUserDetails().type ==
-                      AuthenticationType.email.name ||
-                  HiveUtils.getUserDetails().type ==
-                      AuthenticationType.google.name ||
-                  HiveUtils.getUserDetails().type ==
-                      AuthenticationType.apple.name
+          readOnly: HiveUtils.getUserDetails().type == AuthenticationType.email.name ||
+                  HiveUtils.getUserDetails().type == AuthenticationType.google.name ||
+                  HiveUtils.getUserDetails().type == AuthenticationType.apple.name
               ? true
               : false,
           title: "emailAddress",
@@ -532,12 +482,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
         ),
 
         // Country Selection
-        _buildCountrySelector(
-          context,
-          value: country,
-          onChanged: (val) => setState(() => country = val),
-          label: "Country",
-        ),
+        _buildLocationSelector(),
 
         // Phone (Optional, Visible Only If Enabled)
         _buildOptionalPhone(),
@@ -574,12 +519,9 @@ class UserProfileScreenState extends State<UserProfileScreen> {
         // Email Address
         buildTextField(
           context,
-          readOnly: HiveUtils.getUserDetails().type ==
-                      AuthenticationType.email.name ||
-                  HiveUtils.getUserDetails().type ==
-                      AuthenticationType.google.name ||
-                  HiveUtils.getUserDetails().type ==
-                      AuthenticationType.apple.name
+          readOnly: HiveUtils.getUserDetails().type == AuthenticationType.email.name ||
+                  HiveUtils.getUserDetails().type == AuthenticationType.google.name ||
+                  HiveUtils.getUserDetails().type == AuthenticationType.apple.name
               ? true
               : false,
           title: "emailAddress",
@@ -596,12 +538,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
         ),
 
         // Country Selection
-        _buildCountrySelector(
-          context,
-          value: country,
-          onChanged: (val) => setState(() => country = val),
-          label: "Country",
-        ),
+        _buildLocationSelector(),
 
         // Phone (Optional, Visible Only If Enabled)
         _buildOptionalPhone(),
@@ -689,10 +626,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
           controller: phoneController,
           // Making it optional by removing validator
           keyboard: TextInputType.phone,
-          isReadOnly:
-              HiveUtils.getUserDetails().type == AuthenticationType.phone.name
-                  ? true
-                  : false,
+          isReadOnly: HiveUtils.getUserDetails().type == AuthenticationType.phone.name ? true : false,
           fillColor: context.color.secondaryColor,
           onChange: (value) {
             setState(() {});
@@ -704,14 +638,12 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                 alignment: AlignmentDirectional.centerStart,
                 child: GestureDetector(
                   onTap: () {
-                    if (HiveUtils.getUserDetails().type !=
-                        AuthenticationType.phone.name) {
+                    if (HiveUtils.getUserDetails().type != AuthenticationType.phone.name) {
                       showCountryCode();
                     }
                   },
                   child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8.0, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8),
                       child: Center(
                         child: CustomText(
                           formatCountryCode(countryCode!),
@@ -771,52 +703,27 @@ class UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   // Country selector
-  Widget _buildCountrySelector(
-    BuildContext context, {
-    required String? value,
-    required Function(String?) onChanged,
-    required String label,
-  }) {
+  Widget _buildLocationSelector() {
+    String label = 'Location';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(height: 10),
         CustomText(label),
         SizedBox(height: 10),
-        CustomTextFormField(
-          fillColor: context.color.secondaryColor,
-          hintText: value ?? label,
-          readOnly: true,
-          onTap: () {
-            showCountryPicker(
-              context: context,
-              showPhoneCode: false,
-              countryListTheme: CountryListThemeData(
-                borderRadius: BorderRadius.circular(11),
-                searchTextStyle: TextStyle(
-                  color: context.color.textColorDark,
-                  fontSize: 16,
-                ),
-              ),
-              countryFilter: [
-                'SA', // Saudi Arabia
-                'AE', // United Arab Emirates
-                'QA', // Qatar
-                'OM', // Oman
-                'KW', // Kuwait
-                'LB', // Lebanon
-                'EG', // Egypt
-                'JO', // Jordan
-                'IQ', // Iraq
-              ],
-              onSelect: (Country country) {
-                onChanged(country.name);
+        LocationAutocomplete(
+          controller: locationController,
+          onSelected: (_) {},
+          hintText: 'Location',
+          onLocationSelected: (map) => WidgetsBinding.instance.addPostFrameCallback(
+            (_) => setState(
+              () {
+                city = map['city'];
+                state = map['state'];
+                country = map['country'];
               },
-            );
-          },
-          suffix: const Icon(Icons.arrow_drop_down),
-          validator: CustomTextFieldValidator.nullCheck,
-          controller: TextEditingController(text: value),
+            ),
+          ),
         ),
       ],
     );
@@ -847,13 +754,9 @@ class UserProfileScreenState extends State<UserProfileScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    _selectedCategoryIds.isEmpty
-                        ? "Choose Categories"
-                        : "${_selectedCategoryIds.length} categories selected",
+                    _selectedCategoryIds.isEmpty ? "Choose Categories" : "${_selectedCategoryIds.length} categories selected",
                     style: TextStyle(
-                      color: _selectedCategoryIds.isEmpty
-                          ? context.color.textColorDark.withOpacity(0.5)
-                          : context.color.textColorDark,
+                      color: _selectedCategoryIds.isEmpty ? context.color.textColorDark.withOpacity(0.5) : context.color.textColorDark,
                     ),
                   ),
                 ),
@@ -887,9 +790,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
         return StatefulBuilder(builder: (context, setState) {
           // Load categories when dialog opens
           if (isDialogLoading) {
-            _loadCategoriesForDialog(
-                    setState, filteredCategories, dialogExpandedPanels)
-                .then((_) {
+            _loadCategoriesForDialog(setState, filteredCategories, dialogExpandedPanels).then((_) {
               setState(() {
                 isDialogLoading = false;
               });
@@ -901,10 +802,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
             if (query.isEmpty) {
               setState(() {
                 // Only include categories with type 'providers'
-                filteredCategories = _categories
-                    .where(
-                        (category) => category.type == CategoryType.providers)
-                    .toList();
+                filteredCategories = _categories.where((category) => category.type == CategoryType.providers).toList();
               });
               return;
             }
@@ -918,15 +816,11 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                   return false;
                 }
 
-                final matchesMainCategory =
-                    category.name?.toLowerCase().contains(query) ?? false;
+                final matchesMainCategory = category.name?.toLowerCase().contains(query) ?? false;
 
                 // Check if any subcategory matches
-                final hasMatchingSubcategory = category.children?.any(
-                        (subcategory) =>
-                            subcategory.name?.toLowerCase().contains(query) ??
-                            false) ??
-                    false;
+                final hasMatchingSubcategory =
+                    category.children?.any((subcategory) => subcategory.name?.toLowerCase().contains(query) ?? false) ?? false;
 
                 return matchesMainCategory || hasMatchingSubcategory;
               }).toList();
@@ -935,14 +829,10 @@ class UserProfileScreenState extends State<UserProfileScreen> {
               for (int i = 0; i < filteredCategories.length; i++) {
                 final category = filteredCategories[i];
                 final originalIndex = _categories.indexOf(category);
-                final hasSubcategories =
-                    category.children != null && category.children!.isNotEmpty;
+                final hasSubcategories = category.children != null && category.children!.isNotEmpty;
 
-                final hasMatchingSubcategory = category.children?.any(
-                        (subcategory) =>
-                            subcategory.name?.toLowerCase().contains(query) ??
-                            false) ??
-                    false;
+                final hasMatchingSubcategory =
+                    category.children?.any((subcategory) => subcategory.name?.toLowerCase().contains(query) ?? false) ?? false;
 
                 if (hasMatchingSubcategory) {
                   dialogExpandedPanels[_categories.indexOf(category)] = true;
@@ -960,8 +850,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                 children: [
                   // Header with title and close button
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: context.color.secondaryColor,
                       border: Border(
@@ -1010,8 +899,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            vertical: 12, horizontal: 16),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                       ),
                       onChanged: filterCategories,
                     ),
@@ -1022,17 +910,13 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                     child: isDialogLoading
                         ? const Center(child: CircularProgressIndicator())
                         : filteredCategories.isEmpty
-                            ? const Center(
-                                child: Text("No matching categories found"))
+                            ? const Center(child: Text("No matching categories found"))
                             : ListView.builder(
                                 itemCount: filteredCategories.length,
                                 itemBuilder: (context, index) {
                                   final category = filteredCategories[index];
-                                  final originalIndex =
-                                      _categories.indexOf(category);
-                                  final hasSubcategories =
-                                      category.children != null &&
-                                          category.children!.isNotEmpty;
+                                  final originalIndex = _categories.indexOf(category);
+                                  final hasSubcategories = category.children != null && category.children!.isNotEmpty;
 
                                   return Column(
                                     children: [
@@ -1042,8 +926,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                                           color: context.color.secondaryColor,
                                           border: Border(
                                             bottom: BorderSide(
-                                              color: context.color.borderColor
-                                                  .darken(10),
+                                              color: context.color.borderColor.darken(10),
                                               width: 0.5,
                                             ),
                                           ),
@@ -1051,55 +934,34 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                                         child: ListTile(
                                           title: Text(
                                             category.name ?? "Unknown",
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.w500),
+                                            style: const TextStyle(fontWeight: FontWeight.w500),
                                           ),
                                           leading: Checkbox(
-                                            value: _isCategorySelected(
-                                                category.id ?? 0),
+                                            value: _isCategorySelected(category.id ?? 0),
                                             onChanged: (bool? value) {
                                               if (category.id != null) {
                                                 setState(() {
                                                   if (value == true) {
-                                                    if (!_selectedCategoryIds
-                                                        .contains(
-                                                            category.id!)) {
-                                                      _selectedCategoryIds
-                                                          .add(category.id!);
+                                                    if (!_selectedCategoryIds.contains(category.id!)) {
+                                                      _selectedCategoryIds.add(category.id!);
                                                     }
 
                                                     // Also select all subcategories
                                                     if (hasSubcategories) {
-                                                      for (var subcategory
-                                                          in category
-                                                              .children!) {
-                                                        if (subcategory.id !=
-                                                                null &&
-                                                            !_selectedCategoryIds
-                                                                .contains(
-                                                                    subcategory
-                                                                        .id!)) {
-                                                          _selectedCategoryIds
-                                                              .add(subcategory
-                                                                  .id!);
+                                                      for (var subcategory in category.children!) {
+                                                        if (subcategory.id != null && !_selectedCategoryIds.contains(subcategory.id!)) {
+                                                          _selectedCategoryIds.add(subcategory.id!);
                                                         }
                                                       }
                                                     }
                                                   } else {
-                                                    _selectedCategoryIds
-                                                        .remove(category.id!);
+                                                    _selectedCategoryIds.remove(category.id!);
 
                                                     // Also deselect all subcategories
                                                     if (hasSubcategories) {
-                                                      for (var subcategory
-                                                          in category
-                                                              .children!) {
-                                                        if (subcategory.id !=
-                                                            null) {
-                                                          _selectedCategoryIds
-                                                              .remove(
-                                                                  subcategory
-                                                                      .id!);
+                                                      for (var subcategory in category.children!) {
+                                                        if (subcategory.id != null) {
+                                                          _selectedCategoryIds.remove(subcategory.id!);
                                                         }
                                                       }
                                                     }
@@ -1111,23 +973,15 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                                           // Only show trailing arrow if there are subcategories
                                           trailing: hasSubcategories
                                               ? Icon(
-                                                  dialogExpandedPanels[
-                                                          originalIndex]
-                                                      ? Icons.keyboard_arrow_up
-                                                      : Icons
-                                                          .keyboard_arrow_down,
-                                                  color: context
-                                                      .color.textColorDark,
+                                                  dialogExpandedPanels[originalIndex] ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                                  color: context.color.textColorDark,
                                                 )
                                               : null,
                                           // Make the entire row clickable to expand/collapse if it has subcategories
                                           onTap: hasSubcategories
                                               ? () {
                                                   setState(() {
-                                                    dialogExpandedPanels[
-                                                            originalIndex] =
-                                                        !dialogExpandedPanels[
-                                                            originalIndex];
+                                                    dialogExpandedPanels[originalIndex] = !dialogExpandedPanels[originalIndex];
                                                   });
                                                 }
                                               : null,
@@ -1135,70 +989,39 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                                       ),
 
                                       // Subcategories (if expanded and has subcategories)
-                                      if (hasSubcategories &&
-                                          dialogExpandedPanels[originalIndex])
+                                      if (hasSubcategories && dialogExpandedPanels[originalIndex])
                                         Container(
-                                          color: context.color.secondaryColor
-                                              .withOpacity(0.5),
+                                          color: context.color.secondaryColor.withOpacity(0.5),
                                           child: Column(
-                                            children: category.children!
-                                                .map((subcategory) {
+                                            children: category.children!.map((subcategory) {
                                               // Filter subcategories if search is active
-                                              if (searchController
-                                                  .text.isNotEmpty) {
-                                                final query = searchController
-                                                    .text
-                                                    .toLowerCase();
-                                                if (!(subcategory.name
-                                                        ?.toLowerCase()
-                                                        .contains(query) ??
-                                                    false)) {
+                                              if (searchController.text.isNotEmpty) {
+                                                final query = searchController.text.toLowerCase();
+                                                if (!(subcategory.name?.toLowerCase().contains(query) ?? false)) {
                                                   return Container(); // Skip non-matching subcategories
                                                 }
                                               }
 
                                               final hasNestedSubcategories =
-                                                  subcategory.children !=
-                                                          null &&
-                                                      subcategory
-                                                          .children!.isNotEmpty;
+                                                  subcategory.children != null && subcategory.children!.isNotEmpty;
 
                                               return Column(
                                                 children: [
                                                   Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            left: 20.0),
+                                                    padding: const EdgeInsets.only(left: 20.0),
                                                     child: ListTile(
-                                                      title: Text(
-                                                          subcategory.name ??
-                                                              "Unknown"),
+                                                      title: Text(subcategory.name ?? "Unknown"),
                                                       leading: Checkbox(
-                                                        value:
-                                                            _isCategorySelected(
-                                                                subcategory
-                                                                        .id ??
-                                                                    0),
-                                                        onChanged:
-                                                            (bool? value) {
-                                                          if (subcategory.id !=
-                                                              null) {
+                                                        value: _isCategorySelected(subcategory.id ?? 0),
+                                                        onChanged: (bool? value) {
+                                                          if (subcategory.id != null) {
                                                             setState(() {
-                                                              if (value ==
-                                                                  true) {
-                                                                if (!_selectedCategoryIds
-                                                                    .contains(
-                                                                        subcategory
-                                                                            .id!)) {
-                                                                  _selectedCategoryIds.add(
-                                                                      subcategory
-                                                                          .id!);
+                                                              if (value == true) {
+                                                                if (!_selectedCategoryIds.contains(subcategory.id!)) {
+                                                                  _selectedCategoryIds.add(subcategory.id!);
                                                                 }
                                                               } else {
-                                                                _selectedCategoryIds
-                                                                    .remove(
-                                                                        subcategory
-                                                                            .id!);
+                                                                _selectedCategoryIds.remove(subcategory.id!);
                                                               }
                                                             });
                                                           }
@@ -1207,50 +1030,26 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                                                     ),
                                                   ),
                                                   // Nested subcategories
-                                                  if (hasNestedSubcategories &&
-                                                      _isSubcategoryExpanded(
-                                                          subcategory.id ?? 0))
+                                                  if (hasNestedSubcategories && _isSubcategoryExpanded(subcategory.id ?? 0))
                                                     Container(
-                                                      color: context
-                                                          .color.secondaryColor
-                                                          .withOpacity(0.3),
+                                                      color: context.color.secondaryColor.withOpacity(0.3),
                                                       child: Column(
-                                                        children: subcategory
-                                                            .children!
-                                                            .map((subcategory) {
+                                                        children: subcategory.children!.map((subcategory) {
                                                           return Padding(
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .only(
-                                                                    left: 40.0),
+                                                            padding: const EdgeInsets.only(left: 40.0),
                                                             child: ListTile(
-                                                              title: Text(
-                                                                  subcategory
-                                                                          .name ??
-                                                                      "Unknown"),
+                                                              title: Text(subcategory.name ?? "Unknown"),
                                                               leading: Checkbox(
-                                                                value: _isCategorySelected(
-                                                                    subcategory
-                                                                            .id ??
-                                                                        0),
-                                                                onChanged:
-                                                                    (bool?
-                                                                        value) {
-                                                                  if (subcategory
-                                                                          .id !=
-                                                                      null) {
-                                                                    setState(
-                                                                        () {
-                                                                      if (value ==
-                                                                          true) {
-                                                                        if (!_selectedCategoryIds
-                                                                            .contains(subcategory.id!)) {
-                                                                          _selectedCategoryIds
-                                                                              .add(subcategory.id!);
+                                                                value: _isCategorySelected(subcategory.id ?? 0),
+                                                                onChanged: (bool? value) {
+                                                                  if (subcategory.id != null) {
+                                                                    setState(() {
+                                                                      if (value == true) {
+                                                                        if (!_selectedCategoryIds.contains(subcategory.id!)) {
+                                                                          _selectedCategoryIds.add(subcategory.id!);
                                                                         }
                                                                       } else {
-                                                                        _selectedCategoryIds
-                                                                            .remove(subcategory.id!);
+                                                                        _selectedCategoryIds.remove(subcategory.id!);
                                                                       }
                                                                     });
                                                                   }
@@ -1293,16 +1092,12 @@ class UserProfileScreenState extends State<UserProfileScreen> {
   ) async {
     try {
       final CategoryRepository categoryRepository = CategoryRepository();
-      final result = await categoryRepository.fetchCategories(
-          page: 1, type: CategoryType.providers);
+      final result = await categoryRepository.fetchCategories(page: 1, type: CategoryType.providers);
 
       setState(() {
         _categories = result.modelList;
-        filteredCategories.addAll(_categories
-            .where((category) => category.type == CategoryType.providers)
-            .toList());
-        dialogExpandedPanels
-            .addAll(List.generate(_categories.length, (_) => false));
+        filteredCategories.addAll(_categories.where((category) => category.type == CategoryType.providers).toList());
+        dialogExpandedPanels.addAll(List.generate(_categories.length, (_) => false));
         _expandedPanels = List.generate(_categories.length, (_) => false);
         _isLoadingCategories = false;
       });
@@ -1330,10 +1125,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
         controller: phoneController,
         validator: CustomTextFieldValidator.phoneNumber,
         keyboard: TextInputType.phone,
-        isReadOnly:
-            HiveUtils.getUserDetails().type == AuthenticationType.phone.name
-                ? true
-                : false,
+        isReadOnly: HiveUtils.getUserDetails().type == AuthenticationType.phone.name ? true : false,
         fillColor: context.color.secondaryColor,
         // borderColor: context.color.borderColor.darken(10),
         onChange: (value) {
@@ -1346,15 +1138,13 @@ class UserProfileScreenState extends State<UserProfileScreen> {
               alignment: AlignmentDirectional.centerStart,
               child: GestureDetector(
                 onTap: () {
-                  if (HiveUtils.getUserDetails().type !=
-                      AuthenticationType.phone.name) {
+                  if (HiveUtils.getUserDetails().type != AuthenticationType.phone.name) {
                     showCountryCode();
                   }
                 },
                 child: Container(
                     // color: Colors.red,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8.0, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8),
                     child: Center(
                       child: CustomText(
                         formatCountryCode(countryCode!),
@@ -1400,10 +1190,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: CustomText(
-              (isNotificationsEnabled
-                      ? "enabled".translate(context)
-                      : "disabled".translate(context))
-                  .translate(context),
+              (isNotificationsEnabled ? "enabled".translate(context) : "disabled".translate(context)).translate(context),
               fontSize: context.font.large,
               color: context.color.textDefaultColor,
             ),
@@ -1438,10 +1225,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
           Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: CustomText(
-                (isPersonalDetailShow
-                        ? "enabled".translate(context)
-                        : "disabled".translate(context))
-                    .translate(context),
+                (isPersonalDetailShow ? "enabled".translate(context) : "disabled".translate(context)).translate(context),
                 fontSize: context.font.large,
               )),
           CupertinoSwitch(
@@ -1489,10 +1273,8 @@ class UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   Widget buildAddressTextField(BuildContext context,
-      {required String title,
-      required TextEditingController controller,
-      CustomTextFieldValidator? validator,
-      bool? readOnly}) {
+      {required String title, required TextEditingController controller, CustomTextFieldValidator? validator, bool? readOnly}) {
+    return SizedBox();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1514,11 +1296,11 @@ class UserProfileScreenState extends State<UserProfileScreen> {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               setState(() {
                 city = locationData['city'];
-                _state = locationData['state'];
+                state = locationData['state'];
                 country = locationData['country'];
 
                 print("Location updated to: ${controller.text}");
-                print("City: $city, State: $_state, Country: $country");
+                print("City: $city, State: $state, Country: $country");
               });
             });
           },
@@ -1535,8 +1317,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
       );
     } else {
       if (widget.from == "login") {
-        if (HiveUtils.getUserDetails().profile != "" &&
-            HiveUtils.getUserDetails().profile != null) {
+        if (HiveUtils.getUserDetails().profile != "" && HiveUtils.getUserDetails().profile != null) {
           return UiUtils.getImage(
             HiveUtils.getUserDetails().profile!,
             fit: BoxFit.cover,
@@ -1572,10 +1353,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
           height: 124,
           width: 124,
           alignment: AlignmentDirectional.center,
-          decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border:
-                  Border.all(color: context.color.territoryColor, width: 2)),
+          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: context.color.territoryColor, width: 2)),
           child: Container(
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
@@ -1597,14 +1375,10 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                 width: 37,
                 alignment: AlignmentDirectional.center,
                 decoration: BoxDecoration(
-                    border: Border.all(
-                        color: context.color.buttonColor, width: 1.5),
+                    border: Border.all(color: context.color.buttonColor, width: 1.5),
                     shape: BoxShape.circle,
                     color: context.color.territoryColor),
-                child: SizedBox(
-                    width: 15,
-                    height: 15,
-                    child: UiUtils.getSvg(AppIcons.edit))),
+                child: SizedBox(width: 15, height: 15, child: UiUtils.getSvg(AppIcons.edit))),
           ),
         )
       ],
@@ -1614,9 +1388,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
   void showPicker() {
     showModalBottomSheet(
         context: context,
-        shape: RoundedRectangleBorder(
-            side: const BorderSide(color: Colors.transparent),
-            borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(side: const BorderSide(color: Colors.transparent), borderRadius: BorderRadius.circular(10)),
         builder: (BuildContext bc) {
           return SafeArea(
             child: Wrap(
@@ -1679,8 +1451,9 @@ class UserProfileScreenState extends State<UserProfileScreen> {
       context: context,
       showWorldWide: false,
       showPhoneCode: true,
-      countryListTheme:
-          CountryListThemeData(borderRadius: BorderRadius.circular(11)),
+      countryListTheme: CountryListThemeData(borderRadius: BorderRadius.circular(11)),
+      exclude: ['IL'],
+      favorite: ['LB'],
       onSelect: (Country value) {
         countryCode = value.phoneCode;
         setState(() {});
@@ -1706,9 +1479,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
       log("BEFORE UPDATE - userType: $userType, providerType: $providerType");
 
       // Convert selected categories to string (comma-separated)
-      final String categoriesString = _selectedCategoryIds.isEmpty
-          ? ""
-          : _selectedCategoryIds.map((id) => id.toString()).join(',');
+      final String categoriesString = _selectedCategoryIds.isEmpty ? "" : _selectedCategoryIds.map((id) => id.toString()).join(',');
 
       // Prepare update data
       Map<String, dynamic> additionalParams = {};
@@ -1726,9 +1497,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
       log("Setting type in additionalParams: ${additionalParams['type']}");
 
       // Add type specific fields
-      if (userType == "Provider" ||
-          userType == "Expert" ||
-          userType == "Business") {
+      if (userType == "Provider" || userType == "Expert" || userType == "Business") {
         // Save categories as a string for consistency with the API
         additionalParams['categories'] = categoriesString;
         // Add bio for Expert and Business
@@ -1756,19 +1525,23 @@ class UserProfileScreenState extends State<UserProfileScreen> {
 
       var response;
 
+      String? fcmToken = HiveUtils.getFcmToken();
+
       // For all user types, use the appropriate name field but send it as "name"
       if (providerType == "Business") {
         response = await context.read<AuthCubit>().updateuserdata(context,
             name: businessNameController.text.trim(),
             email: emailController.text.trim(),
             fileUserimg: fileUserimg,
-            address: addressController.text,
+            state: state,
+            city: city,
             bio: bioController.text.trim(),
             mobile: phoneController.text,
             notification: isNotificationsEnabled == true ? "1" : "0",
             countryCode: countryCode,
             personalDetail: isPersonalDetailShow == true ? 1 : 0,
             country: country,
+            fcmToken: fcmToken,
             categories: categoriesString,
             facebook: facebookController.text.trim(),
             twitter: twitterController.text.trim(),
@@ -1782,13 +1555,15 @@ class UserProfileScreenState extends State<UserProfileScreen> {
               email: emailController.text.trim(),
               bio: bioController.text.trim(),
               fileUserimg: fileUserimg,
-              address: addressController.text,
+              state: state,
+              city: city,
               mobile: phoneController.text,
               notification: isNotificationsEnabled == true ? "1" : "0",
               countryCode: countryCode,
               personalDetail: isPersonalDetailShow == true ? 1 : 0,
               country: country,
               categories: categoriesString,
+              fcmToken: fcmToken,
               facebook: facebookController.text.trim(),
               twitter: twitterController.text.trim(),
               instagram: instagramController.text.trim(),
@@ -1801,7 +1576,9 @@ class UserProfileScreenState extends State<UserProfileScreen> {
               name: nameController.text.trim(),
               email: emailController.text.trim(),
               fileUserimg: fileUserimg,
-              address: addressController.text,
+              state: state,
+              city: city,
+              fcmToken: fcmToken,
               mobile: phoneController.text,
               notification: isNotificationsEnabled == true ? "1" : "0",
               countryCode: countryCode,
@@ -1826,34 +1603,26 @@ class UserProfileScreenState extends State<UserProfileScreen> {
         // Make sure proper name field is set based on user type
         if (providerType == "Business") {
           // For business users, ensure name is properly set
-          if (updatedUserData['name'] == null ||
-              updatedUserData['name'] == "") {
+          if (updatedUserData['name'] == null || updatedUserData['name'] == "") {
             updatedUserData['name'] = businessNameController.text.trim();
           }
         } else {
           // For regular users, ensure name is properly set
-          if (updatedUserData['name'] == null ||
-              updatedUserData['name'] == "") {
+          if (updatedUserData['name'] == null || updatedUserData['name'] == "") {
             updatedUserData['name'] = nameController.text.trim();
           }
         }
 
         // Make sure email isn't empty
-        if (updatedUserData['email'] == null ||
-            updatedUserData['email'] == "") {
+        if (updatedUserData['email'] == null || updatedUserData['email'] == "") {
           updatedUserData['email'] = emailController.text.trim();
         }
 
-        // Make sure location/country isn't empty
-        if (updatedUserData['location'] == null ||
-            updatedUserData['location'] == "") {
-          updatedUserData['location'] = country;
-        }
+        updatedUserData['mobile'] = phoneController.text.trim();
+        updatedUserData['countryCode'] = countryCode;
 
         // Save bio for Expert and Business users
-        if (userType == "Provider" ||
-            userType == "Expert" ||
-            userType == "Business") {
+        if (userType == "Provider" || userType == "Expert" || userType == "Business") {
           updatedUserData['bio'] = bioController.text.trim();
 
           // Save social media data
@@ -1871,9 +1640,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
       Future.delayed(
         Duration.zero,
         () {
-          context
-              .read<UserDetailsCubit>()
-              .copy(UserModel.fromJson(response['data']));
+          context.read<UserDetailsCubit>().copy(UserModel.fromJson(response['data']));
         },
       );
 
@@ -1897,13 +1664,10 @@ class UserProfileScreenState extends State<UserProfileScreen> {
         Future.delayed(
           Duration.zero,
           () {
-            if (HiveUtils.getCityName() != null &&
-                HiveUtils.getCityName() != "") {
-              HelperUtils.killPreviousPages(
-                  context, Routes.main, {"from": widget.from});
+            if (HiveUtils.getCityName() != null && HiveUtils.getCityName() != "") {
+              HelperUtils.killPreviousPages(context, Routes.main, {"from": widget.from});
             } else {
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                  Routes.locationPermissionScreen, (route) => false);
+              Navigator.of(context).pushNamedAndRemoveUntil(Routes.locationPermissionScreen, (route) => false);
             }
           },
         );
