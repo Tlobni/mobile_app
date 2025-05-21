@@ -627,14 +627,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: EdgeInsetsDirectional.only(start: 5.0),
-                  child: CustomText(
-                    'Providers'.translate(context),
-                    color: context.color.textDefaultColor.withOpacity(0.3),
-                    fontSize: context.font.normal,
-                  ),
-                ),
                 SizedBox(height: 3),
                 ListView.separated(
                   shrinkWrap: true,
@@ -739,13 +731,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                      padding: EdgeInsetsDirectional.only(start: 5.0),
-                      child: CustomText(
-                        "searchedItems".translate(context),
-                        color: context.color.textDefaultColor.withOpacity(0.3),
-                        fontSize: context.font.normal,
-                      )),
                   SizedBox(
                     height: 3,
                   ),
@@ -1033,7 +1018,9 @@ class ProviderCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 // Provider type
                 CustomText(
-                  provider.type ?? "",
+                  provider.categoriesModels?.isEmpty ?? false
+                      ? provider.type ?? ''
+                      : UiUtils.categoriesListToString(provider.categoriesModels!),
                   fontSize: 14,
                   color: context.color.textDefaultColor.withOpacity(0.7),
                 ),

@@ -19,6 +19,7 @@
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
     <!-- <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/> -->
 
@@ -85,15 +86,11 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data
-                    android:host="eclassify-dev.vercel.app"
-                    android:pathPattern="/product-details/.*"
-                    android:scheme="tlobni" />
-                <data
-                    android:host="eclassifyweb.wrteam.me"
-                    android:pathPattern="/product-details/.*"
-                    android:scheme="tlobni" />
-                <data
                     android:host="tlobni.thewrteam.in"
+                    android:pathPattern="/product-details/.*"
+                    android:scheme="tlobni" />
+                <data
+                    android:host="dashboard.tlobni.com"
                     android:pathPattern="/product-details/.*"
                     android:scheme="tlobni" />
             </intent-filter>

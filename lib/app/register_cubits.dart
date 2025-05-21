@@ -69,6 +69,8 @@ import 'package:tlobni/data/cubits/system/get_api_keys_cubit.dart';
 import 'package:tlobni/data/cubits/system/language_cubit.dart';
 import 'package:tlobni/data/cubits/system/notification_cubit.dart';
 import 'package:tlobni/data/cubits/system/user_details.dart';
+import 'package:tlobni/data/cubits/user_has_rated_item_cubit.dart';
+import 'package:tlobni/data/cubits/user_has_rated_user_cubit.dart';
 import 'package:tlobni/data/cubits/utility/item_edit_global.dart';
 import 'package:tlobni/data/repositories/favourites_repository.dart';
 import 'package:tlobni/data/repositories/home/home_repository.dart';
@@ -112,6 +114,8 @@ class RegisterCubits {
     BlocProvider(create: (context) => FetchPopularItemsCubit()),
     BlocProvider(create: (context) => SearchItemCubit()),
     BlocProvider(create: (context) => FetchSubCategoriesCubit()),
+    BlocProvider(create: (context) => UserHasRatedItemCubit()),
+    BlocProvider(create: (context) => UserHasRatedUserCubit()),
     BlocProvider(create: (context) => ChangeMyItemStatusCubit()),
     BlocProvider(create: (context) => CreateFeaturedAdCubit()),
     BlocProvider(create: (context) => AssignFreePackageCubit()),

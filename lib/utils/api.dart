@@ -122,6 +122,8 @@ class Api {
   static String getVerificationRequestApi = "verification-request";
   static String addReviewReportApi = "add-review-report";
   static String renewItemApi = "renew-item";
+  static String userHasRatedUser = 'user-has-rated-user';
+  static String userHasRatedItem = 'user-has-rated-item';
 
 //Chat module apis
   static String sendMessageApi = "send-message";

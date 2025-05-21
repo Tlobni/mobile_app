@@ -2,11 +2,19 @@ import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
+import 'package:mime_type/mime_type.dart';
 import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/home/fetch_home_all_items_cubit.dart';
 import 'package:tlobni/data/cubits/home/fetch_home_screen_cubit.dart';
 import 'package:tlobni/data/cubits/system/app_theme_cubit.dart';
+import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
 import 'package:tlobni/ui/screens/widgets/full_screen_image_view.dart';
@@ -19,29 +27,27 @@ import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/network_to_localsvg.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:intl/intl.dart';
-import 'package:lottie/lottie.dart';
-import 'package:mime_type/mime_type.dart';
 
 class UiUtils {
-  static SvgPicture getSvg(String path,
-      {Color? color, BoxFit? fit, double? width, double? height}) {
+  static String categoriesListToString(List<CategoryModel> categories) {
+    if (categories.isEmpty) return '';
+    final first = categories.first;
+    final second = categories.length > 1 ? categories[1] : null;
+    final more = categories.length - 2;
+    return '${first.name}${second != null ? ', ${second.name}' : ''}${more > 0 ? ' + $more more' : ''}';
+  }
+
+  static SvgPicture getSvg(String path, {Color? color, BoxFit? fit, double? width, double? height}) {
     return SvgPicture.asset(
       path,
-      colorFilter:
-          color != null ? ColorFilter.mode(color, BlendMode.srcIn) : null,
+      colorFilter: color != null ? ColorFilter.mode(color, BlendMode.srcIn) : null,
       fit: fit ?? BoxFit.contain,
       width: width,
       height: height,
     );
   }
 
-  static void checkUser(
-      {required Function() onNotGuest, required BuildContext context}) {
+  static void checkUser({required Function() onNotGuest, required BuildContext context}) {
     if (!HiveUtils.isUserAuthenticated()) {
       _loginBox(context);
     } else {
@@ -71,8 +77,7 @@ class UiUtils {
                 const SizedBox(
                   height: 5,
                 ),
-                CustomText("tapOnLoginToAuthorize".translate(context),
-                    fontSize: context.font.small),
+                CustomText("tapOnLoginToAuthorize".translate(context), fontSize: context.font.small),
                 const SizedBox(
                   height: 10,
                 ),
@@ -81,8 +86,7 @@ class UiUtils {
                   color: context.color.territoryColor,
                   onPressed: () {
                     Navigator.pop(context);
-                    Navigator.pushNamed(context, Routes.login,
-                        arguments: {"popToCurrent": true});
+                    Navigator.pushNamed(context, Routes.login, arguments: {"popToCurrent": true});
                   },
                   child: CustomText(
                     "loginNow".translate(context),
@@ -97,30 +101,19 @@ class UiUtils {
     );
   }
 
-  static Map<String, double> getWidgetInfo(
-      BuildContext context, GlobalKey key) {
-    final RenderBox renderBox =
-        key.currentContext?.findRenderObject() as RenderBox;
+  static Map<String, double> getWidgetInfo(BuildContext context, GlobalKey key) {
+    final RenderBox renderBox = key.currentContext?.findRenderObject() as RenderBox;
 
     final Size size = renderBox.size; // or _widgetKey.currentContext?.size
 
     final Offset offset = renderBox.localToGlobal(Offset.zero);
 
-    return {
-      "x": (offset.dx),
-      "y": (offset.dy),
-      "width": size.width,
-      "height": size.height,
-      "offX": offset.dx,
-      "offY": offset.dy
-    };
+    return {"x": (offset.dx), "y": (offset.dy), "width": size.width, "height": size.height, "offX": offset.dx, "offY": offset.dy};
   }
 
   static Locale getLocaleFromLanguageCode(String languageCode) {
     List<String> result = languageCode.split("-");
-    return result.length == 1
-        ? Locale(result.first)
-        : Locale(result.first, result.last);
+    return result.length == 1 ? Locale(result.first) : Locale(result.first, result.last);
   }
 
   static Widget getDivider() {
@@ -131,16 +124,10 @@ class UiUtils {
   }
 
   static Widget getSvgImage(String url,
-      {double? width,
-      double? height,
-      BoxFit? fit,
-      String? blurHash,
-      bool? showFullScreenImage,
-      Color? color}) {
+      {double? width, double? height, BoxFit? fit, String? blurHash, bool? showFullScreenImage, Color? color}) {
     return SvgPicture.network(
       url,
-      colorFilter:
-          color != null ? ColorFilter.mode(color, BlendMode.srcIn) : null,
+      colorFilter: color != null ? ColorFilter.mode(color, BlendMode.srcIn) : null,
       width: width,
       height: height,
       fit: fit!,
@@ -162,12 +149,7 @@ class UiUtils {
     );
   }
 
-  static Widget getImage(String url,
-      {double? width,
-      double? height,
-      BoxFit? fit,
-      String? blurHash,
-      bool? showFullScreenImage}) {
+  static Widget getImage(String url, {double? width, double? height, BoxFit? fit, String? blurHash, bool? showFullScreenImage}) {
     return CachedNetworkImage(
       imageUrl: url,
       fit: fit,
@@ -210,11 +192,7 @@ class UiUtils {
     );
   }
 
-  static Widget progress(
-      {double? width,
-      double? height,
-      Color? normalProgressColor,
-      bool? showWhite}) {
+  static Widget progress({double? width, double? height, Color? normalProgressColor, bool? showWhite}) {
     if (Constant.useLottieProgress) {
       return LottieBuilder.asset(
         "assets/lottie/${showWhite ?? false ? Constant.progressLottieFileWhite : Constant.loadingSuccessLottieFile}",
@@ -231,48 +209,24 @@ class UiUtils {
 
   ///Divider / Container
 
-  static SystemUiOverlayStyle getSystemUiOverlayStyle(
-      {required BuildContext context, required Color statusBarColor}) {
+  static SystemUiOverlayStyle getSystemUiOverlayStyle({required BuildContext context, required Color statusBarColor}) {
     return SystemUiOverlayStyle(
         systemNavigationBarDividerColor: Colors.transparent,
         // systemNavigationBarColor: Theme.of(context).colorScheme.secondaryColor,
         systemNavigationBarIconBrightness:
-            context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark
-                ? Brightness.light
-                : Brightness.dark,
+            context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark ? Brightness.light : Brightness.dark,
         //
         statusBarColor: statusBarColor,
-        statusBarBrightness:
-            context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark
-                ? Brightness.dark
-                : Brightness.light,
-        statusBarIconBrightness:
-            context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark
-                ? Brightness.light
-                : Brightness.dark);
+        statusBarBrightness: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark ? Brightness.dark : Brightness.light,
+        statusBarIconBrightness: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark ? Brightness.light : Brightness.dark);
   }
 
-  static void setDefaultLocationValue(
-      {required bool isCurrent,
-      required bool isHomeUpdate,
-      required BuildContext context}) {
+  static void setDefaultLocationValue({required bool isCurrent, required bool isHomeUpdate, required BuildContext context}) {
     if (isCurrent) {
-      HiveUtils.setCurrentLocation(
-          area: null,
-          city: "Bhuj",
-          state: "Gujarat",
-          country: "India",
-          latitude: 23.2533,
-          longitude: 69.6693);
+      HiveUtils.setCurrentLocation(area: null, city: "Bhuj", state: "Gujarat", country: "India", latitude: 23.2533, longitude: 69.6693);
     } else {
       HiveUtils.setLocation(
-          city: "Bhuj",
-          state: "Gujarat",
-          country: "India",
-          area: null,
-          areaId: null,
-          latitude: 23.2533,
-          longitude: 69.6693);
+          city: "Bhuj", state: "Gujarat", country: "India", area: null, areaId: null, latitude: 23.2533, longitude: 69.6693);
     }
     if (isHomeUpdate) {
       Future.delayed(
@@ -281,9 +235,7 @@ class UiUtils {
           context.read<FetchHomeScreenCubit>().fetch(
                 city: "Bhuj",
               );
-          context
-              .read<FetchHomeAllItemsCubit>()
-              .fetch(city: "Bhuj", radius: HiveUtils.getNearbyRadius());
+          context.read<FetchHomeAllItemsCubit>().fetch(city: "Bhuj", radius: HiveUtils.getNearbyRadius());
         },
       );
     }
@@ -308,8 +260,7 @@ class UiUtils {
               borderColor: context.color.borderColor,
               borderRadius: 0,
               borderWidth: 1.5,
-              contentBackgroundColor:
-                  backgroundColor ?? context.color.secondaryColor,
+              contentBackgroundColor: backgroundColor ?? context.color.secondaryColor,
               bottomLeft: true,
               bottomRight: true,
               topLeft: false,
@@ -317,9 +268,8 @@ class UiUtils {
               child: Container(
                 alignment: AlignmentDirectional.bottomStart,
                 child: Padding(
-                  padding: EdgeInsets.symmetric(
-                      horizontal: (showBackButton ?? false) ? 0 : 20,
-                      vertical: (showBackButton ?? false) ? 0 : 18),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: (showBackButton ?? false) ? 0 : 20, vertical: (showBackButton ?? false) ? 0 : 18),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -341,13 +291,8 @@ class UiUtils {
                               child: Directionality(
                                 textDirection: Directionality.of(context),
                                 child: RotatedBox(
-                                  quarterTurns: Directionality.of(context) ==
-                                          ui.TextDirection.rtl
-                                      ? 2
-                                      : -4,
-                                  child: UiUtils.getSvg(AppIcons.arrowLeft,
-                                      fit: BoxFit.none,
-                                      color: context.color.textDefaultColor),
+                                  quarterTurns: Directionality.of(context) == ui.TextDirection.rtl ? 2 : -4,
+                                  child: UiUtils.getSvg(AppIcons.arrowLeft, fit: BoxFit.none, color: context.color.textDefaultColor),
                                 ),
                               ),
                             ),
@@ -384,8 +329,7 @@ class UiUtils {
     int green = color0.green - 10;
     int blue = color0.blue - 10;
 
-    return Color.fromARGB(color0.alpha, red.clamp(0, 255), green.clamp(0, 255),
-        blue.clamp(0, 255));
+    return Color.fromARGB(color0.alpha, red.clamp(0, 255), green.clamp(0, 255), blue.clamp(0, 255));
   }
 
   static Color makeColorLight(Color color) {
@@ -395,8 +339,7 @@ class UiUtils {
     int green = color0.green + 10;
     int blue = color0.blue + 10;
 
-    return Color.fromARGB(color0.alpha, red.clamp(0, 255), green.clamp(0, 255),
-        blue.clamp(0, 255));
+    return Color.fromARGB(color0.alpha, red.clamp(0, 255), green.clamp(0, 255), blue.clamp(0, 255));
   }
 
   static Widget buildButton(BuildContext context,
@@ -442,9 +385,7 @@ class UiUtils {
           minWidth: autoWidth == true ? null : (width ?? double.infinity),
           height: height ?? 56,
           padding: padding,
-          shape: RoundedRectangleBorder(
-              side: border ?? BorderSide.none,
-              borderRadius: BorderRadius.circular(radius ?? 16)),
+          shape: RoundedRectangleBorder(side: border ?? BorderSide.none, borderRadius: BorderRadius.circular(radius ?? 16)),
           elevation: (showElevation ?? true) ? 0.5 : 0,
           color: buttonColor ?? context.color.territoryColor,
           disabledColor: disabledColor ?? context.color.territoryColor,
@@ -459,10 +400,7 @@ class UiUtils {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (isInProgress == true) ...{
-                UiUtils.progress(
-                    width: progressWidth ?? 16,
-                    height: progressHeight ?? 16,
-                    showWhite: true),
+                UiUtils.progress(width: progressWidth ?? 16, height: progressHeight ?? 16, showWhite: true),
               },
               if (isInProgress != true) prefixWidget ?? const SizedBox.shrink(),
               if (isInProgress != true) ...[
@@ -498,8 +436,7 @@ class UiUtils {
 
   static NetworkToLocalSvg networkToLocalSvg = NetworkToLocalSvg();
 
-  static Widget imageType(String url,
-      {double? width, double? height, BoxFit? fit, Color? color}) {
+  static Widget imageType(String url, {double? width, double? height, BoxFit? fit, Color? color}) {
     String? extension = mime(url);
 
     if (extension == "image/svg+xml") {
@@ -520,8 +457,7 @@ class UiUtils {
     }
   }
 
-  static void showFullScreenImage(BuildContext context,
-      {required ImageProvider provider, VoidCallback? then}) {
+  static void showFullScreenImage(BuildContext context, {required ImageProvider provider, VoidCallback? then}) {
     Navigator.of(context)
         .push(BlurredRouter(
             sigmaX: 10,
@@ -557,17 +493,11 @@ class UiUtils {
     );
   }
 
-  static void imageGallaryView(BuildContext context,
-      {required List images, VoidCallback? then, required int initalIndex}) {
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) =>
-                GalleryViewWidget(images: images, initalIndex: initalIndex)));
+  static void imageGallaryView(BuildContext context, {required List images, VoidCallback? then, required int initalIndex}) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => GalleryViewWidget(images: images, initalIndex: initalIndex)));
   }
 
-  static Future showBlurredDialoge(BuildContext context,
-      {required BlurDialog dialoge, double? sigmaX, double? sigmaY}) async {
+  static Future showBlurredDialoge(BuildContext context, {required BlurDialog dialoge, double? sigmaX, double? sigmaY}) async {
     return await Navigator.push(
       context,
       BlurredRouter(
@@ -590,8 +520,7 @@ class UiUtils {
 
 //AAA is color theory's point it means if color is AAA then it will be perfect for your app
   static bool isColorMatchAAA(Color textColor, Color background) {
-    double contrastRatio = (textColor.computeLuminance() + 0.05) /
-        (background.computeLuminance() + 0.05);
+    double contrastRatio = (textColor.computeLuminance() + 0.05) / (background.computeLuminance() + 0.05);
     if (contrastRatio < 4.5) {
       return false;
     } else {
@@ -607,8 +536,7 @@ class UiUtils {
     int d = 0;
 
 // Counting the perceptive luminance - human eye favors green color...
-    double luminance =
-        (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue) / 255;
+    double luminance = (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue) / 255;
 
     if (luminance > 0.5) {
       d = 0;
@@ -644,15 +572,15 @@ class UiUtils {
 ///Format string
 extension FormatAmount on String {
   String formatAmount({bool prefix = false}) {
-    return (prefix)
-        ? "${Constant.currencySymbol}${toString()}"
-        : "${toString()}${Constant.currencySymbol}"; // \u{20B9}"; //currencySymbol
+    return (prefix) ? "${Constant.currencySymbol}${toString()}" : "${toString()}${Constant.currencySymbol}"; // \u{20B9}"; //currencySymbol
   }
 
   String formatDate({
     String? format,
+    bool withJM = true,
   }) {
-    DateFormat dateFormat = DateFormat(format ?? "MMM d, yyyy").add_jm();
+    DateFormat dateFormat = DateFormat(format ?? "MMM d, yyyy");
+    if (withJM) dateFormat = dateFormat.add_jm();
     String formatted = dateFormat.format(DateTime.parse(this).toLocal());
     return formatted;
   }
@@ -690,8 +618,7 @@ extension ScrollEndListen on ScrollController {
 
 class RemoveGlow extends ScrollBehavior {
   @override
-  Widget buildOverscrollIndicator(
-      BuildContext context, Widget child, ScrollableDetails details) {
+  Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) {
     return child;
   }
 }
@@ -733,8 +660,7 @@ class RoundedBorderOnSomeSidesWidget extends StatelessWidget {
           topLeft: topLeft ? Radius.circular(borderRadius) : Radius.zero,
           topRight: topRight ? Radius.circular(borderRadius) : Radius.zero,
           bottomLeft: bottomLeft ? Radius.circular(borderRadius) : Radius.zero,
-          bottomRight:
-              bottomRight ? Radius.circular(borderRadius) : Radius.zero,
+          bottomRight: bottomRight ? Radius.circular(borderRadius) : Radius.zero,
         ),
       ),
       child: Container(
@@ -747,18 +673,10 @@ class RoundedBorderOnSomeSidesWidget extends StatelessWidget {
         decoration: BoxDecoration(
           color: contentBackgroundColor,
           borderRadius: BorderRadius.only(
-            topLeft: topLeft
-                ? Radius.circular(borderRadius - borderWidth)
-                : Radius.zero,
-            topRight: topRight
-                ? Radius.circular(borderRadius - borderWidth)
-                : Radius.zero,
-            bottomLeft: bottomLeft
-                ? Radius.circular(borderRadius - borderWidth)
-                : Radius.zero,
-            bottomRight: bottomRight
-                ? Radius.circular(borderRadius - borderWidth)
-                : Radius.zero,
+            topLeft: topLeft ? Radius.circular(borderRadius - borderWidth) : Radius.zero,
+            topRight: topRight ? Radius.circular(borderRadius - borderWidth) : Radius.zero,
+            bottomLeft: bottomLeft ? Radius.circular(borderRadius - borderWidth) : Radius.zero,
+            bottomRight: bottomRight ? Radius.circular(borderRadius - borderWidth) : Radius.zero,
           ),
         ),
         child: child,

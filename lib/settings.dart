@@ -30,7 +30,7 @@ class AppSettings {
   static const String androidPackageName = 'com.tlobni.app';
   static const String shareAppText = "Share this App";
 
-  static const String demoUrl = "http://192.168.0.103:8000";
+  static const String demoUrl = "http://192.168.0.100:8000";
   // static const String demoUrl = "https://dashboard.tlobni.com";
 
   ///API Setting
@@ -38,7 +38,7 @@ class AppSettings {
   static const int apiDataLoadLimit = 20;
   static const int maxCategoryShowLengthInHomeScreen = 5;
 
-  //TODO: Change to demo url when releasing
+  //TODO: Change to demo url when releasingA
   static final String baseUrl = "${HelperUtils.checkHost(demoUrl)}api/"; //don't change this
 
   static const int hiddenAPIProcessDelay = 1;
@@ -63,7 +63,7 @@ it will call API in background without showing the process and when data availab
   static const int otpTimeOutSecond = 60 * 2;
 
   ///This code will show on login screen [Note: don't add  + symbol]
-  static const String defaultCountryCode = "91";
+  static const String defaultCountryCode = "961";
   static const bool disableCountrySelection = false;
 
   ///Lottie animation

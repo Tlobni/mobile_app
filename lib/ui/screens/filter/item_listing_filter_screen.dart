@@ -65,7 +65,11 @@ class _ItemListingFilterScreenState extends State<ItemListingFilterScreen> {
       listingType = widget.initialFilter?.serviceType;
       categoryList = widget.initialFilter?.categories ??
           (widget.initialFilter?.categoryId != null
-              ? widget.initialFilter!.categoryId!.split(',').map((id) => CategoryModel(id: int.parse(id))).toList()
+              ? widget.initialFilter!.categoryId!
+                  .split(',')
+                  .where((e) => e.isNotEmpty)
+                  .map((id) => CategoryModel(id: int.parse(id)))
+                  .toList()
               : []);
 
       // Initialize rating range

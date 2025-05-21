@@ -10,6 +10,7 @@ import 'package:tlobni/data/cubits/add_user_review_cubit.dart';
 import 'package:tlobni/data/cubits/category/fetch_all_categories_cubit.dart';
 import 'package:tlobni/data/cubits/seller/fetch_seller_item_cubit.dart';
 import 'package:tlobni/data/cubits/seller/fetch_seller_ratings_cubit.dart';
+import 'package:tlobni/data/cubits/user_has_rated_user_cubit.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/data/model/seller_ratings_model.dart';
 import 'package:tlobni/ui/screens/home/home_screen.dart';
@@ -87,6 +88,8 @@ class SellerProfileScreen extends StatefulWidget {
 class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  late double? rating = widget.rating;
+
   //bool isExpanded = false;
 
   @override
@@ -106,6 +109,8 @@ class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTic
     });
 
     context.read<FetchAllCategoriesCubit>().fetchCategories();
+
+    _refreshUserHasRated();
 
     // Load data on initState
     Future.microtask(() {
@@ -183,7 +188,8 @@ class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTic
             widget.model.website = userModelMap['website'];
           }
           if (userModelMap['categories'] != null) {
-            widget.model.categoriesIds = (userModelMap['categories'] as String?)?.split(',').map(int.parse).toList();
+            widget.model.categoriesIds =
+                (userModelMap['categories'] as String?)?.split(',').where((e) => e.isNotEmpty).map(int.parse).toList();
           }
           if (userModelMap['facebook'] != null) {
             widget.model.facebook = userModelMap['facebook'];
@@ -222,7 +228,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTic
       length: tabCount, // Conditional number of tabs
       child: Scaffold(
         backgroundColor: context.color.backgroundColor,
-        floatingActionButton: isBusinessOrExpertProfile() && !isOwnProfile
+        floatingActionButton: false ?? isBusinessOrExpertProfile() && !isOwnProfile
             ? FloatingActionButton(
                 onPressed: () {
                   print("FloatingActionButton pressed");
@@ -336,22 +342,14 @@ class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTic
                   if (widget.model.categoriesIds != null && widget.model.categoriesIds!.isNotEmpty)
                     BlocBuilder<FetchAllCategoriesCubit, FetchAllCategoriesState>(
                       builder: (context, state) {
-                        print('hihibyebye');
                         if (state is FetchAllCategoriesFailure) print(state.errorMessage);
                         if (state is! FetchAllCategoriesSuccess) return SizedBox();
                         final categoryIds = widget.model.categoriesIds?.toSet() ?? {};
-                        print(categoryIds);
-                        print(state.categories);
                         final categories = state.categories.where((e) => categoryIds.contains(e.id)).toList();
-                        print(categories);
                         if (categories.isEmpty) return SizedBox();
-                        final first = categories.first;
-                        final second = categories.length > 1 ? categories[1] : null;
-                        final more = categories.length - 2;
-                        final text = '${first.name}${second != null ? ', ${second.name}' : ''}${more > 0 ? ' + $more more' : ''}';
                         return CustomText(
                           // Show first category name or "Category"
-                          text,
+                          UiUtils.categoriesListToString(categories),
                           color: context.color.textDefaultColor.withOpacity(0.7),
                           fontWeight: FontWeight.w400,
                         );
@@ -744,7 +742,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTic
               ),
 
               // Show progress indicator when loading more
-              if (state is FetchSellerRatingsSuccess && state.isLoadingMore) Center(child: UiUtils.progress()),
+              if (state is FetchSellerRatingsInProgress && state.isLoadingMore) Center(child: UiUtils.progress()),
             ],
           );
         }
@@ -1184,78 +1182,86 @@ class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTic
 
   // Separate method for the review button section
   Widget _buildReviewButtonSection(Seller seller) {
-    final bool isLoggedIn = HiveUtils.isUserAuthenticated();
+    return BlocBuilder<UserHasRatedUserCubit, UserHasRatedUserState>(builder: (context, state) {
+      if (state is! UserHasRatedUserInSuccess) {
+        return Container();
+      }
+      if (state.userHasRatedUser) {
+        return Container();
+      }
+      final bool isLoggedIn = HiveUtils.isUserAuthenticated();
 
-    // Check if this is the current user's own profile
-    bool isOwnProfile = seller.id.toString() == HiveUtils.getUserId();
+      // Check if this is the current user's own profile
+      bool isOwnProfile = seller.id.toString() == HiveUtils.getUserId();
 
-    // Don't show review button for own profile
-    if (isOwnProfile) {
-      return Container(); // Return empty container
-    }
+      // Don't show review button for own profile
+      if (isOwnProfile) {
+        return Container(); // Return empty container
+      }
 
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 8),
-      padding: EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: context.color.primaryColor,
-        border: Border.all(color: context.color.territoryColor.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                getProfileTypeIcon(),
-                color: context.color.territoryColor,
-                size: 20,
+      return Container(
+        margin: EdgeInsets.symmetric(vertical: 8),
+        padding: EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: context.color.primaryColor,
+          border: Border.all(color: context.color.territoryColor.withOpacity(0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  getProfileTypeIcon(),
+                  color: context.color.territoryColor,
+                  size: 20,
+                ),
+                SizedBox(width: 8),
+                CustomText(
+                  getProfileTypeName() + " Profile",
+                  fontSize: context.font.large,
+                  fontWeight: FontWeight.bold,
+                  color: context.color.territoryColor,
+                ),
+              ],
+            ),
+            SizedBox(height: 8),
+            CustomText(
+              "Share your experience with ${seller.name}",
+              color: context.color.textDefaultColor,
+            ),
+            if (!isLoggedIn)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: CustomText(
+                  "Login required to write a review",
+                  color: context.color.textLightColor,
+                  fontSize: context.font.small,
+                ),
               ),
-              SizedBox(width: 8),
-              CustomText(
-                getProfileTypeName() + " Profile",
-                fontSize: context.font.large,
-                fontWeight: FontWeight.bold,
-                color: context.color.territoryColor,
+            SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: () {
+                _showReviewDialog(seller);
+              },
+              icon: Icon(Icons.rate_review, color: context.color.buttonColor),
+              label: CustomText(
+                isLoggedIn ? "Write a Review" : "Login to Review",
+                color: context.color.buttonColor,
               ),
-            ],
-          ),
-          SizedBox(height: 8),
-          CustomText(
-            "Share your experience with ${seller.name}",
-            color: context.color.textDefaultColor,
-          ),
-          if (!isLoggedIn)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: CustomText(
-                "Login required to write a review",
-                color: context.color.textLightColor,
-                fontSize: context.font.small,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.color.territoryColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                minimumSize: Size(double.infinity, 45),
               ),
             ),
-          SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: () {
-              _showReviewDialog(seller);
-            },
-            icon: Icon(Icons.rate_review, color: context.color.buttonColor),
-            label: CustomText(
-              isLoggedIn ? "Write a Review" : "Login to Review",
-              color: context.color.buttonColor,
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.color.territoryColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              minimumSize: Size(double.infinity, 45),
-            ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    });
   }
 
   Widget buildItemsShimmer(BuildContext context) {
@@ -1523,6 +1529,10 @@ class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTic
     } else {
       print('Could not launch $url');
     }
+  }
+
+  void _refreshUserHasRated() {
+    if (widget.model.id != null) context.read<UserHasRatedUserCubit>().userHasRatedUser(ratedUserId: widget.model.id!);
   }
 }
 

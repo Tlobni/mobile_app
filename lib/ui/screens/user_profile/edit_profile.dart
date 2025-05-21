@@ -150,11 +150,16 @@ class UserProfileScreenState extends State<UserProfileScreen> {
     }
 
     // Get location data
+    countryCode = userData['country_code'] ?? userData['countryCode'];
     city = HiveUtils.getCityName();
     state = HiveUtils.getStateName();
     country = HiveUtils.getCountryName();
     latitude = HiveUtils.getLatitude();
     longitude = HiveUtils.getLongitude();
+    if (userData['facebook'] != null) facebookController.text = userData['facebook'];
+    if (userData['twitter'] != null) instagramController.text = userData['instagram'];
+    if (userData['instagram'] != null) twitterController.text = userData['twitter'];
+    if (userData['tiktok'] != null) tiktokController.text = userData['tiktok'];
 
     // Set email from user details if it's empty
     if (emailController.text.isEmpty) {

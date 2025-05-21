@@ -22,7 +22,7 @@ class HomeSearchField extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: _searchButton(context, 'Browse Item Listings'.translate(context), SearchScreenType.itemListing),
+            child: _searchButton(context, 'Browse Items'.translate(context), SearchScreenType.itemListing),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -40,7 +40,7 @@ class HomeSearchField extends StatelessWidget {
           arguments: {'autoFocus': true, 'screenType': destination},
         ),
         padding: EdgeInsets.all(20),
-        color: Theme.of(context).colorScheme.primary,
+        color: territoryColor_,
         child: Text(
           text,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: buttonTextColor),

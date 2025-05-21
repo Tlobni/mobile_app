@@ -22,13 +22,13 @@ import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/data/model/notification_data.dart';
 import 'package:tlobni/data/model/system_settings_model.dart';
 import 'package:tlobni/ui/screens/ad_banner_screen.dart';
+import 'package:tlobni/ui/screens/home/search_screen.dart';
 import 'package:tlobni/ui/screens/home/slider_widget.dart';
 import 'package:tlobni/ui/screens/home/widgets/category_widget_home.dart';
 import 'package:tlobni/ui/screens/home/widgets/grid_list_adapter.dart';
 import 'package:tlobni/ui/screens/home/widgets/home_search.dart';
 import 'package:tlobni/ui/screens/home/widgets/home_sections_adapter.dart';
 import 'package:tlobni/ui/screens/home/widgets/home_shimmers.dart';
-import 'package:tlobni/ui/screens/home/widgets/location_autocomplete_header.dart';
 import 'package:tlobni/ui/screens/widgets/errors/no_internet.dart';
 import 'package:tlobni/ui/screens/widgets/errors/something_went_wrong.dart';
 import 'package:tlobni/ui/screens/widgets/shimmerLoadingContainer.dart';
@@ -207,8 +207,18 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
         appBar: AppBar(
           elevation: 0,
           leadingWidth: double.maxFinite,
-          leading:
-              Padding(padding: EdgeInsetsDirectional.only(start: sidePadding, end: sidePadding), child: const LocationAutocompleteHeader()),
+          bottom: PreferredSize(preferredSize: Size(double.infinity, 1), child: Divider(height: 1, thickness: 1)),
+          leading: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              SizedBox(width: 5),
+              SizedBox(height: 30, child: Image.asset('assets/images/tlobni-logo-2.png')),
+            ],
+          ),
+
+          // leading:
+          //     Padding(padding: EdgeInsetsDirectional.only(start: sidePadding, end: sidePadding), child: const LocationAutocompleteHeader()),
           backgroundColor: const Color.fromARGB(0, 0, 0, 0),
           actions: [
             // Add notification icon with badge
@@ -216,11 +226,11 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
               padding: EdgeInsetsDirectional.only(end: 15.0),
               child: Stack(
                 children: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.notifications_outlined,
-                      color: context.color.textDefaultColor,
-                    ),
+                  MaterialButton(
+                    minWidth: 0,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: EdgeInsets.all(15),
+                    shape: CircleBorder(),
                     onPressed: () {
                       UiUtils.checkUser(
                         onNotGuest: () {
@@ -229,6 +239,10 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
                         context: context,
                       );
                     },
+                    child: Icon(
+                      Icons.notifications_outlined,
+                      color: context.color.textDefaultColor,
+                    ),
                   ),
                   // Notification badge - Only show if there are unread notifications
                   if (HiveUtils.isUserAuthenticated() && _hasUnreadNotifications())
@@ -301,7 +315,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Search Bar
-                const HomeSearchField(),
 
                 // Exclusive Experiences Section
                 if (_isLoadingExperiences || _experienceError != null || _experienceItems.isNotEmpty) ...[
@@ -324,9 +337,11 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
                   _buildFeaturedExperts(context),
                 ],
 
+                const HomeSearchField(),
+
                 // Women-Exclusive Services
                 if (_isLoadingWomenExclusive || _womenExclusiveError != null || _womenExclusiveItems.isNotEmpty) ...[
-                  _buildSectionHeader(context, "Women-Exclusive Services"),
+                  _buildSectionHeader(context, "Women-Exclusive Services", topPadding: 0),
                   _buildWomenExclusiveServices(context),
                 ],
 
@@ -345,9 +360,9 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
+  Widget _buildSectionHeader(BuildContext context, String title, {double? topPadding}) {
     return Padding(
-      padding: EdgeInsetsDirectional.only(top: 18, bottom: 12, start: sidePadding, end: sidePadding),
+      padding: EdgeInsetsDirectional.only(top: topPadding ?? 18, bottom: 12, start: sidePadding, end: sidePadding),
       child: Row(
         children: [
           Expanded(
@@ -363,47 +378,12 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
           const Spacer(),
           GestureDetector(
             onTap: () {
-              // Navigate to the correct "see all" screen based on the section title
-              if (title == "Exclusive Experiences") {
-                Navigator.pushNamed(context, Routes.sectionWiseItemsScreen, arguments: {
-                  "title": "Exclusive Experiences",
-                  "sectionId": 1,
-                  "endpoint": Api.getExperienceItemsApi,
-                  "filter": {"post_type": "experience"},
-                });
-              } else if (title == "Featured Experts & Businesses") {
+              if (title == "Featured Experts & Businesses") {
                 // Use the dedicated featured users screen instead of the section items screen
-                Navigator.pushNamed(context, Routes.featuredUsersScreen, arguments: {
-                  "title": "Featured Experts & Businesses",
-                });
-              } else if (title == "Women-Exclusive Services") {
-                Navigator.pushNamed(context, Routes.sectionWiseItemsScreen, arguments: {
-                  "title": "Women-Exclusive Services",
-                  "sectionId": 3,
-                  "endpoint": Api.getExclusiveWomenItemsApi,
-                  "filter": {"special_tag": "exclusive_women"},
-                });
-              } else if (title == "Corporate & Business Packages") {
-                Navigator.pushNamed(context, Routes.sectionWiseItemsScreen, arguments: {
-                  "title": "Corporate & Business Packages",
-                  "sectionId": 4,
-                  "endpoint": Api.getCorporatePackageItemsApi,
-                  "filter": {"special_tag": "corporate_package"},
-                });
-              } else if (title == "Newest Listings") {
-                Navigator.pushNamed(context, Routes.sectionWiseItemsScreen, arguments: {
-                  "title": "Newest Listings",
-                  "sectionId": 5,
-                  "endpoint": Api.getNewestItemsApi,
-                  "filter": {"sort_by": "new-to-old"},
-                });
+                _goToProviderSearch(context);
               } else {
                 // Default behavior for other sections
-                Navigator.pushNamed(context, Routes.sectionWiseItemsScreen, arguments: {
-                  "title": title,
-                  "sectionId": 6,
-                  "filter": {"sort_by": "new-to-old"},
-                });
+                _goToItemListingSearch(context);
               }
             },
             child: Text(
@@ -1699,6 +1679,22 @@ class AllItemsWidget extends StatelessWidget {
       },
     );
   }
+}
+
+void _goToItemListingSearch(BuildContext context) {
+  _goToSearchPage(context, SearchScreenType.itemListing);
+}
+
+void _goToProviderSearch(BuildContext context) {
+  _goToSearchPage(context, SearchScreenType.provider);
+}
+
+void _goToSearchPage(BuildContext context, SearchScreenType type) {
+  Navigator.pushNamed(
+    context,
+    Routes.searchScreenRoute,
+    arguments: {'autoFocus': true, 'screenType': type},
+  );
 }
 
 Future<void> notificationPermissionChecker() async {

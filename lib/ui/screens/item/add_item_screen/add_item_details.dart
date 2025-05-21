@@ -285,6 +285,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
   // Safely update location data without immediate setState
   void _updateLocationData(Map<String, String> locationData) {
+    if (locationData.isEmpty) return;
     // Update the address component directly
     formatedAddress = AddressComponent(
       city: locationData['city'] ?? formatedAddress?.city,
@@ -345,7 +346,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
           }
 
           // Show success message
-          HelperUtils.showSnackBarMessage(context, widget.isEdit == true ? "Item updated successfully" : "Waiting for review");
+          HelperUtils.showSnackBarMessage(context, widget.isEdit == true ? "Item updated successfully" : "Data submitted");
 
           // Navigate based on edit or new item
           if (widget.isEdit == true) {
@@ -1493,7 +1494,6 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
           hintText: "enterLocation".translate(context),
           onSelected: (value) {
             // Just update the controller, don't call setState() here
-            locationController.text = value;
           },
           onLocationSelected: (locationData) {
             // Use the shared method to update location data safely
@@ -1596,10 +1596,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         LocationAutocomplete(
           controller: locationController,
           hintText: "enterLocation".translate(context),
-          onSelected: (value) {
-            // Just update the controller, don't call setState
-            locationController.text = value;
-          },
+          onSelected: (value) {},
           onLocationSelected: (locationData) {
             // Use the shared method to update location data safely
             _updateLocationData(locationData);

@@ -85,6 +85,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
 
   final TextEditingController _locationController = TextEditingController();
   String? _country;
+  String _countryCode = '961';
   String? _city;
   String? _state;
 
@@ -120,6 +121,26 @@ class _SignupScreenState extends CloudState<SignupScreen> {
             _country = locationData['country'] ?? "";
           });
         },
+      );
+
+  Widget get _phonePrefixCountryCode => SizedBox(
+        width: 55,
+        child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: GestureDetector(
+              onTap: () {
+                showCountryCode(context, (country) => setState(() => _countryCode = country.phoneCode));
+              },
+              child: Container(
+                  // color: Colors.red,
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8),
+                  child: Center(
+                      child: CustomText(
+                    "+$_countryCode",
+                    fontSize: context.font.large,
+                    textAlign: TextAlign.center,
+                  ))),
+            )),
       );
 
   bool _isSubcategoryExpanded(int subcategoryId) {
@@ -292,6 +313,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           'country': _country,
           'state': _state,
           'city': _city,
+          'country_code': _countryCode,
           'categories': categoriesString,
           'phone': _userType == "Provider"
               ? (_providerType == "Expert" ? _expertPhoneController.text.trim() : _businessPhoneController.text.trim())
@@ -350,7 +372,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
             'country': _country,
             'state': _state,
             'city': _city,
-            'countryCode': "",
+            'countryCode': _countryCode,
             'isProfileCompleted': true,
             'showPersonalDetails': 1,
             'autoApproveItem': true,
@@ -673,6 +695,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           validator: CustomTextFieldValidator.phoneNumber,
           keyboard: TextInputType.phone,
           borderColor: context.color.borderColor.darken(50),
+          fixedPrefix: _phonePrefixCountryCode,
         ),
       ],
     );
@@ -707,6 +730,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           validator: CustomTextFieldValidator.phoneNumber,
           keyboard: TextInputType.phone,
           borderColor: context.color.borderColor.darken(50),
+          fixedPrefix: _phonePrefixCountryCode,
         ),
       ],
     );
@@ -831,6 +855,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           // Load categories when dialog opens
           if (isDialogLoading) {
             _loadCategoriesForDialog(setState, filteredCategories, dialogExpandedPanels).then((_) {
+              filteredCategories = filteredCategories.toSet().toList();
               setState(() {
                 isDialogLoading = false;
               });

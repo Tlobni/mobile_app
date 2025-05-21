@@ -495,7 +495,7 @@ class User {
     country = json['country'];
     city = json['city'];
     state = json['state'];
-    categoriesIds = (json['categories'] as String?)?.split(',').map(int.parse).toList();
+    categoriesIds = (json['categories'] as String?)?.split(',').where((e) => e.isNotEmpty).map(int.parse).toList();
     showPersonalDetails = json['show_personal_details'];
   }
 

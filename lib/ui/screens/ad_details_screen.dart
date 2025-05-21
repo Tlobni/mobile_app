@@ -35,6 +35,7 @@ import 'package:tlobni/data/cubits/safety_tips_cubit.dart';
 import 'package:tlobni/data/cubits/seller/fetch_seller_ratings_cubit.dart';
 import 'package:tlobni/data/cubits/subscription/fetch_ads_listing_subscription_packages_cubit.dart';
 import 'package:tlobni/data/cubits/subscription/fetch_user_package_limit_cubit.dart';
+import 'package:tlobni/data/cubits/user_has_rated_item_cubit.dart';
 import 'package:tlobni/data/helper/widgets.dart';
 import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/chat/chat_user_model.dart' as chat_models;
@@ -124,7 +125,6 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
   bool? isFeaturedLimit;
   List<String> selectedFeaturedAdsOptions = [];
 
-  bool isShowReportAds = true;
   final PageController pageController = PageController();
   final List<String?> images = [];
   final Completer<GoogleMapController> _controller = Completer<GoogleMapController>();
@@ -157,6 +157,9 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
         Future.microtask(() {
           context.read<FetchItemReviewsCubit>().fetchItemReviews(itemId: widget.model!.id!);
         });
+      }
+      if (widget.model?.id != null) {
+        context.read<UserHasRatedItemCubit>().userHasRatedItem(itemId: widget.model!.id!);
       }
     }
     pageController.addListener(() {
@@ -359,8 +362,10 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                         ),
                       ),
                     ),
-                  if (isAddedByMe &&
-                      (model.status != "sold out" && model.status != "review" && model.status != "inactive" && model.status != "rejected"))
+                  if (isAddedByMe
+                      // &&
+                      // (model.status != "sold out" && model.status != "review" && model.status != "inactive" && model.status != "rejected")
+                      )
                     MultiBlocProvider(
                       providers: [
                         BlocProvider(
@@ -595,17 +600,10 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
   Widget reportedAdsWidget() {
     return BlocBuilder<UpdatedReportItemCubit, UpdatedReportItemState>(
       builder: (context, state) {
-        bool isItemInCubit = context.read<UpdatedReportItemCubit>().containsItem(model.id!);
-
-        if (!isItemInCubit) {
-          if (model.isAlreadyReported != null && !model.isAlreadyReported!) {
-            return setReportAd();
-          } else {
-            return SizedBox(); // Return an empty widget if conditions are not met
-          }
-        } else {
-          return SizedBox(); // Return an empty widget if item is not in cubit
+        if (model.isAlreadyReported == null || !model.isAlreadyReported!) {
+          return setReportAd();
         }
+        return SizedBox();
       },
     );
   }
@@ -1300,85 +1298,11 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: _buildButton("editBtnLbl".translate(context), () {
-                addCloudData("edit_request", model);
-                addCloudData("edit_from", model.status);
-                Navigator.pushNamed(context, Routes.addItemDetails, arguments: {"isEdit": true}).then((value) {
-                  // When we return from edit screen, refresh the detail view with the latest data
-                  if (value == "refresh" || value == true) {
-                    // Force cache reset and refresh the current screen with updated data
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      print("Refreshing item details after edit with slug: ${model.slug}");
-
-                      // Show loading indicator
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Refreshing..."),
-                          duration: Duration(seconds: 1),
-                        ),
-                      );
-
-                      // Get a reference to the current cubit
-                      final cubit = BlocProvider.of<FetchItemFromSlugCubit>(context, listen: false);
-
-                      // First set it to initial state to force a full refresh
-                      cubit.emit(FetchItemFromSlugInitial());
-
-                      // Then trigger a new fetch with a slight delay
-                      Future.delayed(Duration(milliseconds: 300), () {
-                        if (mounted) {
-                          cubit.fetchItemFromSlug(slug: model.slug ?? "");
-                        }
-                      });
-                    });
-
-                    // Update related items cubit if needed
-                    if (model.categoryId != null) {
-                      context.read<FetchRelatedItemsCubit>().fetchRelatedItems(
-                            categoryId: model.categoryId!,
-                            country: model.country,
-                            state: model.state,
-                            city: model.city,
-                            areaId: model.areaId,
-                          );
-                    }
-                  }
-                });
-              }, contextColor.secondaryColor, contextColor.territoryColor),
+              child: _editButton(contextColor),
             ),
             SizedBox(width: 10),
-            BlocProvider(
-              create: (context) => DeleteItemCubit(),
-              child: Builder(builder: (context) {
-                return BlocListener<DeleteItemCubit, DeleteItemState>(
-                  listener: (context, deleteState) {
-                    if (deleteState is DeleteItemSuccess) {
-                      HelperUtils.showSnackBarMessage(context, "deleteItemSuccessMsg".translate(context));
-                      context.read<FetchMyItemsCubit>().deleteItem(model);
-                      Navigator.pop(context, "refresh");
-                    } else if (deleteState is DeleteItemFailure) {
-                      HelperUtils.showSnackBarMessage(context, deleteState.errorMessage);
-                    }
-                  },
-                  child: Expanded(
-                    child: _buildButton("lblremove".translate(context), () async {
-                      final delete = await UiUtils.showBlurredDialoge(
-                            context,
-                            dialoge: BlurredDialogBox(
-                              title: "deleteBtnLbl".translate(context),
-                              content: CustomText(
-                                "deleteitemwarning".translate(context),
-                              ),
-                            ),
-                          ) as bool? ??
-                          false;
-                      if (delete) {
-                        context.read<DeleteItemCubit>().deleteItem(model.id!);
-                      }
-                    }, null, null),
-                  ),
-                );
-              }),
+            Expanded(
+              child: _deleteButton(),
             ),
           ],
         );
@@ -1387,80 +1311,16 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: _buildButton("editBtnLbl".translate(context), () {
-                addCloudData("edit_request", model);
-                addCloudData("edit_from", model.status);
-                Navigator.pushNamed(context, Routes.addItemDetails, arguments: {"isEdit": true}).then((value) {
-                  // When we return from edit screen, refresh the detail view with the latest data
-                  if (value == "refresh" || value == true) {
-                    // Force cache reset and refresh the current screen with updated data
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      print("Refreshing item details after edit with slug: ${model.slug}");
-
-                      // Show loading indicator
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Refreshing..."),
-                          duration: Duration(seconds: 1),
-                        ),
-                      );
-
-                      // Get a reference to the current cubit
-                      final cubit = BlocProvider.of<FetchItemFromSlugCubit>(context, listen: false);
-
-                      // First set it to initial state to force a full refresh
-                      cubit.emit(FetchItemFromSlugInitial());
-
-                      // Then trigger a new fetch with a slight delay
-                      Future.delayed(Duration(milliseconds: 300), () {
-                        if (mounted) {
-                          cubit.fetchItemFromSlug(slug: model.slug ?? "");
-                        }
-                      });
-                    });
-
-                    // Update related items cubit if needed
-                    if (model.categoryId != null) {
-                      context.read<FetchRelatedItemsCubit>().fetchRelatedItems(
-                            categoryId: model.categoryId!,
-                            country: model.country,
-                            state: model.state,
-                            city: model.city,
-                            areaId: model.areaId,
-                          );
-                    }
-                  }
-                });
-              }, contextColor.secondaryColor, contextColor.territoryColor),
+              child: _editButton(contextColor),
+            ),
+            SizedBox(width: 10),
+            Expanded(
+              child: _deleteButton(),
             ),
           ],
         );
       } else if (model.status == "sold out" || model.status == "inactive" || model.status == "rejected") {
-        return BlocProvider(
-          create: (context) => DeleteItemCubit(),
-          child: Builder(builder: (context) {
-            return BlocListener<DeleteItemCubit, DeleteItemState>(
-              listener: (context, deleteState) {
-                if (deleteState is DeleteItemSuccess) {
-                  HelperUtils.showSnackBarMessage(context, "deleteItemSuccessMsg".translate(context));
-
-                  context.read<FetchMyItemsCubit>().deleteItem(model);
-                  Navigator.pop(context, "refresh");
-                } else if (deleteState is DeleteItemFailure) {
-                  HelperUtils.showSnackBarMessage(context, deleteState.errorMessage);
-                }
-              },
-              child: _buildButton("lblremove".translate(context), () {
-                Future.delayed(
-                  Duration.zero,
-                  () {
-                    context.read<DeleteItemCubit>().deleteItem(model.id!);
-                  },
-                );
-              }, null, null),
-            );
-          }),
-        );
+        return _deleteButton();
       } else if (model.status == "expired") {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1472,32 +1332,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               }, contextColor.secondaryColor, contextColor.territoryColor),
             ),
             SizedBox(width: 10),
-            BlocProvider(
-              create: (context) => DeleteItemCubit(),
-              child: Builder(builder: (context) {
-                return BlocListener<DeleteItemCubit, DeleteItemState>(
-                  listener: (context, deleteState) {
-                    if (deleteState is DeleteItemSuccess) {
-                      HelperUtils.showSnackBarMessage(context, "deleteItemSuccessMsg".translate(context));
-                      context.read<FetchMyItemsCubit>().deleteItem(model);
-                      Navigator.pop(context, "refresh");
-                    } else if (deleteState is DeleteItemFailure) {
-                      HelperUtils.showSnackBarMessage(context, deleteState.errorMessage);
-                    }
-                  },
-                  child: Expanded(
-                    child: _buildButton("lblremove".translate(context), () {
-                      Future.delayed(
-                        Duration.zero,
-                        () {
-                          context.read<DeleteItemCubit>().deleteItem(model.id!);
-                        },
-                      );
-                    }, null, null),
-                  ),
-                );
-              }),
-            ),
+            Expanded(child: _deleteButton()),
           ],
         );
       } else {
@@ -2211,11 +2046,13 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
           ),
           (isDate)
               ? Expanded(
+                  flex: 2,
                   child: CustomText(
-                  model.created!.formatDate(format: "d MMM yyyy"),
-                  maxLines: 1,
-                  color: context.color.textDefaultColor.withOpacity(0.3),
-                ))
+                    model.created!.formatDate(format: "d MMM yyyy", withJM: false),
+                    maxLines: 1,
+                    textAlign: TextAlign.end,
+                    color: context.color.textDefaultColor.withOpacity(0.3),
+                  ))
               : const SizedBox.shrink()
           //TODO: add DATE from model
         ],
@@ -2304,82 +2141,72 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
   }
 
   Widget setReportAd() {
-    return AnimatedCrossFade(
-      duration: Duration(milliseconds: 500),
-      crossFadeState: isShowReportAds ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-      firstChild: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: context.color.textDefaultColor.withOpacity(0.1)),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: context.color.textDefaultColor.withOpacity(0.1)),
 
-          // Background color
-        ),
-        margin: const EdgeInsets.symmetric(vertical: 10),
-        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-                //crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.report,
-                    size: 20,
-                    color: Colors.red, // Icon color can be adjusted
-                  ),
-                  SizedBox(
-                    width: 5,
-                  ),
-                  Expanded(
-                    child: CustomText(
-                      "didYouFindAnyProblemWithThisItem".translate(context),
-                      maxLines: 2,
-                      fontSize: context.font.large,
-                    ),
-                  ),
-                ]),
-            SizedBox(height: 15),
-            BlocListener<ItemReportCubit, ItemReportState>(
-              listener: (context, state) {
-                if (state is ItemReportFailure) {
-                  HelperUtils.showSnackBarMessage(context, state.error.toString());
-                }
-                if (state is ItemReportInSuccess) {
-                  HelperUtils.showSnackBarMessage(context, state.responseMessage.toString());
-                  context.read<UpdatedReportItemCubit>().addItem(model);
-                }
-
-                if (!Constant.isDemoModeOn)
-                  setState(() {
-                    isShowReportAds = false;
-                  });
-              },
-              child: GestureDetector(
-                onTap: () {
-                  UiUtils.checkUser(
-                      onNotGuest: () {
-                        _bottomSheet(model.id!);
-                      },
-                      context: context);
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: context.color.territoryColor.withOpacity(0.1), // Button color can be adjusted
-                  ),
+        // Background color
+      ),
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+              //crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.report,
+                  size: 20,
+                  color: Colors.red, // Icon color can be adjusted
+                ),
+                SizedBox(
+                  width: 5,
+                ),
+                Expanded(
                   child: CustomText(
-                    "reportThisAd".translate(context),
-                    color: context.color.territoryColor,
+                    "didYouFindAnyProblemWithThisItem".translate(context),
+                    maxLines: 2,
+                    fontSize: context.font.large,
                   ),
                 ),
+              ]),
+          SizedBox(height: 15),
+          BlocListener<ItemReportCubit, ItemReportState>(
+            listener: (context, state) {
+              if (state is ItemReportFailure) {
+                HelperUtils.showSnackBarMessage(context, state.error.toString());
+              }
+              if (state is ItemReportInSuccess) {
+                HelperUtils.showSnackBarMessage(context, state.responseMessage.toString());
+                context.read<UpdatedReportItemCubit>().addItem(model);
+              }
+            },
+            child: GestureDetector(
+              onTap: () {
+                UiUtils.checkUser(
+                    onNotGuest: () {
+                      _bottomSheet(model.id!);
+                    },
+                    context: context);
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: context.color.territoryColor.withOpacity(0.1), // Button color can be adjusted
+                ),
+                child: CustomText(
+                  "reportThisAd".translate(context),
+                  color: context.color.territoryColor,
+                ),
               ),
-            )
-          ],
-        ),
+            ),
+          )
+        ],
       ),
-      secondChild: SizedBox.shrink(),
     );
   }
 
@@ -2677,26 +2504,28 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                     ),
                   ),
                 ),
-                SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      _showServiceReviewDialog(
-                          serviceId: model.id!,
-                          userId: model.userId!,
-                          name: model.name ?? "Service",
-                          image: model.image,
-                          isExperience: model.itemType == "experience");
-                    },
-                    icon: Icon(Icons.rate_review, color: context.color.buttonColor),
-                    label: CustomText(
-                      "Write Review",
-                      color: context.color.buttonColor,
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.color.territoryColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                _userHasRatedItemBuilder(child: SizedBox(width: 10)),
+                _userHasRatedItemBuilder(
+                  child: Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        _showServiceReviewDialog(
+                            serviceId: model.id!,
+                            userId: model.userId!,
+                            name: model.name ?? "Service",
+                            image: model.image,
+                            isExperience: model.itemType == "experience");
+                      },
+                      icon: Icon(Icons.rate_review, color: context.color.buttonColor),
+                      label: CustomText(
+                        "Write Review",
+                        color: context.color.buttonColor,
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: context.color.territoryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
                   ),
@@ -2715,6 +2544,13 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
       },
     );
   }
+
+  Widget _userHasRatedItemBuilder({required Widget child}) => BlocBuilder<UserHasRatedItemCubit, UserHasRatedItemState>(
+        builder: (context, state) {
+          if (state is! UserHasRatedItemInSuccess || state.userHasRatedItem) return Container();
+          return child;
+        },
+      );
 
   // Show service/experience review dialog
   void _showServiceReviewDialog({
@@ -2748,6 +2584,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               if (model.id != null) {
                 // Refresh the reviews from the API
                 context.read<FetchItemReviewsCubit>().fetchItemReviews(itemId: model.id!);
+                context.read<UserHasRatedItemCubit>().userHasRatedItem(itemId: model.id!);
               }
             }
           }
@@ -3420,41 +3257,42 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: reasons?.length ?? 0,
-                  physics: const BouncingScrollPhysics(),
-                  separatorBuilder: (context, index) {
-                    return const SizedBox(height: 10);
-                  },
-                  itemBuilder: (context, index) {
-                    return InkWell(
-                      borderRadius: BorderRadius.circular(10),
-                      onTap: () {
-                        setState(() {
-                          selectedId = reasons![index].id;
-                        });
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: context.color.primaryColor,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: selectedId == reasons![index].id ? context.color.territoryColor : context.color.borderColor,
-                            width: 1.5,
+                if ((reasons?.length ?? 0) > 1)
+                  ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: reasons?.length ?? 0,
+                    physics: const BouncingScrollPhysics(),
+                    separatorBuilder: (context, index) {
+                      return const SizedBox(height: 10);
+                    },
+                    itemBuilder: (context, index) {
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: () {
+                          setState(() {
+                            selectedId = reasons![index].id;
+                          });
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: context.color.primaryColor,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: selectedId == reasons![index].id ? context.color.territoryColor : context.color.borderColor,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(14.0),
+                            child: CustomText(
+                              reasons![index].reason.firstUpperCase(),
+                              color: selectedId == reasons![index].id ? context.color.territoryColor : context.color.textColorDark,
+                            ),
                           ),
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(14.0),
-                          child: CustomText(
-                            reasons![index].reason.firstUpperCase(),
-                            color: selectedId == reasons![index].id ? context.color.territoryColor : context.color.textColorDark,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  ),
                 if (selectedId.isNegative)
                   Padding(
                     padding: EdgeInsetsDirectional.only(
@@ -3587,4 +3425,76 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
       ),
     );
   }
+
+  Widget _deleteButton() => BlocProvider(
+        create: (context) => DeleteItemCubit(),
+        child: Builder(builder: (context) {
+          return BlocListener<DeleteItemCubit, DeleteItemState>(
+            listener: (context, deleteState) {
+              if (deleteState is DeleteItemSuccess) {
+                HelperUtils.showSnackBarMessage(context, "deleteItemSuccessMsg".translate(context));
+
+                context.read<FetchMyItemsCubit>().deleteItem(model);
+                Navigator.pop(context, "refresh");
+              } else if (deleteState is DeleteItemFailure) {
+                HelperUtils.showSnackBarMessage(context, deleteState.errorMessage);
+              }
+            },
+            child: _buildButton("lblremove".translate(context), () {
+              Future.delayed(
+                Duration.zero,
+                () {
+                  context.read<DeleteItemCubit>().deleteItem(model.id!);
+                },
+              );
+            }, null, null),
+          );
+        }),
+      );
+
+  Widget _editButton(ColorScheme contextColor) => _buildButton("editBtnLbl".translate(context), () {
+        addCloudData("edit_request", model);
+        addCloudData("edit_from", model.status);
+        Navigator.pushNamed(context, Routes.addItemDetails, arguments: {"isEdit": true}).then((value) {
+          // When we return from edit screen, refresh the detail view with the latest data
+          if (value == "refresh" || value == true) {
+            // Force cache reset and refresh the current screen with updated data
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              print("Refreshing item details after edit with slug: ${model.slug}");
+
+              // Show loading indicator
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("Refreshing..."),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+
+              // Get a reference to the current cubit
+              final cubit = BlocProvider.of<FetchItemFromSlugCubit>(context, listen: false);
+
+              // First set it to initial state to force a full refresh
+              cubit.emit(FetchItemFromSlugInitial());
+
+              // Then trigger a new fetch with a slight delay
+              Future.delayed(Duration(milliseconds: 300), () {
+                if (mounted) {
+                  cubit.fetchItemFromSlug(slug: model.slug ?? "");
+                }
+              });
+            });
+
+            // Update related items cubit if needed
+            if (model.categoryId != null) {
+              context.read<FetchRelatedItemsCubit>().fetchRelatedItems(
+                    categoryId: model.categoryId!,
+                    country: model.country,
+                    state: model.state,
+                    city: model.city,
+                    areaId: model.areaId,
+                  );
+            }
+          }
+        });
+      }, contextColor.secondaryColor, contextColor.territoryColor);
 }

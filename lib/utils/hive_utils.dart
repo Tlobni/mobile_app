@@ -33,7 +33,7 @@ class HiveUtils {
   }
 
   static String? getUserId() {
-    return Hive.box(HiveKeys.userDetailsBox).get("id").toString();
+    return Hive.box(HiveKeys.userDetailsBox).get("id")?.toString();
   }
 
   static AppTheme getCurrentTheme() {
@@ -330,5 +330,9 @@ class HiveUtils {
 
   static String getJwtToken() {
     return getJWT();
+  }
+
+  static int? getUserIdInt() {
+    return int.tryParse(Hive.box(HiveKeys.userDetailsBox).get("id").toString());
   }
 }

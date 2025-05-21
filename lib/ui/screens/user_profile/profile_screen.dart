@@ -1099,7 +1099,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
         acceptButtonName: "deleteBtnLbl".translate(context),
         cancelTextColor: context.color.textColorDark,
         svgImagePath: AppIcons.deleteIcon,
-        isAcceptContainerPush: true,
+        isAcceptContainerPush: false,
         onAccept: () async => proceedToDeleteProfile(),
       ),
     );
@@ -1134,11 +1134,11 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
     try {
       // await _auth.currentUser!.delete().then((value) {
       //delete user prefs from App-local
-      await context.read<DeleteUserCubit>().deleteUser().then((value) {
+      await context.read<DeleteUserCubit>().deleteUser().then((value) async {
         HelperUtils.showSnackBarMessage(context, (value["message"]));
         for (int i = 0; i < AuthenticationType.values.length; i++) {
           if (AuthenticationType.values[i].name == HiveUtils.getUserDetails().type) {
-            signOut(AuthenticationType.values[i]).then((value) {
+            await signOut(AuthenticationType.values[i]).then((value) {
               HiveUtils.clear();
               Constant.favoriteItemList.clear();
               context.read<UserDetailsCubit>().clear();
