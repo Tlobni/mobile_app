@@ -1,4 +1,8 @@
 import 'package:device_preview/device_preview.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:tlobni/app/app.dart';
 import 'package:tlobni/app/app_localization.dart';
 import 'package:tlobni/app/app_theme.dart';
@@ -11,10 +15,6 @@ import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/notification/firebase_messaging_service.dart';
 import 'package:tlobni/utils/notification/notification_service.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 
 /////////////
 ///V-1.0.0//
@@ -35,13 +35,14 @@ class EntryPointState extends State<EntryPoint> {
   @override
   void initState() {
     super.initState();
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    // FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    // NotificationService.init(context);
     ChatGlobals.init();
-    _initializeFirebaseMessaging();
+    _initializeFirebaseMessaging(context);
   }
 
-  Future<void> _initializeFirebaseMessaging() async {
-    await FirebaseMessagingService().initialize();
+  Future<void> _initializeFirebaseMessaging(BuildContext) async {
+    await FirebaseMessagingService().initialize(context);
   }
 
   @override

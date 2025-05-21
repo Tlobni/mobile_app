@@ -1,5 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
+import 'package:tlobni/data/model/category_model.dart';
+
 class UserModel {
   String? address;
   String? createdAt;
@@ -25,32 +27,37 @@ class UserModel {
   String? token;
   String? updatedAt;
   int? isVerified;
+  String? country, city, state;
+  List<int>? categoriesIds;
+  List<CategoryModel>? categoriesModels;
 
-  UserModel(
-      {this.address,
-      this.createdAt,
-      this.customerTotalPost,
-      this.email,
-      this.fcmId,
-      this.firebaseId,
-      this.id,
-      this.isActive,
-      this.isProfileCompleted,
-      this.type,
-      this.mobile,
-      this.name,
-      this.bio,
-      this.website,
-      this.facebook,
-      this.twitter,
-      this.instagram,
-      this.tiktok,
-      this.notification,
-      this.profile,
-      this.token,
-      this.updatedAt,
-      this.isPersonalDetailShow,
-      this.isVerified});
+  UserModel({
+    this.address,
+    this.createdAt,
+    this.customerTotalPost,
+    this.email,
+    this.fcmId,
+    this.firebaseId,
+    this.id,
+    this.isActive,
+    this.isProfileCompleted,
+    this.type,
+    this.mobile,
+    this.name,
+    this.bio,
+    this.website,
+    this.facebook,
+    this.twitter,
+    this.instagram,
+    this.tiktok,
+    this.notification,
+    this.profile,
+    this.token,
+    this.updatedAt,
+    this.isPersonalDetailShow,
+    this.isVerified,
+    this.categoriesModels,
+  });
 
   UserModel.fromJson(Map<String, dynamic> json) {
     address = json['address'];
@@ -71,6 +78,9 @@ class UserModel {
     tiktok = json['tiktok'];
     mobile = json['mobile'];
     name = json['name'];
+    categoriesModels = json['categories_models'] == null
+        ? null
+        : (json['categories_models'] as List<dynamic>).map((e) => CategoryModel.fromJson(e)).toList();
 
     notification = (json['notification'] != null
         ? (json['notification'] is int)
@@ -80,6 +90,12 @@ class UserModel {
     profile = json['profile'];
     token = json['token'];
     updatedAt = json['updated_at'];
+    categoriesIds = json['categories'] is List
+        ? (json['categories'] as List<dynamic>).map((e) => int.parse(e.toString())).toList()
+        : (json['categories'] as String?)?.split(',').where((e) => e.isNotEmpty).map(int.parse).toList();
+    country = json['country'];
+    city = json['city'];
+    state = json['state'];
     isVerified = json['is_verified'];
     isPersonalDetailShow = (json['show_personal_details'] != null
         ? (json['show_personal_details'] is int)
@@ -87,6 +103,8 @@ class UserModel {
             : int.parse(json['show_personal_details'].toString())
         : null);
   }
+
+  String? get location => country == null || city == null ? null : '$city, $country';
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
@@ -106,6 +124,10 @@ class UserModel {
     data['profile'] = profile;
     data['token'] = token;
     data['updated_at'] = updatedAt;
+    data['country'] = country;
+    data['city'] = city;
+    data['state'] = state;
+    data['categories'] = categoriesIds?.join(',');
     data['show_personal_details'] = isPersonalDetailShow;
     data['is_verified'] = isVerified;
     return data;

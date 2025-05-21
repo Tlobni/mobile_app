@@ -14,25 +14,19 @@ class SellerIntroVerificationScreen extends StatefulWidget {
   SellerIntroVerificationScreen({super.key, required this.isResubmitted});
 
   @override
-  State<SellerIntroVerificationScreen> createState() =>
-      _SellerIntroVerificationScreenState();
+  State<SellerIntroVerificationScreen> createState() => _SellerIntroVerificationScreenState();
 
   static Route route(RouteSettings routeSettings) {
     Map? arguments = routeSettings.arguments as Map?;
-    return BlurredRouter(
-        builder: (_) => SellerIntroVerificationScreen(
-            isResubmitted: arguments?["isResubmitted"]));
+    return BlurredRouter(builder: (_) => SellerIntroVerificationScreen(isResubmitted: arguments?["isResubmitted"]));
   }
 }
 
-class _SellerIntroVerificationScreenState
-    extends State<SellerIntroVerificationScreen> {
+class _SellerIntroVerificationScreenState extends State<SellerIntroVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: context.color.backgroundColor,
-        appBar: UiUtils.buildAppBar(context, showBackButton: true),
-        body: mainBody());
+        backgroundColor: context.color.backgroundColor, appBar: UiUtils.buildAppBar(context, showBackButton: true), body: mainBody());
   }
 
   Widget mainBody() {
@@ -85,10 +79,8 @@ class _SellerIntroVerificationScreenState
         ),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: sidePadding),
-          child: UiUtils.buildButton(context, height: 46, radius: 8,
-              onPressed: () {
-            Navigator.pushNamed(context, Routes.sellerVerificationScreen,
-                arguments: {"isResubmitted": widget.isResubmitted});
+          child: UiUtils.buildButton(context, height: 46, radius: 8, onPressed: () {
+            Navigator.pushNamed(context, Routes.sellerVerificationScreen, arguments: {"isResubmitted": widget.isResubmitted});
           }, buttonTitle: "startVerification".translate(context)),
         ),
         SizedBox(
@@ -97,9 +89,10 @@ class _SellerIntroVerificationScreenState
         InkWell(
           child: Text(
             "skipForLater".translate(context),
-            style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                decoration: TextDecoration.underline,
-                color: context.color.textDefaultColor),
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium!
+                .copyWith(decoration: TextDecoration.underline, color: context.color.textDefaultColor),
           ),
           onTap: () {
             Navigator.pop(context);

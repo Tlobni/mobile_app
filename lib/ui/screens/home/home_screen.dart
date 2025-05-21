@@ -1,40 +1,38 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:async';
 import 'dart:developer';
-import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/category/fetch_category_cubit.dart';
 import 'package:tlobni/data/cubits/chat/blocked_users_list_cubit.dart';
 import 'package:tlobni/data/cubits/chat/get_buyer_chat_users_cubit.dart';
 import 'package:tlobni/data/cubits/favorite/favorite_cubit.dart';
+import 'package:tlobni/data/cubits/favorite/manage_fav_cubit.dart';
 import 'package:tlobni/data/cubits/home/fetch_home_all_items_cubit.dart';
 import 'package:tlobni/data/cubits/home/fetch_home_screen_cubit.dart';
 import 'package:tlobni/data/cubits/item/manage_item_cubit.dart';
 import 'package:tlobni/data/cubits/slider_cubit.dart';
 import 'package:tlobni/data/cubits/system/fetch_system_settings_cubit.dart';
 import 'package:tlobni/data/cubits/system/get_api_keys_cubit.dart';
-import 'package:tlobni/data/cubits/fetch_notifications_cubit.dart';
-import 'package:tlobni/data/helper/designs.dart';
-import 'package:tlobni/data/model/home/home_screen_section.dart';
+import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/data/model/notification_data.dart';
 import 'package:tlobni/data/model/system_settings_model.dart';
 import 'package:tlobni/ui/screens/ad_banner_screen.dart';
+import 'package:tlobni/ui/screens/home/search_screen.dart';
 import 'package:tlobni/ui/screens/home/slider_widget.dart';
 import 'package:tlobni/ui/screens/home/widgets/category_widget_home.dart';
 import 'package:tlobni/ui/screens/home/widgets/grid_list_adapter.dart';
 import 'package:tlobni/ui/screens/home/widgets/home_search.dart';
 import 'package:tlobni/ui/screens/home/widgets/home_sections_adapter.dart';
 import 'package:tlobni/ui/screens/home/widgets/home_shimmers.dart';
-import 'package:tlobni/ui/screens/home/widgets/location_widget.dart';
-import 'package:tlobni/ui/screens/home/widgets/location_autocomplete_header.dart';
 import 'package:tlobni/ui/screens/widgets/errors/no_internet.dart';
 import 'package:tlobni/ui/screens/widgets/errors/something_went_wrong.dart';
-import 'package:tlobni/ui/screens/widgets/promoted_widget.dart';
 import 'package:tlobni/ui/screens/widgets/shimmerLoadingContainer.dart';
 import 'package:tlobni/ui/theme/theme.dart';
-import 'package:tlobni/utils/custom_text.dart';
 //import 'package:uni_links/uni_links.dart';
 
 import 'package:tlobni/utils/api.dart';
@@ -43,14 +41,7 @@ import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/notification/awsome_notification.dart';
-import 'package:tlobni/utils/notification/notification_service.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:tlobni/data/model/category_model.dart';
-import 'package:tlobni/data/cubits/favorite/manage_fav_cubit.dart';
-import 'package:tlobni/data/repositories/favourites_repository.dart';
 
 const double sidePadding = 10;
 
@@ -63,8 +54,7 @@ class HomeScreen extends StatefulWidget {
   HomeScreenState createState() => HomeScreenState();
 }
 
-class HomeScreenState extends State<HomeScreen>
-    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, AutomaticKeepAliveClientMixin<HomeScreen> {
   //
   @override
   bool get wantKeepAlive => true;
@@ -85,8 +75,7 @@ class HomeScreenState extends State<HomeScreen>
 
   //
   late final ScrollController _scrollController = ScrollController();
-  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
-      GlobalKey<RefreshIndicatorState>();
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
 
   // Add these new properties
   final List<ItemModel> _experienceItems = [];
@@ -124,7 +113,6 @@ class HomeScreenState extends State<HomeScreen>
     notificationPermissionChecker();
     LocalAwesomeNotification().init(context);
     ///////////////////////////////////////
-    NotificationService.init(context);
     context.read<SliderCubit>().fetchSlider(
           context,
         );
@@ -132,10 +120,7 @@ class HomeScreenState extends State<HomeScreen>
           type: CategoryType.serviceExperience,
         );
     context.read<FetchHomeScreenCubit>().fetch(
-        city: HiveUtils.getCityName(),
-        areaId: HiveUtils.getAreaId(),
-        country: HiveUtils.getCountryName(),
-        state: HiveUtils.getStateName());
+        city: HiveUtils.getCityName(), areaId: HiveUtils.getAreaId(), country: HiveUtils.getCountryName(), state: HiveUtils.getStateName());
     context.read<FetchHomeAllItemsCubit>().fetch(
         city: HiveUtils.getCityName(),
         areaId: HiveUtils.getAreaId(),
@@ -161,16 +146,14 @@ class HomeScreenState extends State<HomeScreen>
     _fetchNotifications();
 
     // Set up a refresh timer for notifications (every 2 minutes)
-    _notificationRefreshTimer =
-        Timer.periodic(const Duration(minutes: 2), (timer) {
+    _notificationRefreshTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
       if (mounted) {
         _fetchNotifications();
       }
     });
 
     // Listen for item update events
-    _itemUpdatesSubscription =
-        ItemEvents().itemEditedStream.stream.listen((updatedItem) {
+    _itemUpdatesSubscription = ItemEvents().itemEditedStream.stream.listen((updatedItem) {
       print("Home screen received item update: ${updatedItem.id}");
       if (mounted) {
         context.read<FetchHomeAllItemsCubit>().updateItem(updatedItem);
@@ -203,10 +186,8 @@ class HomeScreenState extends State<HomeScreen>
 
   void initializeSettings() {
     final settingsCubit = context.read<FetchSystemSettingsCubit>();
-    if (!const bool.fromEnvironment("force-disable-demo-mode",
-        defaultValue: false)) {
-      Constant.isDemoModeOn =
-          settingsCubit.getSetting(SystemSetting.demoMode) ?? false;
+    if (!const bool.fromEnvironment("force-disable-demo-mode", defaultValue: false)) {
+      Constant.isDemoModeOn = settingsCubit.getSetting(SystemSetting.demoMode) ?? false;
     }
   }
 
@@ -226,10 +207,18 @@ class HomeScreenState extends State<HomeScreen>
         appBar: AppBar(
           elevation: 0,
           leadingWidth: double.maxFinite,
-          leading: Padding(
-              padding: EdgeInsetsDirectional.only(
-                  start: sidePadding, end: sidePadding),
-              child: const LocationAutocompleteHeader()),
+          bottom: PreferredSize(preferredSize: Size(double.infinity, 1), child: Divider(height: 1, thickness: 1)),
+          leading: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              SizedBox(width: 5),
+              SizedBox(height: 30, child: Image.asset('assets/images/tlobni-logo-2.png')),
+            ],
+          ),
+
+          // leading:
+          //     Padding(padding: EdgeInsetsDirectional.only(start: sidePadding, end: sidePadding), child: const LocationAutocompleteHeader()),
           backgroundColor: const Color.fromARGB(0, 0, 0, 0),
           actions: [
             // Add notification icon with badge
@@ -237,11 +226,11 @@ class HomeScreenState extends State<HomeScreen>
               padding: EdgeInsetsDirectional.only(end: 15.0),
               child: Stack(
                 children: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.notifications_outlined,
-                      color: context.color.textDefaultColor,
-                    ),
+                  MaterialButton(
+                    minWidth: 0,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: EdgeInsets.all(15),
+                    shape: CircleBorder(),
                     onPressed: () {
                       UiUtils.checkUser(
                         onNotGuest: () {
@@ -250,10 +239,13 @@ class HomeScreenState extends State<HomeScreen>
                         context: context,
                       );
                     },
+                    child: Icon(
+                      Icons.notifications_outlined,
+                      color: context.color.textDefaultColor,
+                    ),
                   ),
                   // Notification badge - Only show if there are unread notifications
-                  if (HiveUtils.isUserAuthenticated() &&
-                      _hasUnreadNotifications())
+                  if (HiveUtils.isUserAuthenticated() && _hasUnreadNotifications())
                     Positioned(
                       right: 8,
                       top: 8,
@@ -268,9 +260,7 @@ class HomeScreenState extends State<HomeScreen>
                           minHeight: 16,
                         ),
                         child: Text(
-                          _getNotificationCount() > 9
-                              ? '9+'
-                              : _getNotificationCount().toString(),
+                          _getNotificationCount() > 9 ? '9+' : _getNotificationCount().toString(),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 10,
@@ -325,30 +315,41 @@ class HomeScreenState extends State<HomeScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Search Bar
-                const HomeSearchField(),
 
                 // Exclusive Experiences Section
-                _buildSectionHeader(context, "Exclusive Experiences"),
-                _buildExclusiveExperiences(context),
+                if (_isLoadingExperiences || _experienceError != null || _experienceItems.isNotEmpty) ...[
+                  _buildSectionHeader(context, "Exclusive Experiences"),
+                  _buildExclusiveExperiences(context),
+                ],
 
                 // Categories
                 const CategoryWidgetHome(),
 
                 // Newest Listings Section
-                _buildSectionHeader(context, "Newest Listings"),
-                _buildNewestListings(context),
+                if (_isLoadingNewestItems || _newestItemsError != null || _newestItems.isNotEmpty) ...[
+                  _buildSectionHeader(context, "Newest Listings"),
+                  _buildNewestListings(context),
+                ],
 
                 // Featured Experts & Businesses
-                _buildSectionHeader(context, "Featured Experts & Businesses"),
-                _buildFeaturedExperts(context),
+                if (_isLoadingFeaturedUsers || _featuredUsersError != null || _featuredUsers.isNotEmpty) ...[
+                  _buildSectionHeader(context, "Featured Experts & Businesses"),
+                  _buildFeaturedExperts(context),
+                ],
+
+                const HomeSearchField(),
 
                 // Women-Exclusive Services
-                _buildSectionHeader(context, "Women-Exclusive Services"),
-                _buildWomenExclusiveServices(context),
+                if (_isLoadingWomenExclusive || _womenExclusiveError != null || _womenExclusiveItems.isNotEmpty) ...[
+                  _buildSectionHeader(context, "Women-Exclusive Services", topPadding: 0),
+                  _buildWomenExclusiveServices(context),
+                ],
 
                 // Corporate & Business Packages
-                _buildSectionHeader(context, "Corporate & Business Packages"),
-                _buildCorporatePackages(context),
+                if (_isLoadingCorporatePackages || _corporatePackagesError != null || _corporatePackageItems.isNotEmpty) ...[
+                  _buildSectionHeader(context, "Corporate & Business Packages"),
+                  _buildCorporatePackages(context),
+                ],
 
                 const SizedBox(height: 20),
               ],
@@ -359,10 +360,9 @@ class HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
+  Widget _buildSectionHeader(BuildContext context, String title, {double? topPadding}) {
     return Padding(
-      padding: EdgeInsetsDirectional.only(
-          top: 18, bottom: 12, start: sidePadding, end: sidePadding),
+      padding: EdgeInsetsDirectional.only(top: topPadding ?? 18, bottom: 12, start: sidePadding, end: sidePadding),
       child: Row(
         children: [
           Expanded(
@@ -378,53 +378,12 @@ class HomeScreenState extends State<HomeScreen>
           const Spacer(),
           GestureDetector(
             onTap: () {
-              // Navigate to the correct "see all" screen based on the section title
-              if (title == "Exclusive Experiences") {
-                Navigator.pushNamed(context, Routes.sectionWiseItemsScreen,
-                    arguments: {
-                      "title": "Exclusive Experiences",
-                      "sectionId": 1,
-                      "endpoint": Api.getExperienceItemsApi,
-                      "filter": {"post_type": "experience"},
-                    });
-              } else if (title == "Featured Experts & Businesses") {
+              if (title == "Featured Experts & Businesses") {
                 // Use the dedicated featured users screen instead of the section items screen
-                Navigator.pushNamed(context, Routes.featuredUsersScreen,
-                    arguments: {
-                      "title": "Featured Experts & Businesses",
-                    });
-              } else if (title == "Women-Exclusive Services") {
-                Navigator.pushNamed(context, Routes.sectionWiseItemsScreen,
-                    arguments: {
-                      "title": "Women-Exclusive Services",
-                      "sectionId": 3,
-                      "endpoint": Api.getExclusiveWomenItemsApi,
-                      "filter": {"special_tag": "exclusive_women"},
-                    });
-              } else if (title == "Corporate & Business Packages") {
-                Navigator.pushNamed(context, Routes.sectionWiseItemsScreen,
-                    arguments: {
-                      "title": "Corporate & Business Packages",
-                      "sectionId": 4,
-                      "endpoint": Api.getCorporatePackageItemsApi,
-                      "filter": {"special_tag": "corporate_package"},
-                    });
-              } else if (title == "Newest Listings") {
-                Navigator.pushNamed(context, Routes.sectionWiseItemsScreen,
-                    arguments: {
-                      "title": "Newest Listings",
-                      "sectionId": 5,
-                      "endpoint": Api.getNewestItemsApi,
-                      "filter": {"sort_by": "new-to-old"},
-                    });
+                _goToProviderSearch(context);
               } else {
                 // Default behavior for other sections
-                Navigator.pushNamed(context, Routes.sectionWiseItemsScreen,
-                    arguments: {
-                      "title": title,
-                      "sectionId": 6,
-                      "filter": {"sort_by": "new-to-old"},
-                    });
+                _goToItemListingSearch(context);
               }
             },
             child: Text(
@@ -443,22 +402,7 @@ class HomeScreenState extends State<HomeScreen>
 
   Widget _buildNewestListings(BuildContext context) {
     if (_isLoadingNewestItems) {
-      return SizedBox(
-        height: 210,
-        child: ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: sidePadding),
-          scrollDirection: Axis.horizontal,
-          itemCount: 4,
-          separatorBuilder: (context, index) => const SizedBox(width: 14),
-          itemBuilder: (context, index) {
-            return CustomShimmer(
-              width: 170,
-              height: 210,
-              borderRadius: 10,
-            );
-          },
-        ),
-      );
+      return _shimmerEffect(itemCount: 4, width: 170, height: 210);
     }
 
     if (_newestItemsError != null) {
@@ -534,7 +478,7 @@ class HomeScreenState extends State<HomeScreen>
                                 fontSize: context.font.small * 1.2,
                                 fontWeight: FontWeight.w500,
                               ),
-                              maxLines: 2,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 4),
@@ -569,8 +513,7 @@ class HomeScreenState extends State<HomeScreen>
                       start: 8,
                       top: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: context.color.territoryColor,
                           borderRadius: BorderRadius.circular(4),
@@ -585,52 +528,9 @@ class HomeScreenState extends State<HomeScreen>
                       ),
                     ),
                   PositionedDirectional(
-                    end: 8,
+                    end: 0,
                     bottom: 50,
-                    child: BlocBuilder<FavoriteCubit, FavoriteState>(
-                      builder: (context, state) {
-                        bool isLike = context
-                            .read<FavoriteCubit>()
-                            .isItemFavorite(item.id!);
-                        return GestureDetector(
-                          onTap: () {
-                            UiUtils.checkUser(
-                              context: context,
-                              onNotGuest: () {
-                                context
-                                    .read<UpdateFavoriteCubit>()
-                                    .setFavoriteItem(
-                                      item: item,
-                                      type: isLike ? 0 : 1,
-                                    );
-                              },
-                            );
-                          },
-                          child: Container(
-                            width: 30,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              color: context.color.secondaryColor,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Icon(
-                                isLike ? Icons.favorite : Icons.favorite_border,
-                                size: 18,
-                                color: context.color.territoryColor,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                    child: favouriteButton(context, item),
                   ),
                 ],
               ),
@@ -643,22 +543,7 @@ class HomeScreenState extends State<HomeScreen>
 
   Widget _buildFeaturedExperts(BuildContext context) {
     if (_isLoadingFeaturedUsers) {
-      return SizedBox(
-        height: 210,
-        child: ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: sidePadding),
-          scrollDirection: Axis.horizontal,
-          itemCount: 3,
-          separatorBuilder: (context, index) => const SizedBox(width: 14),
-          itemBuilder: (context, index) {
-            return CustomShimmer(
-              width: 170,
-              height: 210,
-              borderRadius: 10,
-            );
-          },
-        ),
-      );
+      return _shimmerEffect(itemCount: 3, width: 170, height: 210);
     }
 
     if (_featuredUsersError != null) {
@@ -688,8 +573,7 @@ class HomeScreenState extends State<HomeScreen>
           String categoryName = "Category";
           if (user['categories'] != null) {
             try {
-              List<String> categories =
-                  user['categories'].toString().split(',');
+              List<String> categories = user['categories'].toString().split(',');
               if (categories.isNotEmpty) {
                 categoryName = categories.first;
               }
@@ -746,8 +630,7 @@ class HomeScreenState extends State<HomeScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // User Image
-                      user['profile'] != null &&
-                              user['profile'].toString().isNotEmpty
+                      user['profile'] != null && user['profile'].toString().isNotEmpty
                           ? ClipRRect(
                               borderRadius: BorderRadius.only(
                                 topLeft: Radius.circular(10),
@@ -764,8 +647,7 @@ class HomeScreenState extends State<HomeScreen>
                               height: 120,
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: context.color.territoryColor
-                                    .withOpacity(0.1),
+                                color: context.color.territoryColor.withOpacity(0.1),
                                 borderRadius: BorderRadius.only(
                                   topLeft: Radius.circular(10),
                                   topRight: Radius.circular(10),
@@ -837,8 +719,7 @@ class HomeScreenState extends State<HomeScreen>
                     start: 8,
                     top: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: context.color.territoryColor,
                         borderRadius: BorderRadius.circular(4),
@@ -863,29 +744,13 @@ class HomeScreenState extends State<HomeScreen>
 
   Widget _buildWomenExclusiveServices(BuildContext context) {
     if (_isLoadingWomenExclusive) {
-      return SizedBox(
-        height: 210,
-        child: ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: sidePadding),
-          scrollDirection: Axis.horizontal,
-          itemCount: 3,
-          separatorBuilder: (context, index) => const SizedBox(width: 14),
-          itemBuilder: (context, index) {
-            return CustomShimmer(
-              width: 170,
-              height: 210,
-              borderRadius: 10,
-            );
-          },
-        ),
-      );
+      return _shimmerEffect(itemCount: 3, width: 170, height: 210);
     }
 
     if (_womenExclusiveError != null) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: sidePadding),
-        child: Text(
-            "Failed to load women-exclusive services: $_womenExclusiveError"),
+        child: Text("Failed to load women-exclusive services: $_womenExclusiveError"),
       );
     }
 
@@ -901,8 +766,7 @@ class HomeScreenState extends State<HomeScreen>
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: sidePadding),
         scrollDirection: Axis.horizontal,
-        itemCount:
-            _womenExclusiveItems.length > 3 ? 3 : _womenExclusiveItems.length,
+        itemCount: _womenExclusiveItems.length > 3 ? 3 : _womenExclusiveItems.length,
         separatorBuilder: (context, index) => const SizedBox(width: 14),
         itemBuilder: (context, index) {
           final item = _womenExclusiveItems[index];
@@ -955,7 +819,7 @@ class HomeScreenState extends State<HomeScreen>
                               style: TextStyle(
                                 fontSize: context.font.small * 1.2,
                               ),
-                              maxLines: 2,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 4),
@@ -990,8 +854,7 @@ class HomeScreenState extends State<HomeScreen>
                       start: 8,
                       top: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: context.color.territoryColor,
                           borderRadius: BorderRadius.circular(4),
@@ -1006,58 +869,9 @@ class HomeScreenState extends State<HomeScreen>
                       ),
                     ),
                   PositionedDirectional(
-                    end: 8,
+                    end: 0,
                     bottom: 45,
-                    child: BlocProvider(
-                      create: (context) =>
-                          UpdateFavoriteCubit(FavoriteRepository()),
-                      child: BlocBuilder<FavoriteCubit, FavoriteState>(
-                        builder: (context, state) {
-                          bool isLike = context
-                              .read<FavoriteCubit>()
-                              .isItemFavorite(item.id!);
-                          return GestureDetector(
-                            onTap: () {
-                              UiUtils.checkUser(
-                                context: context,
-                                onNotGuest: () {
-                                  context
-                                      .read<UpdateFavoriteCubit>()
-                                      .setFavoriteItem(
-                                        item: item,
-                                        type: isLike ? 0 : 1,
-                                      );
-                                },
-                              );
-                            },
-                            child: Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                color: context.color.secondaryColor,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  isLike
-                                      ? Icons.favorite
-                                      : Icons.favorite_border,
-                                  size: 18,
-                                  color: context.color.territoryColor,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                    child: favouriteButton(context, item),
                   ),
                 ],
               ),
@@ -1070,29 +884,13 @@ class HomeScreenState extends State<HomeScreen>
 
   Widget _buildCorporatePackages(BuildContext context) {
     if (_isLoadingCorporatePackages) {
-      return SizedBox(
-        height: 210,
-        child: ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: sidePadding),
-          scrollDirection: Axis.horizontal,
-          itemCount: 3,
-          separatorBuilder: (context, index) => const SizedBox(width: 14),
-          itemBuilder: (context, index) {
-            return CustomShimmer(
-              width: 170,
-              height: 210,
-              borderRadius: 10,
-            );
-          },
-        ),
-      );
+      return _shimmerEffect(itemCount: 3, width: 170, height: 210);
     }
 
     if (_corporatePackagesError != null) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: sidePadding),
-        child:
-            Text("Failed to load corporate packages: $_corporatePackagesError"),
+        child: Text("Failed to load corporate packages: $_corporatePackagesError"),
       );
     }
 
@@ -1108,9 +906,7 @@ class HomeScreenState extends State<HomeScreen>
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: sidePadding),
         scrollDirection: Axis.horizontal,
-        itemCount: _corporatePackageItems.length > 3
-            ? 3
-            : _corporatePackageItems.length,
+        itemCount: _corporatePackageItems.length > 3 ? 3 : _corporatePackageItems.length,
         separatorBuilder: (context, index) => const SizedBox(width: 14),
         itemBuilder: (context, index) {
           final item = _corporatePackageItems[index];
@@ -1163,7 +959,7 @@ class HomeScreenState extends State<HomeScreen>
                               style: TextStyle(
                                 fontSize: context.font.small * 1.2,
                               ),
-                              maxLines: 2,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 4),
@@ -1198,8 +994,7 @@ class HomeScreenState extends State<HomeScreen>
                       start: 8,
                       top: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: context.color.territoryColor,
                           borderRadius: BorderRadius.circular(4),
@@ -1214,58 +1009,9 @@ class HomeScreenState extends State<HomeScreen>
                       ),
                     ),
                   PositionedDirectional(
-                    end: 8,
+                    end: 0,
                     bottom: 45,
-                    child: BlocProvider(
-                      create: (context) =>
-                          UpdateFavoriteCubit(FavoriteRepository()),
-                      child: BlocBuilder<FavoriteCubit, FavoriteState>(
-                        builder: (context, state) {
-                          bool isLike = context
-                              .read<FavoriteCubit>()
-                              .isItemFavorite(item.id!);
-                          return GestureDetector(
-                            onTap: () {
-                              UiUtils.checkUser(
-                                context: context,
-                                onNotGuest: () {
-                                  context
-                                      .read<UpdateFavoriteCubit>()
-                                      .setFavoriteItem(
-                                        item: item,
-                                        type: isLike ? 0 : 1,
-                                      );
-                                },
-                              );
-                            },
-                            child: Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                color: context.color.secondaryColor,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  isLike
-                                      ? Icons.favorite
-                                      : Icons.favorite_border,
-                                  size: 18,
-                                  color: context.color.territoryColor,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                    child: favouriteButton(context, item),
                   ),
                 ],
               ),
@@ -1312,23 +1058,18 @@ class HomeScreenState extends State<HomeScreen>
     // Use the API to fetch notifications with proper parameters
     Api.get(
       url: Api.getNotificationListApi,
-      queryParameters: {
-        "page": 1
-      }, // Add page parameter to ensure proper API call
+      queryParameters: {"page": 1}, // Add page parameter to ensure proper API call
     ).then((response) {
       if (!response[Api.error] && response['data'] != null) {
         // Check if data exists and is a list
         if (response['data'] is List) {
           List list = response['data'];
-          _notifications =
-              list.map((model) => NotificationData.fromJson(model)).toList();
+          _notifications = list.map((model) => NotificationData.fromJson(model)).toList();
           log('Fetched ${_notifications.length} notifications');
-        } else if (response['data']['data'] != null &&
-            response['data']['data'] is List) {
+        } else if (response['data']['data'] != null && response['data']['data'] is List) {
           // Some APIs use a nested data structure
           List list = response['data']['data'];
-          _notifications =
-              list.map((model) => NotificationData.fromJson(model)).toList();
+          _notifications = list.map((model) => NotificationData.fromJson(model)).toList();
           log('Fetched ${_notifications.length} notifications from nested data');
         } else {
           log('Notification data format unexpected: ${response['data']}');
@@ -1360,13 +1101,11 @@ class HomeScreenState extends State<HomeScreen>
     if (!HiveUtils.isUserAuthenticated()) return false;
 
     // A provider should see notifications for their packages and posts
-    final isProvider = HiveUtils.getUserType() == "Expert" ||
-        HiveUtils.getUserType() == "Business";
+    final isProvider = HiveUtils.getUserType() == "Expert" || HiveUtils.getUserType() == "Business";
 
     if (isProvider) {
       // Check for provider-specific notifications
-      return _notifications.any((notification) =>
-          notification.isProviderNotification() && !notification.isRead);
+      return _notifications.any((notification) => notification.isProviderNotification() && !notification.isRead);
     }
 
     return false;
@@ -1377,15 +1116,11 @@ class HomeScreenState extends State<HomeScreen>
     if (!HiveUtils.isUserAuthenticated()) return 0;
 
     // A provider should see notifications for their packages and posts
-    final isProvider = HiveUtils.getUserType() == "Expert" ||
-        HiveUtils.getUserType() == "Business";
+    final isProvider = HiveUtils.getUserType() == "Expert" || HiveUtils.getUserType() == "Business";
 
     if (isProvider) {
       // Count provider-specific notifications
-      return _notifications
-          .where((notification) =>
-              notification.isProviderNotification() && !notification.isRead)
-          .length;
+      return _notifications.where((notification) => notification.isProviderNotification() && !notification.isRead).length;
     }
 
     return 0;
@@ -1402,27 +1137,19 @@ class HomeScreenState extends State<HomeScreen>
       "page": 1,
       if (HiveUtils.getCityName() != null) 'city': HiveUtils.getCityName(),
       if (HiveUtils.getAreaId() != null) 'area_id': HiveUtils.getAreaId(),
-      if (HiveUtils.getCountryName() != null)
-        'country': HiveUtils.getCountryName(),
+      if (HiveUtils.getCountryName() != null) 'country': HiveUtils.getCountryName(),
       if (HiveUtils.getStateName() != null) 'state': HiveUtils.getStateName(),
     };
 
-    Api.get(url: Api.getExperienceItemsApi, queryParameters: parameters)
-        .then((response) {
+    Api.get(url: Api.getExperienceItemsApi, queryParameters: parameters).then((response) {
       if (!response[Api.error] && response['data'] != null) {
         List<ItemModel> items = [];
         if (response['data'] is List) {
-          items = (response['data'] as List)
-              .map((e) => ItemModel.fromJson(e))
-              .toList();
+          items = (response['data'] as List).map((e) => ItemModel.fromJson(e)).toList();
         } else if (response['data']['data'] is List) {
-          items = (response['data']['data'] as List)
-              .map((e) => ItemModel.fromJson(e))
-              .toList();
+          items = (response['data']['data'] as List).map((e) => ItemModel.fromJson(e)).toList();
         } else if (response['data']['items'] is List) {
-          items = (response['data']['items'] as List)
-              .map((e) => ItemModel.fromJson(e))
-              .toList();
+          items = (response['data']['items'] as List).map((e) => ItemModel.fromJson(e)).toList();
         }
 
         if (mounted) {
@@ -1454,13 +1181,11 @@ class HomeScreenState extends State<HomeScreen>
       "page": 1,
       if (HiveUtils.getCityName() != null) 'city': HiveUtils.getCityName(),
       if (HiveUtils.getAreaId() != null) 'area_id': HiveUtils.getAreaId(),
-      if (HiveUtils.getCountryName() != null)
-        'country': HiveUtils.getCountryName(),
+      if (HiveUtils.getCountryName() != null) 'country': HiveUtils.getCountryName(),
       if (HiveUtils.getStateName() != null) 'state': HiveUtils.getStateName(),
     };
 
-    Api.get(url: Api.featuredUsersApi, queryParameters: parameters)
-        .then((response) {
+    Api.get(url: Api.featuredUsersApi, queryParameters: parameters).then((response) {
       if (!response[Api.error] && response['data'] != null) {
         List<dynamic> users = [];
 
@@ -1498,27 +1223,19 @@ class HomeScreenState extends State<HomeScreen>
       "page": 1,
       if (HiveUtils.getCityName() != null) 'city': HiveUtils.getCityName(),
       if (HiveUtils.getAreaId() != null) 'area_id': HiveUtils.getAreaId(),
-      if (HiveUtils.getCountryName() != null)
-        'country': HiveUtils.getCountryName(),
+      if (HiveUtils.getCountryName() != null) 'country': HiveUtils.getCountryName(),
       if (HiveUtils.getStateName() != null) 'state': HiveUtils.getStateName(),
     };
 
-    Api.get(url: Api.getExclusiveWomenItemsApi, queryParameters: parameters)
-        .then((response) {
+    Api.get(url: Api.getExclusiveWomenItemsApi, queryParameters: parameters).then((response) {
       if (!response[Api.error] && response['data'] != null) {
         List<ItemModel> items = [];
         if (response['data'] is List) {
-          items = (response['data'] as List)
-              .map((e) => ItemModel.fromJson(e))
-              .toList();
+          items = (response['data'] as List).map((e) => ItemModel.fromJson(e)).toList();
         } else if (response['data']['data'] is List) {
-          items = (response['data']['data'] as List)
-              .map((e) => ItemModel.fromJson(e))
-              .toList();
+          items = (response['data']['data'] as List).map((e) => ItemModel.fromJson(e)).toList();
         } else if (response['data']['items'] is List) {
-          items = (response['data']['items'] as List)
-              .map((e) => ItemModel.fromJson(e))
-              .toList();
+          items = (response['data']['items'] as List).map((e) => ItemModel.fromJson(e)).toList();
         }
 
         if (mounted) {
@@ -1550,27 +1267,19 @@ class HomeScreenState extends State<HomeScreen>
       "page": 1,
       if (HiveUtils.getCityName() != null) 'city': HiveUtils.getCityName(),
       if (HiveUtils.getAreaId() != null) 'area_id': HiveUtils.getAreaId(),
-      if (HiveUtils.getCountryName() != null)
-        'country': HiveUtils.getCountryName(),
+      if (HiveUtils.getCountryName() != null) 'country': HiveUtils.getCountryName(),
       if (HiveUtils.getStateName() != null) 'state': HiveUtils.getStateName(),
     };
 
-    Api.get(url: Api.getCorporatePackageItemsApi, queryParameters: parameters)
-        .then((response) {
+    Api.get(url: Api.getCorporatePackageItemsApi, queryParameters: parameters).then((response) {
       if (!response[Api.error] && response['data'] != null) {
         List<ItemModel> items = [];
         if (response['data'] is List) {
-          items = (response['data'] as List)
-              .map((e) => ItemModel.fromJson(e))
-              .toList();
+          items = (response['data'] as List).map((e) => ItemModel.fromJson(e)).toList();
         } else if (response['data']['data'] is List) {
-          items = (response['data']['data'] as List)
-              .map((e) => ItemModel.fromJson(e))
-              .toList();
+          items = (response['data']['data'] as List).map((e) => ItemModel.fromJson(e)).toList();
         } else if (response['data']['items'] is List) {
-          items = (response['data']['items'] as List)
-              .map((e) => ItemModel.fromJson(e))
-              .toList();
+          items = (response['data']['items'] as List).map((e) => ItemModel.fromJson(e)).toList();
         }
 
         if (mounted) {
@@ -1594,22 +1303,7 @@ class HomeScreenState extends State<HomeScreen>
   // Add a new method to build exclusive experiences section
   Widget _buildExclusiveExperiences(BuildContext context) {
     if (_isLoadingExperiences) {
-      return SizedBox(
-        height: 200,
-        child: ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: sidePadding),
-          scrollDirection: Axis.horizontal,
-          itemCount: 3,
-          separatorBuilder: (context, index) => const SizedBox(width: 14),
-          itemBuilder: (context, index) {
-            return CustomShimmer(
-              width: 300,
-              height: 200,
-              borderRadius: 10,
-            );
-          },
-        ),
-      );
+      return _shimmerEffect(itemCount: 3, width: 300, height: 200);
     }
 
     if (_experienceError != null) {
@@ -1720,7 +1414,7 @@ class HomeScreenState extends State<HomeScreen>
                                 fontSize: context.font.small * 1.2,
                                 fontWeight: FontWeight.w500,
                               ),
-                              maxLines: 2,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             if (experience.expirationDate != null)
@@ -1743,8 +1437,7 @@ class HomeScreenState extends State<HomeScreen>
                     start: 8,
                     top: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: context.color.territoryColor,
                         borderRadius: BorderRadius.circular(4),
@@ -1762,50 +1455,7 @@ class HomeScreenState extends State<HomeScreen>
                   PositionedDirectional(
                     end: 8,
                     top: 8,
-                    child: BlocBuilder<FavoriteCubit, FavoriteState>(
-                      builder: (context, state) {
-                        bool isLike = context
-                            .read<FavoriteCubit>()
-                            .isItemFavorite(experience.id!);
-                        return GestureDetector(
-                          onTap: () {
-                            UiUtils.checkUser(
-                              context: context,
-                              onNotGuest: () {
-                                context
-                                    .read<UpdateFavoriteCubit>()
-                                    .setFavoriteItem(
-                                      item: experience,
-                                      type: isLike ? 0 : 1,
-                                    );
-                              },
-                            );
-                          },
-                          child: Container(
-                            width: 30,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              color: context.color.secondaryColor,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Icon(
-                                isLike ? Icons.favorite : Icons.favorite_border,
-                                size: 18,
-                                color: context.color.territoryColor,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                    child: favouriteButton(context, experience),
                   ),
                 ],
               ),
@@ -1814,6 +1464,94 @@ class HomeScreenState extends State<HomeScreen>
         },
       ),
     );
+  }
+
+  SizedBox _shimmerEffect({
+    required double width,
+    required double height,
+    required int itemCount,
+  }) {
+    return SizedBox(
+      height: 200,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+        scrollDirection: Axis.horizontal,
+        itemCount: 3,
+        separatorBuilder: (context, index) => const SizedBox(width: 14),
+        itemBuilder: (context, index) {
+          return CustomShimmer(
+            width: width,
+            height: height,
+            borderRadius: 10,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget favouriteButton(BuildContext context, ItemModel model) {
+    bool isAddedByMe = (model.user?.id != null ? model.user!.id.toString() : model.userId) == HiveUtils.getUserId();
+    if (!isAddedByMe) {
+      return BlocBuilder<FavoriteCubit, FavoriteState>(
+        bloc: context.read<FavoriteCubit>(),
+        builder: (context, favState) {
+          bool isLike = context.select((FavoriteCubit cubit) => cubit.isItemFavorite(model.id!));
+
+          return BlocConsumer<UpdateFavoriteCubit, UpdateFavoriteState>(
+            bloc: context.read<UpdateFavoriteCubit>(),
+            listener: (context, state) {
+              if (state is UpdateFavoriteSuccess) {
+                if (state.wasProcess) {
+                  context.read<FavoriteCubit>().addFavoriteitem(state.item);
+                } else {
+                  context.read<FavoriteCubit>().removeFavoriteItem(state.item);
+                }
+              }
+            },
+            builder: (context, state) {
+              return setTopRowItem(
+                  alignment: AlignmentDirectional.topEnd,
+                  marginVal: 10,
+                  backgroundColor: context.color.backgroundColor,
+                  cornerRadius: 30,
+                  childWidget: InkWell(
+                    onTap: () {
+                      UiUtils.checkUser(
+                          onNotGuest: () {
+                            context.read<UpdateFavoriteCubit>().setFavoriteItem(
+                                  item: model,
+                                  type: isLike ? 0 : 1,
+                                );
+                          },
+                          context: context);
+                    },
+                    child: UiUtils.getSvg(isLike ? AppIcons.like_fill : AppIcons.like,
+                        color: context.color.territoryColor, width: 22, height: 22),
+                  ));
+            },
+          );
+        },
+      );
+    } else {
+      return SizedBox.shrink();
+    }
+  }
+
+  Widget setTopRowItem(
+      {required AlignmentDirectional alignment,
+      required double marginVal,
+      required double cornerRadius,
+      required Color backgroundColor,
+      required Widget childWidget}) {
+    return Align(
+        alignment: alignment,
+        child: Container(
+            margin: EdgeInsets.all(marginVal),
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(cornerRadius), color: backgroundColor),
+            child: childWidget)
+        //TODO: swap icons according to liked and non-liked -- favorite_border_rounded and favorite_rounded
+        );
   }
 
   // Fetch newest items
@@ -1827,27 +1565,19 @@ class HomeScreenState extends State<HomeScreen>
       "page": 1,
       if (HiveUtils.getCityName() != null) 'city': HiveUtils.getCityName(),
       if (HiveUtils.getAreaId() != null) 'area_id': HiveUtils.getAreaId(),
-      if (HiveUtils.getCountryName() != null)
-        'country': HiveUtils.getCountryName(),
+      if (HiveUtils.getCountryName() != null) 'country': HiveUtils.getCountryName(),
       if (HiveUtils.getStateName() != null) 'state': HiveUtils.getStateName(),
     };
 
-    Api.get(url: Api.getNewestItemsApi, queryParameters: parameters)
-        .then((response) {
+    Api.get(url: Api.getNewestItemsApi, queryParameters: parameters).then((response) {
       if (!response[Api.error] && response['data'] != null) {
         List<ItemModel> items = [];
         if (response['data'] is List) {
-          items = (response['data'] as List)
-              .map((e) => ItemModel.fromJson(e))
-              .toList();
+          items = (response['data'] as List).map((e) => ItemModel.fromJson(e)).toList();
         } else if (response['data']['data'] is List) {
-          items = (response['data']['data'] as List)
-              .map((e) => ItemModel.fromJson(e))
-              .toList();
+          items = (response['data']['data'] as List).map((e) => ItemModel.fromJson(e)).toList();
         } else if (response['data']['items'] is List) {
-          items = (response['data']['items'] as List)
-              .map((e) => ItemModel.fromJson(e))
-              .toList();
+          items = (response['data']['items'] as List).map((e) => ItemModel.fromJson(e)).toList();
         }
 
         if (mounted) {
@@ -1882,8 +1612,7 @@ class AllItemsWidget extends StatelessWidget {
           if (state.items.isNotEmpty) {
             final int crossAxisCount = 2;
             final int items = state.items.length;
-            final int total = (items ~/ crossAxisCount) +
-                (items % crossAxisCount != 0 ? 1 : 0);
+            final int total = (items ~/ crossAxisCount) + (items % crossAxisCount != 0 ? 1 : 0);
 
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -1899,10 +1628,7 @@ class AllItemsWidget extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             for (int i = 0; i < crossAxisCount; ++i) ...[
-                              Expanded(
-                                  child: itemIndex + 1 <= items
-                                      ? ItemCard(item: state.items[itemIndex++])
-                                      : SizedBox.shrink()),
+                              Expanded(child: itemIndex + 1 <= items ? ItemCard(item: state.items[itemIndex++]) : SizedBox.shrink()),
                               if (i != crossAxisCount - 1)
                                 SizedBox(
                                   width: 15,
@@ -1913,8 +1639,7 @@ class AllItemsWidget extends StatelessWidget {
                       );
                     },
                     listSeparator: (context, index) {
-                      if (index == 0 ||
-                          index % Constant.nativeAdsAfterItemNumber != 0) {
+                      if (index == 0 || index % Constant.nativeAdsAfterItemNumber != 0) {
                         return SizedBox(
                           height: 15,
                         );
@@ -1954,6 +1679,22 @@ class AllItemsWidget extends StatelessWidget {
       },
     );
   }
+}
+
+void _goToItemListingSearch(BuildContext context) {
+  _goToSearchPage(context, SearchScreenType.itemListing);
+}
+
+void _goToProviderSearch(BuildContext context) {
+  _goToSearchPage(context, SearchScreenType.provider);
+}
+
+void _goToSearchPage(BuildContext context, SearchScreenType type) {
+  Navigator.pushNamed(
+    context,
+    Routes.searchScreenRoute,
+    arguments: {'autoFocus': true, 'screenType': type},
+  );
 }
 
 Future<void> notificationPermissionChecker() async {

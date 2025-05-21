@@ -1,8 +1,3 @@
-import 'package:tlobni/data/model/personalized/personalized_settings.dart';
-import 'package:tlobni/firebase_options.dart';
-import 'package:tlobni/main.dart';
-import 'package:tlobni/ui/screens/widgets/errors/something_went_wrong.dart';
-import 'package:tlobni/utils/hive_keys.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -11,16 +6,19 @@ import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:tlobni/data/model/personalized/personalized_settings.dart';
+import 'package:tlobni/firebase_options.dart';
+import 'package:tlobni/main.dart';
+import 'package:tlobni/ui/screens/widgets/errors/something_went_wrong.dart';
+import 'package:tlobni/utils/hive_keys.dart';
 
-PersonalizedInterestSettings personalizedInterestSettings =
-    PersonalizedInterestSettings.empty();
+PersonalizedInterestSettings personalizedInterestSettings = PersonalizedInterestSettings.empty();
 
 void initApp() async {
   ///Note: this file's code is very necessary and sensitive if you change it, this might affect whole app , So change it carefully.
   ///This must be used do not remove this line
   WidgetsFlutterBinding.ensureInitialized();
-  final GoogleMapsFlutterPlatform mapsImplementation =
-      GoogleMapsFlutterPlatform.instance;
+  final GoogleMapsFlutterPlatform mapsImplementation = GoogleMapsFlutterPlatform.instance;
   if (mapsImplementation is GoogleMapsFlutterAndroid) {
     mapsImplementation.useAndroidViewSurface = false;
   }
@@ -37,8 +35,7 @@ void initApp() async {
   }
 
   if (Firebase.apps.isNotEmpty) {
-    await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform);
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   } else {
     await Firebase.initializeApp();
   }
@@ -54,12 +51,8 @@ void initApp() async {
   await Hive.openBox(HiveKeys.jwtToken);
   await Hive.openBox(HiveKeys.historyBox);
 
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]).then(
-    (_) async {
-      SystemChrome.setSystemUIOverlayStyle(
-          const SystemUiOverlayStyle(statusBarColor: Colors.transparent));
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(statusBarColor: Colors.transparent));
 
-      runApp(const EntryPoint());
-    },
-  );
+  runApp(const EntryPoint());
 }

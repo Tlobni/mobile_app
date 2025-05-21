@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/category/fetch_sub_categories_cubit.dart';
 import 'package:tlobni/data/model/category_model.dart';
@@ -10,9 +13,6 @@ import 'package:tlobni/utils/api.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shimmer/shimmer.dart';
 
 class SubCategoryScreen extends StatefulWidget {
   final List<CategoryModel> categoryList;
@@ -20,12 +20,7 @@ class SubCategoryScreen extends StatefulWidget {
   final int catId;
   final List<String> categoryIds;
 
-  const SubCategoryScreen(
-      {super.key,
-      required this.categoryList,
-      required this.catName,
-      required this.catId,
-      required this.categoryIds});
+  const SubCategoryScreen({super.key, required this.categoryList, required this.catName, required this.catId, required this.categoryIds});
 
   @override
   State<SubCategoryScreen> createState() => _CategoryListState();
@@ -43,8 +38,7 @@ class SubCategoryScreen extends StatefulWidget {
   }
 }
 
-class _CategoryListState extends State<SubCategoryScreen>
-    with TickerProviderStateMixin {
+class _CategoryListState extends State<SubCategoryScreen> with TickerProviderStateMixin {
   late final ScrollController controller = ScrollController();
 
   @override
@@ -79,8 +73,7 @@ class _CategoryListState extends State<SubCategoryScreen>
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion(
-      value: UiUtils.getSystemUiOverlayStyle(
-          context: context, statusBarColor: context.color.secondaryColor),
+      value: UiUtils.getSystemUiOverlayStyle(context: context, statusBarColor: context.color.secondaryColor),
       child: Scaffold(
           backgroundColor: context.color.backgroundColor,
           appBar: UiUtils.buildAppBar(
@@ -99,8 +92,7 @@ class _CategoryListState extends State<SubCategoryScreen>
                   children: [
                     InkWell(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 18),
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
                         child: CustomText(
                           "${"lblall".translate(context)}\t${widget.catName}",
                           textAlign: TextAlign.center,
@@ -112,12 +104,11 @@ class _CategoryListState extends State<SubCategoryScreen>
                         ),
                       ),
                       onTap: () {
-                        Navigator.pushNamed(context, Routes.itemsList,
-                            arguments: {
-                              'catID': widget.catId.toString(),
-                              'catName': widget.catName,
-                              "categoryIds": [...widget.categoryIds]
-                            });
+                        Navigator.pushNamed(context, Routes.itemsList, arguments: {
+                          'catID': widget.catId.toString(),
+                          'catName': widget.catName,
+                          "categoryIds": [...widget.categoryIds]
+                        });
                       },
                     ),
                     const Divider(
@@ -137,67 +128,45 @@ class _CategoryListState extends State<SubCategoryScreen>
                               );
                             },
                             itemBuilder: (context, index) {
-                              CategoryModel category =
-                                  widget.categoryList[index];
+                              CategoryModel category = widget.categoryList[index];
 
                               return ListTile(
                                 onTap: () {
-                                  if (widget.categoryList[index].children!
-                                          .isEmpty &&
-                                      widget.categoryList[index]
-                                              .subcategoriesCount ==
-                                          0) {
-                                    Navigator.pushNamed(
-                                        context, Routes.itemsList,
-                                        arguments: {
-                                          'catID': widget.categoryList[index].id
-                                              .toString(),
-                                          'catName':
-                                              widget.categoryList[index].name,
-                                          "categoryIds": [
-                                            ...widget.categoryIds,
-                                            widget.categoryList[index].id
-                                                .toString()
-                                          ]
-                                        });
+                                  if (widget.categoryList[index].children!.isEmpty && widget.categoryList[index].subcategoriesCount == 0) {
+                                    Navigator.pushNamed(context, Routes.itemsList, arguments: {
+                                      'catID': widget.categoryList[index].id.toString(),
+                                      'catName': widget.categoryList[index].name,
+                                      "categoryIds": [...widget.categoryIds, widget.categoryList[index].id.toString()]
+                                    });
                                   } else {
-                                    Navigator.pushNamed(
-                                        context, Routes.subCategoryScreen,
-                                        arguments: {
-                                          "categoryList": widget
-                                              .categoryList[index].children,
-                                          "catName":
-                                              widget.categoryList[index].name,
-                                          "catId":
-                                              widget.categoryList[index].id,
-                                          "categoryIds": [
-                                            ...widget.categoryIds,
-                                            widget.categoryList[index].id
-                                                .toString()
-                                          ]
-                                        });
+                                    Navigator.pushNamed(context, Routes.subCategoryScreen, arguments: {
+                                      "categoryList": widget.categoryList[index].children,
+                                      "catName": widget.categoryList[index].name,
+                                      "catId": widget.categoryList[index].id,
+                                      "categoryIds": [...widget.categoryIds, widget.categoryList[index].id.toString()]
+                                    });
                                   }
                                 },
-                                leading: FittedBox(
-                                  child: Container(
-                                      width: 40,
-                                      height: 40,
-                                      clipBehavior: Clip.antiAlias,
-                                      padding: const EdgeInsets.all(0),
-                                      decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: context.color.territoryColor
-                                              .withOpacity(0.1)),
-                                      child: ClipRRect(
-                                        child: UiUtils.imageType(
-                                          category.url!,
-                                          color: context.color.territoryColor,
-                                          width: double.infinity,
-                                          height: double.infinity,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      )),
-                                ),
+                                // leading: FittedBox(
+                                //   child: Container(
+                                //       width: 40,
+                                //       height: 40,
+                                //       clipBehavior: Clip.antiAlias,
+                                //       padding: const EdgeInsets.all(0),
+                                //       decoration: BoxDecoration(
+                                //           shape: BoxShape.circle,
+                                //           color: context.color.territoryColor
+                                //               .withOpacity(0.1)),
+                                //       child: ClipRRect(
+                                //         child: UiUtils.imageType(
+                                //           category.url!,
+                                //           color: context.color.territoryColor,
+                                //           width: double.infinity,
+                                //           height: double.infinity,
+                                //           fit: BoxFit.cover,
+                                //         ),
+                                //       )),
+                                // ),
                                 title: CustomText(
                                   category.name!,
                                   textAlign: TextAlign.start,
@@ -209,10 +178,8 @@ class _CategoryListState extends State<SubCategoryScreen>
                                 trailing: Container(
                                     width: 32,
                                     height: 32,
-                                    decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(8),
-                                        color: context.color.borderColor
-                                            .darken(10)),
+                                    decoration:
+                                        BoxDecoration(borderRadius: BorderRadius.circular(8), color: context.color.borderColor.darken(10)),
                                     child: Icon(
                                       Icons.chevron_right_outlined,
                                       color: context.color.textDefaultColor,
@@ -241,9 +208,7 @@ class _CategoryListState extends State<SubCategoryScreen>
             if (state.errorMessage == "no-internet") {
               return NoInternet(
                 onRetry: () {
-                  context
-                      .read<FetchSubCategoriesCubit>()
-                      .fetchSubCategories(categoryId: widget.catId);
+                  context.read<FetchSubCategoriesCubit>().fetchSubCategories(categoryId: widget.catId);
                 },
               );
             }
@@ -256,9 +221,7 @@ class _CategoryListState extends State<SubCategoryScreen>
           if (state.categories.isEmpty) {
             return NoDataFound(
               onTap: () {
-                context
-                    .read<FetchSubCategoriesCubit>()
-                    .fetchSubCategories(categoryId: widget.catId);
+                context.read<FetchSubCategoriesCubit>().fetchSubCategories(categoryId: widget.catId);
               },
             );
           }
@@ -283,28 +246,19 @@ class _CategoryListState extends State<SubCategoryScreen>
 
                   return ListTile(
                     onTap: () {
-                      if (state.categories[index].children!.isEmpty &&
-                          state.categories[index].subcategoriesCount == 0) {
-                        Navigator.pushNamed(context, Routes.itemsList,
-                            arguments: {
-                              'catID': state.categories[index].id.toString(),
-                              'catName': state.categories[index].name,
-                              "categoryIds": [
-                                ...widget.categoryIds,
-                                state.categories[index].id.toString()
-                              ]
-                            });
+                      if (state.categories[index].children!.isEmpty && state.categories[index].subcategoriesCount == 0) {
+                        Navigator.pushNamed(context, Routes.itemsList, arguments: {
+                          'catID': state.categories[index].id.toString(),
+                          'catName': state.categories[index].name,
+                          "categoryIds": [...widget.categoryIds, state.categories[index].id.toString()]
+                        });
                       } else {
-                        Navigator.pushNamed(context, Routes.subCategoryScreen,
-                            arguments: {
-                              "categoryList": state.categories[index].children,
-                              "catName": state.categories[index].name,
-                              "catId": state.categories[index].id,
-                              "categoryIds": [
-                                ...widget.categoryIds,
-                                state.categories[index].id.toString()
-                              ]
-                            });
+                        Navigator.pushNamed(context, Routes.subCategoryScreen, arguments: {
+                          "categoryList": state.categories[index].children,
+                          "catName": state.categories[index].name,
+                          "catId": state.categories[index].id,
+                          "categoryIds": [...widget.categoryIds, state.categories[index].id.toString()]
+                        });
                       }
                     },
                     leading: FittedBox(
@@ -312,10 +266,8 @@ class _CategoryListState extends State<SubCategoryScreen>
                           width: 40,
                           height: 40,
                           padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              color: context.color.territoryColor
-                                  .withOpacity(0.1)),
+                          decoration:
+                              BoxDecoration(borderRadius: BorderRadius.circular(20), color: context.color.territoryColor.withOpacity(0.1)),
                           child: UiUtils.imageType(
                             category.url!,
                             color: context.color.territoryColor,
@@ -333,9 +285,7 @@ class _CategoryListState extends State<SubCategoryScreen>
                     trailing: Container(
                         width: 32,
                         height: 32,
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            color: context.color.borderColor.darken(10)),
+                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: context.color.borderColor.darken(10)),
                         child: Icon(
                           Icons.chevron_right_outlined,
                           color: context.color.textDefaultColor,

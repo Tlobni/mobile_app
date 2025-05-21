@@ -1,15 +1,17 @@
 import 'dart:developer';
 
+import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/custom_text_form_field.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/api.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -114,31 +116,27 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         radius: 8,
                         onPressed: () async {
                           FocusScope.of(context).unfocus(); //dismiss keyboard
-                          Future.delayed(const Duration(seconds: 1))
-                              .then((_) async {
+                          Future.delayed(const Duration(seconds: 1)).then((_) async {
                             if (_formKey.currentState!.validate()) {
                               try {
-                                await _auth
-                                    .sendPasswordResetEmail(
-                                        email: _emailController.text)
-                                    .then((value) {
-                                  HelperUtils.showSnackBarMessage(context,
-                                      "resetPasswordSuccess".translate(context),
-                                      type: MessageType.success);
-                                  Navigator.of(context).pushNamedAndRemoveUntil(
-                                      Routes.login, (route) => false);
-                                });
-                              } on FirebaseAuthException catch (e) {
-                                if (e.code == 'user-not-found') {
-                                  HelperUtils.showSnackBarMessage(context,
-                                      "userNotFound".translate(context),
-                                      type: MessageType.error);
-                                } else {
-                                  HelperUtils.showSnackBarMessage(
-                                      context, e.toString(),
-                                      type: MessageType.error);
-                                }
+                                final response = await Api.post(
+                                  url: Api.forgotPassword,
+                                  parameter: {
+                                    'email': _emailController.text,
+                                  },
+                                  options: Options(
+                                    followRedirects: true,
+                                    receiveDataWhenStatusError: true,
+                                  ),
+                                );
+                                print(response);
+                              } catch (e) {
+                                // if (e.type != DioExceptionType.badResponse) return;
                               }
+
+                              HelperUtils.showSnackBarMessage(context, "resetPasswordSuccess".translate(context),
+                                  type: MessageType.success);
+                              Navigator.of(context).pushNamedAndRemoveUntil(Routes.login, (route) => false);
                             }
                           });
                         },
