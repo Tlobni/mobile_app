@@ -53,13 +53,9 @@ class ItemHorizontalCard extends StatelessWidget {
                   listener: ((context, state) {
                     if (state is UpdateFavoriteSuccess) {
                       if (state.wasProcess) {
-                        context
-                            .read<FavoriteCubit>()
-                            .addFavoriteitem(state.item);
+                        context.read<FavoriteCubit>().addFavoriteitem(state.item);
                       } else {
-                        context
-                            .read<FavoriteCubit>()
-                            .removeFavoriteItem(state.item);
+                        context.read<FavoriteCubit>().removeFavoriteItem(state.item);
                       }
                     }
                   }),
@@ -68,9 +64,7 @@ class ItemHorizontalCard extends StatelessWidget {
                       onTap: () {
                         UiUtils.checkUser(
                             onNotGuest: () {
-                              context
-                                  .read<UpdateFavoriteCubit>()
-                                  .setFavoriteItem(
+                              context.read<UpdateFavoriteCubit>().setFavoriteItem(
                                     item: item,
                                     type: isLike ? 0 : 1,
                                   );
@@ -83,18 +77,16 @@ class ItemHorizontalCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: context.color.secondaryColor,
                           shape: BoxShape.circle,
-                          boxShadow:
-                              context.watch<AppThemeCubit>().state.appTheme ==
-                                      AppTheme.dark
-                                  ? null
-                                  : [
-                                      BoxShadow(
-                                        color: Color.fromARGB(12, 0, 0, 0),
-                                        offset: Offset(0, 2),
-                                        blurRadius: 10,
-                                        spreadRadius: 4,
-                                      )
-                                    ],
+                          boxShadow: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: Color.fromARGB(12, 0, 0, 0),
+                                    offset: Offset(0, 2),
+                                    blurRadius: 10,
+                                    spreadRadius: 4,
+                                  )
+                                ],
                         ),
                         child: FittedBox(
                           fit: BoxFit.none,
@@ -140,40 +132,28 @@ class ItemHorizontalCard extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(15),
                                 child: UiUtils.getImage(
                                   item.image ?? "",
-                                  height: addBottom == null
-                                      ? 122
-                                      : (122 +
-                                          (additionalHeight ??
-                                              0)) /*statusButton != null ? 90 : 120*/,
+                                  height: addBottom == null ? 122 : (122 + (additionalHeight ?? 0)) /*statusButton != null ? 90 : 120*/,
                                   width: 100 + (additionalImageWidth ?? 0),
                                   fit: BoxFit.cover,
                                 ),
                               ),
                               // CustomText(item.promoted.toString()),
                               if (item.isFeature ?? false)
-                                const PositionedDirectional(
-                                    start: 5,
-                                    top: 5,
-                                    child: PromotedCard(
-                                        type: PromoteCardType.icon)),
+                                const PositionedDirectional(start: 5, top: 5, child: PromotedCard(type: PromoteCardType.icon)),
                             ],
                           ),
                           if (statusButton != null)
                             Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 3.0, horizontal: 3.0),
+                              padding: const EdgeInsets.symmetric(vertical: 3.0, horizontal: 3.0),
                               child: Container(
-                                decoration: BoxDecoration(
-                                    color: statusButton!.color,
-                                    borderRadius: BorderRadius.circular(4)),
+                                decoration: BoxDecoration(color: statusButton!.color, borderRadius: BorderRadius.circular(4)),
                                 width: 80,
                                 height: 120 - 90 - 8,
                                 child: Center(
                                     child: CustomText(statusButton!.lable,
                                         fontSize: context.font.small,
                                         fontWeight: FontWeight.bold,
-                                        color: statusButton?.textColor ??
-                                            Colors.black)),
+                                        color: statusButton?.textColor ?? Colors.black)),
                               ),
                             )
                         ],
@@ -215,15 +195,13 @@ class ItemHorizontalCard extends StatelessWidget {
                                     Icon(
                                       Icons.location_on_outlined,
                                       size: 15,
-                                      color: context.color.textDefaultColor
-                                          .withOpacity(0.3),
+                                      color: context.color.textDefaultColor.withOpacity(0.3),
                                     ),
                                     Expanded(
                                         child: CustomText(
                                       item.address?.trim() ?? "",
                                       fontSize: context.font.smaller,
-                                      color: context.color.textDefaultColor
-                                          .withOpacity(0.3),
+                                      color: context.color.textDefaultColor.withOpacity(0.3),
                                       maxLines: 1,
                                     ))
                                   ],

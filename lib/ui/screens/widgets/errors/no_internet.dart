@@ -13,8 +13,7 @@ class NoInternet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion(
-      value: UiUtils.getSystemUiOverlayStyle(
-          context: context, statusBarColor: context.color.primaryColor),
+      value: UiUtils.getSystemUiOverlayStyle(context: context, statusBarColor: context.color.primaryColor),
       child: Scaffold(
         backgroundColor: context.color.backgroundColor,
         body: SizedBox(
@@ -51,9 +50,7 @@ class NoInternet extends StatelessWidget {
               ),
               TextButton(
                   onPressed: onRetry,
-                  style: ButtonStyle(
-                      overlayColor: WidgetStateProperty.all(
-                          context.color.territoryColor.withOpacity(0.2))),
+                  style: ButtonStyle(overlayColor: WidgetStateProperty.all(context.color.territoryColor.withOpacity(0.2))),
                   child: CustomText(
                     "retry".translate(context),
                     color: context.color.territoryColor,

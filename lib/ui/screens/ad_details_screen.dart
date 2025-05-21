@@ -2,8 +2,14 @@
 import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
-import 'dart:ui' as ui;
 
+import 'package:flick_video_player/flick_video_player.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:intl/intl.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/add_user_review_cubit.dart';
 import 'package:tlobni/data/cubits/chat/delete_message_cubit.dart';
@@ -17,6 +23,7 @@ import 'package:tlobni/data/cubits/item/change_my_items_status_cubit.dart';
 import 'package:tlobni/data/cubits/item/create_featured_ad_cubit.dart';
 import 'package:tlobni/data/cubits/item/delete_item_cubit.dart';
 import 'package:tlobni/data/cubits/item/fetch_item_from_slug_cubit.dart';
+import 'package:tlobni/data/cubits/item/fetch_item_reviews_cubit.dart';
 import 'package:tlobni/data/cubits/item/fetch_my_item_cubit.dart';
 import 'package:tlobni/data/cubits/item/item_total_click_cubit.dart';
 import 'package:tlobni/data/cubits/item/related_item_cubit.dart';
@@ -28,7 +35,7 @@ import 'package:tlobni/data/cubits/safety_tips_cubit.dart';
 import 'package:tlobni/data/cubits/seller/fetch_seller_ratings_cubit.dart';
 import 'package:tlobni/data/cubits/subscription/fetch_ads_listing_subscription_packages_cubit.dart';
 import 'package:tlobni/data/cubits/subscription/fetch_user_package_limit_cubit.dart';
-import 'package:tlobni/data/cubits/item/fetch_item_reviews_cubit.dart';
+import 'package:tlobni/data/cubits/user_has_rated_item_cubit.dart';
 import 'package:tlobni/data/helper/widgets.dart';
 import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/chat/chat_user_model.dart' as chat_models;
@@ -63,20 +70,14 @@ import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
 import 'package:tlobni/utils/validator.dart';
-import 'package:flick_video_player/flick_video_player.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
-import 'package:intl/intl.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class AdDetailsScreen extends StatefulWidget {
   final ItemModel? model;
   final String? slug;
+
   const AdDetailsScreen({
     super.key,
     this.model,
@@ -124,19 +125,15 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
   bool? isFeaturedLimit;
   List<String> selectedFeaturedAdsOptions = [];
 
-  bool isShowReportAds = true;
   final PageController pageController = PageController();
   final List<String?> images = [];
-  final Completer<GoogleMapController> _controller =
-      Completer<GoogleMapController>();
+  final Completer<GoogleMapController> _controller = Completer<GoogleMapController>();
   late final ScrollController _pageScrollController = ScrollController();
   List<ReportReason>? reasons = [];
   late int selectedId;
-  final TextEditingController _reportmessageController =
-      TextEditingController();
+  final TextEditingController _reportmessageController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey();
-  final TextEditingController _makeAnOffermessageController =
-      TextEditingController();
+  final TextEditingController _makeAnOffermessageController = TextEditingController();
   final GlobalKey<FormState> _offerFormKey = GlobalKey();
   int? _selectedPackageIndex;
 
@@ -158,10 +155,11 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
       // Immediately try to fetch reviews if the item ID is available
       if (widget.model!.id != null) {
         Future.microtask(() {
-          context
-              .read<FetchItemReviewsCubit>()
-              .fetchItemReviews(itemId: widget.model!.id!);
+          context.read<FetchItemReviewsCubit>().fetchItemReviews(itemId: widget.model!.id!);
         });
+      }
+      if (widget.model?.id != null) {
+        context.read<UserHasRatedItemCubit>().userHasRatedItem(itemId: widget.model!.id!);
       }
     }
     pageController.addListener(() {
@@ -175,21 +173,16 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
   void initVariables(ItemModel itemModel) {
     model = itemModel;
 
-    isAddedByMe =
-        (model.user?.id != null ? model.user!.id.toString() : model.userId) ==
-            HiveUtils.getUserId();
+    isAddedByMe = (model.user?.id != null ? model.user!.id.toString() : model.userId) == HiveUtils.getUserId();
 
     if (!isAddedByMe) {
       context.read<FetchItemReportReasonsListCubit>().fetch();
       context.read<FetchSafetyTipsListCubit>().fetchSafetyTips();
-      context.read<FetchSellerRatingsCubit>().fetch(
-          sellerId: (model.user?.id != null ? model.user!.id! : model.userId!));
+      context.read<FetchSellerRatingsCubit>().fetch(sellerId: (model.user?.id != null ? model.user!.id! : model.userId!));
 
       // Fetch reviews specifically for this item
       if (model.id != null) {
-        context
-            .read<FetchItemReviewsCubit>()
-            .fetchItemReviews(itemId: model.id!);
+        context.read<FetchItemReviewsCubit>().fetchItemReviews(itemId: model.id!);
       }
     } else {
       context.read<FetchAdsListingSubscriptionPackagesCubit>().fetchPackages();
@@ -246,9 +239,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
       images.add(model.videoLink);
     }
 
-    if (model.videoLink != "" &&
-        model.videoLink != null &&
-        !HelperUtils.isYoutubeVideo(model.videoLink ?? "")) {
+    if (model.videoLink != "" && model.videoLink != null && !HelperUtils.isYoutubeVideo(model.videoLink ?? "")) {
       flickManager = FlickManager(
         videoPlayerController: VideoPlayerController.networkUrl(
           Uri.parse(model.videoLink!),
@@ -256,9 +247,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
       );
       flickManager?.onVideoEnd = () {};
     }
-    if (model.videoLink != "" &&
-        model.videoLink != null &&
-        HelperUtils.isYoutubeVideo(model.videoLink ?? "")) {
+    if (model.videoLink != "" && model.videoLink != null && HelperUtils.isYoutubeVideo(model.videoLink ?? "")) {
       String? videoId = YoutubePlayer.convertUrlToId(model.videoLink!);
       if (videoId != null) {
         String thumbnail = YoutubePlayer.getThumbnail(videoId: videoId);
@@ -280,8 +269,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
         value: SystemUiOverlayStyle(
           statusBarColor: context.color.secondaryDetailsColor,
         ),
-        child: BlocConsumer<FetchItemFromSlugCubit, FetchItemFromSlugState>(
-            listener: (context, state) {
+        child: BlocConsumer<FetchItemFromSlugCubit, FetchItemFromSlugState>(listener: (context, state) {
           if (state is FetchItemFromSlugSuccess) {
             log('success');
             initVariables(state.item);
@@ -289,19 +277,15 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
             // Only show error message if it's not a refresh operation
             // or if it's a significant error like no internet
             if (state.errorMessage.contains("no-internet")) {
-              HelperUtils.showSnackBarMessage(
-                  context, "noInternet".translate(context));
-            } else if (!state.errorMessage.contains("unexpected-error") &&
-                !state.errorMessage.contains("session-expired")) {
+              HelperUtils.showSnackBarMessage(context, "noInternet".translate(context));
+            } else if (!state.errorMessage.contains("unexpected-error") && !state.errorMessage.contains("session-expired")) {
               // Don't show generic errors during refresh operations
               log("Error ignored during refresh: ${state.errorMessage}");
             }
           }
         }, builder: (context, state) {
           if (state is FetchItemFromSlugInitial && widget.slug != null) {
-            context
-                .read<FetchItemFromSlugCubit>()
-                .fetchItemFromSlug(slug: widget.slug!);
+            context.read<FetchItemFromSlugCubit>().fetchItemFromSlug(slug: widget.slug!);
             log('fetching item');
             return Material(
               child: Center(
@@ -315,8 +299,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                 child: UiUtils.progress(),
               ),
             );
-          } else if (state is FetchItemFromSlugFailure &&
-              widget.model == null) {
+          } else if (state is FetchItemFromSlugFailure && widget.model == null) {
             // Only show error screen if we don't have a model to display
             return Scaffold(
               appBar: UiUtils.buildAppBar(
@@ -333,9 +316,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                     ElevatedButton(
                       onPressed: () {
                         if (widget.slug != null) {
-                          context
-                              .read<FetchItemFromSlugCubit>()
-                              .fetchItemFromSlug(slug: widget.slug!);
+                          context.read<FetchItemFromSlugCubit>().fetchItemFromSlug(slug: widget.slug!);
                         }
                       },
                       child: CustomText("retryBtnLbl".translate(context)),
@@ -350,8 +331,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               if (state is MakeAnOfferItemInProgress) {
                 Widgets.showLoader(context);
               }
-              if (state is MakeAnOfferItemSuccess ||
-                  state is MakeAnOfferItemFailure) {
+              if (state is MakeAnOfferItemSuccess || state is MakeAnOfferItemFailure) {
                 Widgets.hideLoder(context);
               }
             },
@@ -361,8 +341,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                 backgroundColor: context.color.secondaryDetailsColor,
                 showBackButton: true,
                 actions: [
-                  if (isAddedByMe && model.status == "active" ||
-                      model.status == 'approved')
+                  if (isAddedByMe && model.status == "active" || model.status == 'approved')
                     Padding(
                       padding: EdgeInsetsDirectional.only(
                           end: isAddedByMe &&
@@ -383,11 +362,10 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                         ),
                       ),
                     ),
-                  if (isAddedByMe &&
-                      (model.status != "sold out" &&
-                          model.status != "review" &&
-                          model.status != "inactive" &&
-                          model.status != "rejected"))
+                  if (isAddedByMe
+                      // &&
+                      // (model.status != "sold out" && model.status != "review" && model.status != "inactive" && model.status != "rejected")
+                      )
                     MultiBlocProvider(
                       providers: [
                         BlocProvider(
@@ -401,30 +379,22 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                         return BlocListener<DeleteItemCubit, DeleteItemState>(
                           listener: (context, deleteState) {
                             if (deleteState is DeleteItemSuccess) {
-                              HelperUtils.showSnackBarMessage(context,
-                                  "deleteItemSuccessMsg".translate(context));
-                              context
-                                  .read<FetchMyItemsCubit>()
-                                  .deleteItem(model);
+                              HelperUtils.showSnackBarMessage(context, "deleteItemSuccessMsg".translate(context));
+                              context.read<FetchMyItemsCubit>().deleteItem(model);
 
                               // Return to previous screen with refresh signal
                               Navigator.pop(context, "refresh");
                             } else if (deleteState is DeleteItemFailure) {
-                              HelperUtils.showSnackBarMessage(
-                                  context, deleteState.errorMessage);
+                              HelperUtils.showSnackBarMessage(context, deleteState.errorMessage);
                             }
                           },
-                          child: BlocListener<ChangeMyItemStatusCubit,
-                              ChangeMyItemStatusState>(
+                          child: BlocListener<ChangeMyItemStatusCubit, ChangeMyItemStatusState>(
                             listener: (context, changeState) {
                               if (changeState is ChangeMyItemStatusSuccess) {
-                                HelperUtils.showSnackBarMessage(
-                                    context, changeState.message);
+                                HelperUtils.showSnackBarMessage(context, changeState.message);
                                 Navigator.pop(context, "refresh");
-                              } else if (changeState
-                                  is ChangeMyItemStatusFailure) {
-                                HelperUtils.showSnackBarMessage(
-                                    context, changeState.errorMessage);
+                              } else if (changeState is ChangeMyItemStatusFailure) {
+                                HelperUtils.showSnackBarMessage(context, changeState.errorMessage);
                               }
                             },
                             child: Padding(
@@ -449,45 +419,33 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                                     width: 20,
                                     height: 20,
                                     fit: BoxFit.contain,
-                                    colorFilter: ColorFilter.mode(
-                                        context.color.textDefaultColor,
-                                        BlendMode.srcIn),
+                                    colorFilter: ColorFilter.mode(context.color.textDefaultColor, BlendMode.srcIn),
                                   ),
                                   itemBuilder: (context) => [
-                                    if (model.status == "active" ||
-                                        model.status == "approved")
+                                    if (model.status == "active" || model.status == "approved")
                                       PopupMenuItem(
                                           onTap: () {
                                             Future.delayed(Duration.zero, () {
-                                              context
-                                                  .read<
-                                                      ChangeMyItemStatusCubit>()
-                                                  .changeMyItemStatus(
-                                                      id: model.id!,
-                                                      status: 'inactive');
+                                              context.read<ChangeMyItemStatusCubit>().changeMyItemStatus(id: model.id!, status: 'inactive');
                                             });
                                           },
                                           child: CustomText(
                                             "deactivate".translate(context),
                                             color: context.color.buttonColor,
                                           )),
-                                    if (model.status == "active" ||
-                                        model.status == "approved")
+                                    if (model.status == "active" || model.status == "approved")
                                       PopupMenuItem(
                                         child: CustomText(
                                           "lblremove".translate(context),
                                           color: context.color.buttonColor,
                                         ),
                                         onTap: () async {
-                                          var delete =
-                                              await UiUtils.showBlurredDialoge(
+                                          var delete = await UiUtils.showBlurredDialoge(
                                             context,
                                             dialoge: BlurredDialogBox(
-                                              title: "deleteBtnLbl"
-                                                  .translate(context),
+                                              title: "deleteBtnLbl".translate(context),
                                               content: CustomText(
-                                                "deleteitemwarning"
-                                                    .translate(context),
+                                                "deleteitemwarning".translate(context),
                                               ),
                                             ),
                                           );
@@ -495,9 +453,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                                             Future.delayed(
                                               Duration.zero,
                                               () {
-                                                context
-                                                    .read<DeleteItemCubit>()
-                                                    .deleteItem(model.id!);
+                                                context.read<DeleteItemCubit>().deleteItem(model.id!);
                                               },
                                             );
                                           }
@@ -514,10 +470,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                 ],
               ),
               backgroundColor: context.color.secondaryDetailsColor,
-              bottomNavigationBar: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  child: bottomButtonWidget()),
+              bottomNavigationBar: Padding(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), child: bottomButtonWidget()),
               body: RefreshIndicator(
                 onRefresh: () async {
                   // Create a completer to control when the refresh is considered done
@@ -531,8 +484,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
 
                       // Listen for state changes
                       var subscription = cubit.stream.listen((state) {
-                        if (state is FetchItemFromSlugSuccess ||
-                            state is FetchItemFromSlugFailure) {
+                        if (state is FetchItemFromSlugSuccess || state is FetchItemFromSlugFailure) {
                           if (!completer.isCompleted) {
                             completer.complete();
                           }
@@ -591,9 +543,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                               maxLines: 2,
                             )),
                         setPriceAndStatus(),
-                        if (model.specialTags != null ||
-                            model.priceType != null)
-                          setSpecialTagsAndPriceType(),
+                        if (model.specialTags != null || model.priceType != null) setSpecialTagsAndPriceType(),
                         if (isAddedByMe) setRejectedReason(),
                         if (model.address != null) setAddress(isDate: true),
                         const SizedBox(
@@ -602,49 +552,35 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                         if (Constant.isGoogleBannerAdsEnabled == "1") ...[
                           Container(
                             alignment: AlignmentDirectional.center,
-                            child:
-                                AdBannerWidget(), // Custom widget for banner ad
+                            child: AdBannerWidget(), // Custom widget for banner ad
                           ),
                         ],
                         const SizedBox(
                           height: 10,
                         ),
                         if (isAddedByMe)
-                          if (!(model.isFeature ?? false)) createFeaturesAds(),
-                        if (model.customFields?.isNotEmpty ?? false)
-                          customFields(),
+                          // if (!(model.isFeature ?? false)) createFeaturesAds(),
+                          if (model.customFields?.isNotEmpty ?? false) customFields(),
                         //detailsContainer Widget
                         //Dynamic Ads here
-                        Divider(
-                            thickness: 1,
-                            color: context.color.textDefaultColor
-                                .withOpacity(0.1)),
+                        Divider(thickness: 1, color: context.color.textDefaultColor.withOpacity(0.1)),
                         setDescription(),
-                        Divider(
-                            thickness: 1,
-                            color: context.color.textDefaultColor
-                                .withOpacity(0.1)),
-                        if (!isAddedByMe && model.user != null)
-                          setSellerDetails(),
+                        Divider(thickness: 1, color: context.color.textDefaultColor.withOpacity(0.1)),
+                        if (!isAddedByMe && model.user != null) setSellerDetails(),
 
                         // Show reviews for services and experiences
                         if ((model.category != null &&
-                            (model.category!.type ==
-                                    CategoryType.serviceExperience ||
+                            (model.category!.type == CategoryType.serviceExperience ||
                                 model.itemType == "service" ||
                                 model.itemType == "experience")))
                           buildServiceReviews(),
 
                         //Dynamic Ads here
                         if (Constant.isGoogleBannerAdsEnabled == "1") ...[
-                          Divider(
-                              thickness: 1,
-                              color: context.color.textDefaultColor
-                                  .withOpacity(0.1)),
+                          Divider(thickness: 1, color: context.color.textDefaultColor.withOpacity(0.1)),
                           Container(
                             alignment: AlignmentDirectional.center,
-                            child:
-                                AdBannerWidget(), // Custom widget for banner ad
+                            child: AdBannerWidget(), // Custom widget for banner ad
                           ),
                         ],
 
@@ -664,25 +600,16 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
   Widget reportedAdsWidget() {
     return BlocBuilder<UpdatedReportItemCubit, UpdatedReportItemState>(
       builder: (context, state) {
-        bool isItemInCubit =
-            context.read<UpdatedReportItemCubit>().containsItem(model.id!);
-
-        if (!isItemInCubit) {
-          if (model.isAlreadyReported != null && !model.isAlreadyReported!) {
-            return setReportAd();
-          } else {
-            return SizedBox(); // Return an empty widget if conditions are not met
-          }
-        } else {
-          return SizedBox(); // Return an empty widget if item is not in cubit
+        if (model.isAlreadyReported == null || !model.isAlreadyReported!) {
+          return setReportAd();
         }
+        return SizedBox();
       },
     );
   }
 
   Widget relatedAds() {
-    return BlocBuilder<FetchRelatedItemsCubit, FetchRelatedItemsState>(
-        builder: (context, state) {
+    return BlocBuilder<FetchRelatedItemsCubit, FetchRelatedItemsState>(builder: (context, state) {
       return RefreshIndicator(
         onRefresh: () async {
           context.read<FetchRelatedItemsCubit>().fetchRelatedItems(
@@ -816,19 +743,15 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
           return BlocListener<CreateFeaturedAdCubit, CreateFeaturedAdState>(
             listener: (context, state) {
               if (state is CreateFeaturedAdInSuccess) {
-                HelperUtils.showSnackBarMessage(
-                    context, state.responseMessage.toString(),
-                    messageDuration: 3);
+                HelperUtils.showSnackBarMessage(context, state.responseMessage.toString(), messageDuration: 3);
 
                 Navigator.pop(context, "refresh");
               }
               if (state is CreateFeaturedAdFailure) {
-                HelperUtils.showSnackBarMessage(context, state.error.toString(),
-                    messageDuration: 3);
+                HelperUtils.showSnackBarMessage(context, state.error.toString(), messageDuration: 3);
               }
             },
-            child: BlocListener<FetchUserPackageLimitCubit,
-                FetchUserPackageLimitState>(
+            child: BlocListener<FetchUserPackageLimitCubit, FetchUserPackageLimitState>(
               listener: (context, state) async {
                 if (state is FetchUserPackageLimitFailure) {
                   UiUtils.noPackageAvailableDialog(context);
@@ -839,17 +762,14 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                     dialoge: BlurredDialogBox(
                         title: "createFeaturedAd".translate(context),
                         content: CustomText(
-                          "areYouSureToCreateThisItemAsAFeaturedAd"
-                              .translate(context),
+                          "areYouSureToCreateThisItemAsAFeaturedAd".translate(context),
                         ),
                         isAcceptContainerPush: true,
                         onAccept: () => Future.value().then((_) {
                               Future.delayed(
                                 Duration.zero,
                                 () {
-                                  context
-                                      .read<CreateFeaturedAdCubit>()
-                                      .createFeaturedAds(
+                                  context.read<CreateFeaturedAdCubit>().createFeaturedAds(
                                         itemId: model.id!,
                                       );
                                   Navigator.pop(context);
@@ -862,9 +782,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               },
               child: AnimatedCrossFade(
                 duration: Duration(milliseconds: 500),
-                crossFadeState: isFeaturedWidget
-                    ? CrossFadeState.showFirst
-                    : CrossFadeState.showSecond,
+                crossFadeState: isFeaturedWidget ? CrossFadeState.showFirst : CrossFadeState.showSecond,
                 firstChild: Container(
                   margin: const EdgeInsets.symmetric(vertical: 12),
                   padding: const EdgeInsets.all(12),
@@ -872,8 +790,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
                     color: context.color.territoryColor.withOpacity(0.1),
-                    border:
-                        Border.all(color: context.color.borderColor.darken(30)),
+                    border: Border.all(color: context.color.borderColor.darken(30)),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -893,22 +810,17 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                           children: [
                             CustomText(
                               "${"featureYourAdsAttractMore".translate(context)}\n${"clientsAndSellFaster".translate(context)}",
-                              color: context.color.textDefaultColor
-                                  .withOpacity(0.7),
+                              color: context.color.textDefaultColor.withOpacity(0.7),
                               fontSize: context.font.large,
                             ),
                             const SizedBox(height: 12),
                             InkWell(
                               onTap: () {
-                                context
-                                    .read<FetchUserPackageLimitCubit>()
-                                    .fetchUserPackageLimit(
-                                        packageType: "advertisement");
+                                context.read<FetchUserPackageLimitCubit>().fetchUserPackageLimit(packageType: "advertisement");
                               },
                               child: Container(
                                 height: 33,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 18, vertical: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(8),
                                   color: context.color.territoryColor,
@@ -945,8 +857,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
           ...List.generate(model.customFields!.length, (index) {
             if (model.customFields![index].value!.isNotEmpty) {
               return DecoratedBox(
-                decoration: BoxDecoration(
-                    border: Border.all(color: Colors.red.withOpacity(0))),
+                decoration: BoxDecoration(border: Border.all(color: Colors.red.withOpacity(0))),
                 child: SizedBox(
                   width: MediaQuery.sizeOf(context).width * .45,
                   child: Row(
@@ -957,9 +868,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                         height: 33,
                         width: 33,
                         alignment: Alignment.center,
-                        child: UiUtils.imageType(
-                            model.customFields![index].image!,
-                            fit: BoxFit.contain),
+                        child: UiUtils.imageType(model.customFields![index].image!, fit: BoxFit.contain),
                       ),
                       SizedBox(width: 7),
                       Column(
@@ -968,11 +877,8 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                         children: [
                           Tooltip(
                             message: model.customFields![index].name,
-                            child: CustomText(
-                                (model.customFields?[index].name) ?? "",
-                                maxLines: 1,
-                                fontSize: context.font.small,
-                                color: context.color.textLightColor),
+                            child: CustomText((model.customFields?[index].name) ?? "",
+                                maxLines: 1, fontSize: context.font.small, color: context.color.textLightColor),
                           ),
                           valueContent(model.customFields![index].value),
                           const SizedBox(
@@ -994,19 +900,16 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
   }
 
   Widget valueContent(List<dynamic>? value) {
-    if (((value![0].toString()).startsWith("http") ||
-        (value[0].toString()).startsWith("https"))) {
+    if (((value![0].toString()).startsWith("http") || (value[0].toString()).startsWith("https"))) {
       if ((value[0].toString()).toLowerCase().endsWith(".pdf")) {
         // Render PDF link as clickable text
         return GestureDetector(
             onTap: () {
-              Navigator.pushNamed(context, Routes.pdfViewerScreen,
-                  arguments: {"url": value[0]});
+              Navigator.pushNamed(context, Routes.pdfViewerScreen, arguments: {"url": value[0]});
             },
             child: Padding(
               padding: const EdgeInsets.only(top: 5.0),
-              child: UiUtils.getSvg(AppIcons.pdfIcon,
-                  color: context.color.textColorDark),
+              child: UiUtils.getSvg(AppIcons.pdfIcon, color: context.color.textColorDark),
             ));
       } else if ((value[0]).toLowerCase().endsWith(".png") ||
           (value[0]).toLowerCase().endsWith(".jpg") ||
@@ -1026,9 +929,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               width: 50,
               height: 50,
               margin: EdgeInsets.only(top: 2),
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: context.color.territoryColor.withOpacity(0.1)),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: context.color.territoryColor.withOpacity(0.1)),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: UiUtils.imageType(
@@ -1052,8 +953,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
     );
   }
 
-  Widget itemData(
-      int index, SubscriptionPackageModel model, StateSetter stateSetter) {
+  Widget itemData(int index, SubscriptionPackageModel model, StateSetter stateSetter) {
     return Padding(
       padding: const EdgeInsets.only(top: 7.0),
       child: Stack(
@@ -1090,12 +990,10 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16.0),
                   border: Border.all(
-                      color: index == _selectedPackageIndex
-                          ? context.color.territoryColor
-                          : context.color.textDefaultColor.withOpacity(0.1),
+                      color:
+                          index == _selectedPackageIndex ? context.color.territoryColor : context.color.textDefaultColor.withOpacity(0.1),
                       width: 1.5)),
-              child:
-                  !model.isActive! ? adsWidget(model) : activeAdsWidget(model),
+              child: !model.isActive! ? adsWidget(model) : activeAdsWidget(model),
             ),
           ),
         ],
@@ -1146,9 +1044,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
         Padding(
           padding: EdgeInsetsDirectional.only(start: 10.0),
           child: CustomText(
-            model.finalPrice! > 0
-                ? "${model.finalPrice!.currencyFormat}"
-                : "free".translate(context),
+            model.finalPrice! > 0 ? "${model.finalPrice!.currencyFormat}" : "free".translate(context),
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -1179,24 +1075,20 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                 children: [
                   Text.rich(
                     TextSpan(
-                      text: model.limit == "unlimited"
-                          ? "${"unlimitedLbl".translate(context)}\t${"adsLbl".translate(context)}\t\t·\t\t"
-                          : '',
+                      text:
+                          model.limit == "unlimited" ? "${"unlimitedLbl".translate(context)}\t${"adsLbl".translate(context)}\t\t·\t\t" : '',
                       style: TextStyle(
                         color: context.color.textDefaultColor.withOpacity(0.3),
                       ),
                       children: [
                         if (model.limit != "unlimited")
                           TextSpan(
-                            text:
-                                '${model.userPurchasedPackages![0].remainingItemLimit}',
-                            style: TextStyle(
-                                color: context.color.textDefaultColor),
+                            text: '${model.userPurchasedPackages![0].remainingItemLimit}',
+                            style: TextStyle(color: context.color.textDefaultColor),
                           ),
                         if (model.limit != "unlimited")
                           TextSpan(
-                            text:
-                                '/${model.limit.toString()}\t${"adsLbl".translate(context)}\t\t·\t\t',
+                            text: '/${model.limit.toString()}\t${"adsLbl".translate(context)}\t\t·\t\t',
                           ),
                       ],
                     ),
@@ -1206,25 +1098,19 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                   Flexible(
                     child: Text.rich(
                       TextSpan(
-                        text: model.duration == "unlimited"
-                            ? "${"unlimitedLbl".translate(context)}\t${"days".translate(context)}"
-                            : '',
+                        text: model.duration == "unlimited" ? "${"unlimitedLbl".translate(context)}\t${"days".translate(context)}" : '',
                         style: TextStyle(
-                          color:
-                              context.color.textDefaultColor.withOpacity(0.3),
+                          color: context.color.textDefaultColor.withOpacity(0.3),
                         ),
                         children: [
                           if (model.duration != "unlimited")
                             TextSpan(
-                              text:
-                                  '${model.userPurchasedPackages![0].remainingDays}',
-                              style: TextStyle(
-                                  color: context.color.textDefaultColor),
+                              text: '${model.userPurchasedPackages![0].remainingDays}',
+                              style: TextStyle(color: context.color.textDefaultColor),
                             ),
                           if (model.duration != "unlimited")
                             TextSpan(
-                              text:
-                                  '/${model.duration.toString()}\t${"days".translate(context)}',
+                              text: '/${model.duration.toString()}\t${"days".translate(context)}',
                             ),
                         ],
                       ),
@@ -1241,9 +1127,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
         Padding(
           padding: EdgeInsetsDirectional.only(start: 10.0),
           child: CustomText(
-            model.finalPrice! > 0
-                ? "${model.finalPrice!.currencyFormat}"
-                : "free".translate(context),
+            model.finalPrice! > 0 ? "${model.finalPrice!.currencyFormat}" : "free".translate(context),
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -1311,8 +1195,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
   }
 
   Widget packageList() {
-    return BlocBuilder<FetchAdsListingSubscriptionPackagesCubit,
-        FetchAdsListingSubscriptionPackagesState>(
+    return BlocBuilder<FetchAdsListingSubscriptionPackagesCubit, FetchAdsListingSubscriptionPackagesState>(
       builder: (context, state) {
         print("state package***$state");
         if (state is FetchAdsListingSubscriptionPackagesInProgress) {
@@ -1325,9 +1208,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
             if (state.errorMessage == "no-internet") {
               return NoInternet(
                 onRetry: () {
-                  context
-                      .read<FetchAdsListingSubscriptionPackagesCubit>()
-                      .fetchPackages();
+                  context.read<FetchAdsListingSubscriptionPackagesCubit>().fetchPackages();
                 },
               );
             }
@@ -1336,20 +1217,16 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
           return const SomethingWentWrong();
         }
         if (state is FetchAdsListingSubscriptionPackagesSuccess) {
-          print(
-              "subscription plan list***${state.subscriptionPackages.length}");
+          print("subscription plan list***${state.subscriptionPackages.length}");
           if (state.subscriptionPackages.isEmpty) {
             return NoDataFound(
               onTap: () {
-                context
-                    .read<FetchAdsListingSubscriptionPackagesCubit>()
-                    .fetchPackages();
+                context.read<FetchAdsListingSubscriptionPackagesCubit>().fetchPackages();
               },
             );
           }
 
-          return StatefulBuilder(
-              builder: (BuildContext context, StateSetter setStater) {
+          return StatefulBuilder(builder: (BuildContext context, StateSetter setStater) {
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1358,8 +1235,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                       shrinkWrap: true,
                       padding: EdgeInsets.symmetric(horizontal: 18),
                       itemBuilder: (context, index) {
-                        return itemData(index,
-                            state.subscriptionPackages[index], setStater);
+                        return itemData(index, state.subscriptionPackages[index], setStater);
                       },
                       itemCount: state.subscriptionPackages.length),
                 ),
@@ -1367,41 +1243,33 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                   return BlocListener<RenewItemCubit, RenewItemState>(
                     listener: (context, changeState) {
                       if (changeState is RenewItemInSuccess) {
-                        HelperUtils.showSnackBarMessage(
-                            context, changeState.responseMessage);
+                        HelperUtils.showSnackBarMessage(context, changeState.responseMessage);
                         Future.delayed(Duration.zero, () {
                           Navigator.pop(context);
                           Navigator.pop(context, "refresh");
                         });
                       } else if (changeState is RenewItemFailure) {
                         Navigator.pop(context);
-                        HelperUtils.showSnackBarMessage(
-                            context, changeState.error);
+                        HelperUtils.showSnackBarMessage(context, changeState.error);
                       }
                     },
                     child: UiUtils.buildButton(context, onPressed: () {
-                      if (state.subscriptionPackages[_selectedPackageIndex!]
-                          .isActive!) {
+                      if (state.subscriptionPackages[_selectedPackageIndex!].isActive!) {
                         Future.delayed(Duration.zero, () {
-                          context.read<RenewItemCubit>().renewItem(
-                              packageId: state
-                                  .subscriptionPackages[_selectedPackageIndex!]
-                                  .id!,
-                              itemId: model.id!);
+                          context
+                              .read<RenewItemCubit>()
+                              .renewItem(packageId: state.subscriptionPackages[_selectedPackageIndex!].id!, itemId: model.id!);
                         });
                       } else {
                         Navigator.pop(context);
-                        HelperUtils.showSnackBarMessage(context,
-                            "pleasePurchasePackage".translate(context));
-                        Navigator.pushNamed(
-                            context, Routes.subscriptionPackageListRoute);
+                        HelperUtils.showSnackBarMessage(context, "pleasePurchasePackage".translate(context));
+                        Navigator.pushNamed(context, Routes.subscriptionPackageListRoute);
                       }
                     },
                         radius: 10,
                         height: 46,
                         disabled: _selectedPackageIndex == null,
-                        disabledColor:
-                            context.color.textLightColor.withOpacity(0.3),
+                        disabledColor: context.color.textLightColor.withOpacity(0.3),
                         fontSize: context.font.large,
                         buttonColor: context.color.territoryColor,
                         textColor: context.color.secondaryColor,
@@ -1430,92 +1298,11 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: _buildButton("editBtnLbl".translate(context), () {
-                addCloudData("edit_request", model);
-                addCloudData("edit_from", model.status);
-                Navigator.pushNamed(context, Routes.addItemDetails,
-                    arguments: {"isEdit": true}).then((value) {
-                  // When we return from edit screen, refresh the detail view with the latest data
-                  if (value == "refresh" || value == true) {
-                    // Force cache reset and refresh the current screen with updated data
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      print(
-                          "Refreshing item details after edit with slug: ${model.slug}");
-
-                      // Show loading indicator
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Refreshing..."),
-                          duration: Duration(seconds: 1),
-                        ),
-                      );
-
-                      // Get a reference to the current cubit
-                      final cubit = BlocProvider.of<FetchItemFromSlugCubit>(
-                          context,
-                          listen: false);
-
-                      // First set it to initial state to force a full refresh
-                      cubit.emit(FetchItemFromSlugInitial());
-
-                      // Then trigger a new fetch with a slight delay
-                      Future.delayed(Duration(milliseconds: 300), () {
-                        if (mounted) {
-                          cubit.fetchItemFromSlug(slug: model.slug ?? "");
-                        }
-                      });
-                    });
-
-                    // Update related items cubit if needed
-                    if (model.categoryId != null) {
-                      context.read<FetchRelatedItemsCubit>().fetchRelatedItems(
-                            categoryId: model.categoryId!,
-                            country: model.country,
-                            state: model.state,
-                            city: model.city,
-                            areaId: model.areaId,
-                          );
-                    }
-                  }
-                });
-              }, contextColor.secondaryColor, contextColor.territoryColor),
+              child: _editButton(contextColor),
             ),
             SizedBox(width: 10),
-            BlocProvider(
-              create: (context) => DeleteItemCubit(),
-              child: Builder(builder: (context) {
-                return BlocListener<DeleteItemCubit, DeleteItemState>(
-                  listener: (context, deleteState) {
-                    if (deleteState is DeleteItemSuccess) {
-                      HelperUtils.showSnackBarMessage(
-                          context, "deleteItemSuccessMsg".translate(context));
-                      context.read<FetchMyItemsCubit>().deleteItem(model);
-                      Navigator.pop(context, "refresh");
-                    } else if (deleteState is DeleteItemFailure) {
-                      HelperUtils.showSnackBarMessage(
-                          context, deleteState.errorMessage);
-                    }
-                  },
-                  child: Expanded(
-                    child:
-                        _buildButton("lblremove".translate(context), () async {
-                      final delete = await UiUtils.showBlurredDialoge(
-                            context,
-                            dialoge: BlurredDialogBox(
-                              title: "deleteBtnLbl".translate(context),
-                              content: CustomText(
-                                "deleteitemwarning".translate(context),
-                              ),
-                            ),
-                          ) as bool? ??
-                          false;
-                      if (delete) {
-                        context.read<DeleteItemCubit>().deleteItem(model.id!);
-                      }
-                    }, null, null),
-                  ),
-                );
-              }),
+            Expanded(
+              child: _deleteButton(),
             ),
           ],
         );
@@ -1524,88 +1311,16 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: _buildButton("editBtnLbl".translate(context), () {
-                addCloudData("edit_request", model);
-                addCloudData("edit_from", model.status);
-                Navigator.pushNamed(context, Routes.addItemDetails,
-                    arguments: {"isEdit": true}).then((value) {
-                  // When we return from edit screen, refresh the detail view with the latest data
-                  if (value == "refresh" || value == true) {
-                    // Force cache reset and refresh the current screen with updated data
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      print(
-                          "Refreshing item details after edit with slug: ${model.slug}");
-
-                      // Show loading indicator
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Refreshing..."),
-                          duration: Duration(seconds: 1),
-                        ),
-                      );
-
-                      // Get a reference to the current cubit
-                      final cubit = BlocProvider.of<FetchItemFromSlugCubit>(
-                          context,
-                          listen: false);
-
-                      // First set it to initial state to force a full refresh
-                      cubit.emit(FetchItemFromSlugInitial());
-
-                      // Then trigger a new fetch with a slight delay
-                      Future.delayed(Duration(milliseconds: 300), () {
-                        if (mounted) {
-                          cubit.fetchItemFromSlug(slug: model.slug ?? "");
-                        }
-                      });
-                    });
-
-                    // Update related items cubit if needed
-                    if (model.categoryId != null) {
-                      context.read<FetchRelatedItemsCubit>().fetchRelatedItems(
-                            categoryId: model.categoryId!,
-                            country: model.country,
-                            state: model.state,
-                            city: model.city,
-                            areaId: model.areaId,
-                          );
-                    }
-                  }
-                });
-              }, contextColor.secondaryColor, contextColor.territoryColor),
+              child: _editButton(contextColor),
+            ),
+            SizedBox(width: 10),
+            Expanded(
+              child: _deleteButton(),
             ),
           ],
         );
-      } else if (model.status == "sold out" ||
-          model.status == "inactive" ||
-          model.status == "rejected") {
-        return BlocProvider(
-          create: (context) => DeleteItemCubit(),
-          child: Builder(builder: (context) {
-            return BlocListener<DeleteItemCubit, DeleteItemState>(
-              listener: (context, deleteState) {
-                if (deleteState is DeleteItemSuccess) {
-                  HelperUtils.showSnackBarMessage(
-                      context, "deleteItemSuccessMsg".translate(context));
-
-                  context.read<FetchMyItemsCubit>().deleteItem(model);
-                  Navigator.pop(context, "refresh");
-                } else if (deleteState is DeleteItemFailure) {
-                  HelperUtils.showSnackBarMessage(
-                      context, deleteState.errorMessage);
-                }
-              },
-              child: _buildButton("lblremove".translate(context), () {
-                Future.delayed(
-                  Duration.zero,
-                  () {
-                    context.read<DeleteItemCubit>().deleteItem(model.id!);
-                  },
-                );
-              }, null, null),
-            );
-          }),
-        );
+      } else if (model.status == "sold out" || model.status == "inactive" || model.status == "rejected") {
+        return _deleteButton();
       } else if (model.status == "expired") {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1617,34 +1332,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               }, contextColor.secondaryColor, contextColor.territoryColor),
             ),
             SizedBox(width: 10),
-            BlocProvider(
-              create: (context) => DeleteItemCubit(),
-              child: Builder(builder: (context) {
-                return BlocListener<DeleteItemCubit, DeleteItemState>(
-                  listener: (context, deleteState) {
-                    if (deleteState is DeleteItemSuccess) {
-                      HelperUtils.showSnackBarMessage(
-                          context, "deleteItemSuccessMsg".translate(context));
-                      context.read<FetchMyItemsCubit>().deleteItem(model);
-                      Navigator.pop(context, "refresh");
-                    } else if (deleteState is DeleteItemFailure) {
-                      HelperUtils.showSnackBarMessage(
-                          context, deleteState.errorMessage);
-                    }
-                  },
-                  child: Expanded(
-                    child: _buildButton("lblremove".translate(context), () {
-                      Future.delayed(
-                        Duration.zero,
-                        () {
-                          context.read<DeleteItemCubit>().deleteItem(model.id!);
-                        },
-                      );
-                    }, null, null),
-                  ),
-                );
-              }),
-            ),
+            Expanded(child: _deleteButton()),
           ],
         );
       } else {
@@ -1654,37 +1342,24 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
       return BlocBuilder<GetBuyerChatListCubit, GetBuyerChatListState>(
         bloc: context.read<GetBuyerChatListCubit>(),
         builder: (context, State) {
-          chat_models.ChatUser? chatedUser = context.select(
-              (GetBuyerChatListCubit cubit) =>
-                  cubit.getOfferForItem(model.id!));
+          chat_models.ChatUser? chatedUser = context.select((GetBuyerChatListCubit cubit) => cubit.getOfferForItem(model.id!));
 
           return BlocListener<MakeAnOfferItemCubit, MakeAnOfferItemState>(
             listener: (context, state) {
               if (state is MakeAnOfferItemSuccess) {
                 dynamic data = state.data;
 
-                context.read<GetBuyerChatListCubit>().addOrUpdateChat(
-                    chat_models.ChatUser(
-                        itemId: data['item_id'] is String
-                            ? int.parse(data['item_id'])
-                            : data['item_id'],
-                        amount: data['amount'] != null
-                            ? double.parse(data['amount'].toString())
-                            : null,
-                        buyerId: data['buyer_id'] is String
-                            ? int.parse(data['buyer_id'])
-                            : data['buyer_id'],
-                        createdAt: data['created_at'],
-                        id: data['id'] is String
-                            ? int.parse(data['id'])
-                            : data['id'],
-                        sellerId: data['seller_id'] is String
-                            ? int.parse(data['seller_id'])
-                            : data['seller_id'],
-                        updatedAt: data['updated_at'],
-                        buyer: chat_models.Buyer.fromJson(data['buyer']),
-                        item: chat_models.Item.fromJson(data['item']),
-                        seller: chat_models.Seller.fromJson(data['seller'])));
+                context.read<GetBuyerChatListCubit>().addOrUpdateChat(chat_models.ChatUser(
+                    itemId: data['item_id'] is String ? int.parse(data['item_id']) : data['item_id'],
+                    amount: data['amount'] != null ? double.parse(data['amount'].toString()) : null,
+                    buyerId: data['buyer_id'] is String ? int.parse(data['buyer_id']) : data['buyer_id'],
+                    createdAt: data['created_at'],
+                    id: data['id'] is String ? int.parse(data['id']) : data['id'],
+                    sellerId: data['seller_id'] is String ? int.parse(data['seller_id']) : data['seller_id'],
+                    updatedAt: data['updated_at'],
+                    buyer: chat_models.Buyer.fromJson(data['buyer']),
+                    item: chat_models.Item.fromJson(data['item']),
+                    seller: chat_models.Seller.fromJson(data['seller'])));
 
                 if (state.from == 'offer') {
                   HelperUtils.showSnackBarMessage(
@@ -1716,15 +1391,11 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                         itemId: model.id.toString(),
                         date: model.created!,
                         itemTitle: model.name!,
-                        itemOfferId: state.data['id'] is String
-                            ? int.parse(state.data['id'])
-                            : state.data['id'],
+                        itemOfferId: state.data['id'] is String ? int.parse(state.data['id']) : state.data['id'],
                         itemPrice: model.price!,
                         status: model.status!,
                         buyerId: HiveUtils.getUserId(),
-                        itemOfferPrice: state.data['amount'] != null
-                            ? double.parse(state.data['amount'].toString())
-                            : null,
+                        itemOfferPrice: state.data['amount'] != null ? double.parse(state.data['amount'].toString()) : null,
                         isPurchased: model.isPurchased ?? 0,
                         alreadyReview: model.review == null
                             ? false
@@ -1745,16 +1416,29 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               }
             },
             child: Row(
+              spacing: 10,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (model.user?.showPersonalDetails == 1 && model.user?.mobile != null)
+                  Expanded(
+                    child: _buildButton(
+                      'Whatsapp'.translate(context),
+                      () {
+                        String phone = model.user!.mobile!;
+                        String url = Platform.isAndroid ? "https://wa.me/$phone" : "https://api.whatsapp.com/send?phone=$phone"; // new line
+
+                        launchUrl(Uri.parse(url));
+                      },
+                      null,
+                      null,
+                    ),
+                  ),
                 if (chatedUser == null)
                   Expanded(
-                    child: _buildButton("Book To Open Chat", () {
+                    child: _buildButton('chat'.translate(context), () {
                       UiUtils.checkUser(
                           onNotGuest: () {
-                            context
-                                .read<MakeAnOfferItemCubit>()
-                                .makeAnOfferItem(id: model.id!, from: "chat");
+                            context.read<MakeAnOfferItemCubit>().makeAnOfferItem(id: model.id!, from: "chat");
                           },
                           context: context);
                     }, null, null),
@@ -1772,8 +1456,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                                       create: (context) => SendMessageCubit(),
                                     ),
                                     BlocProvider(
-                                      create: (context) =>
-                                          LoadChatMessagesCubit(),
+                                      create: (context) => LoadChatMessagesCubit(),
                                     ),
                                     BlocProvider(
                                       create: (context) => DeleteMessageCubit(),
@@ -1781,31 +1464,15 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                                   ],
                                   child: ChatScreen(
                                     itemId: chatedUser.itemId.toString(),
-                                    profilePicture: chatedUser.seller != null &&
-                                            chatedUser.seller!.profile != null
-                                        ? chatedUser.seller!.profile!
-                                        : "",
-                                    userName: chatedUser.seller != null &&
-                                            chatedUser.seller!.name != null
-                                        ? chatedUser.seller!.name!
-                                        : "",
+                                    profilePicture:
+                                        chatedUser.seller != null && chatedUser.seller!.profile != null ? chatedUser.seller!.profile! : "",
+                                    userName: chatedUser.seller != null && chatedUser.seller!.name != null ? chatedUser.seller!.name! : "",
                                     date: chatedUser.createdAt!,
                                     itemOfferId: chatedUser.id!,
-                                    itemPrice: chatedUser.item != null &&
-                                            chatedUser.item!.price != null
-                                        ? chatedUser.item!.price!
-                                        : 0.0,
-                                    itemOfferPrice: chatedUser.amount != null
-                                        ? chatedUser.amount!
-                                        : null,
-                                    itemImage: chatedUser.item != null &&
-                                            chatedUser.item!.image != null
-                                        ? chatedUser.item!.image!
-                                        : "",
-                                    itemTitle: chatedUser.item != null &&
-                                            chatedUser.item!.name != null
-                                        ? chatedUser.item!.name!
-                                        : "",
+                                    itemPrice: chatedUser.item != null && chatedUser.item!.price != null ? chatedUser.item!.price! : 0.0,
+                                    itemOfferPrice: chatedUser.amount != null ? chatedUser.amount! : null,
+                                    itemImage: chatedUser.item != null && chatedUser.item!.image != null ? chatedUser.item!.image! : "",
+                                    itemTitle: chatedUser.item != null && chatedUser.item!.name != null ? chatedUser.item!.name! : "",
                                     userId: chatedUser.sellerId.toString(),
                                     buyerId: chatedUser.buyerId.toString(),
                                     status: chatedUser.item!.status,
@@ -1834,8 +1501,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
   }
 
   void safetyTipsBottomSheet() {
-    List<SafetyTipsModel>? tipsList =
-        context.read<FetchSafetyTipsListCubit>().getList();
+    List<SafetyTipsModel>? tipsList = context.read<FetchSafetyTipsListCubit>().getList();
     if (tipsList == null || tipsList.isEmpty) {
       makeOfferBottomSheet(model);
       return;
@@ -1944,16 +1610,13 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
     );
   }
 
-  Widget _buildButton(String title, VoidCallback onPressed, Color? buttonColor,
-      Color? textColor) {
+  Widget _buildButton(String title, VoidCallback onPressed, Color? buttonColor, Color? textColor) {
     return UiUtils.buildButton(
       context,
       onPressed: onPressed,
       radius: 10,
       height: 46,
-      border: buttonColor != null
-          ? BorderSide(color: context.color.territoryColor)
-          : null,
+      border: buttonColor != null ? BorderSide(color: context.color.territoryColor) : null,
       buttonColor: buttonColor,
       textColor: textColor,
       buttonTitle: title,
@@ -1976,9 +1639,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
             // Increase itemCount if videoLink is present
             controller: pageController,
             itemBuilder: (context, index) {
-              if (index == images.length - 1 &&
-                  model.videoLink != "" &&
-                  model.videoLink != null) {
+              if (index == images.length - 1 && model.videoLink != "" && model.videoLink != null) {
                 return Stack(
                   children: [
                     // Thumbnail Image
@@ -2050,12 +1711,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                     return LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0x00FFFFFF),
-                        Color(0x00FFFFFF),
-                        Color(0x00FFFFFF),
-                        Color(0x7F060606)
-                      ],
+                      colors: [Color(0x00FFFFFF), Color(0x00FFFFFF), Color(0x00FFFFFF), Color(0x7F060606)],
                     ).createShader(bounds);
                     //TODO: change black color to some other app color if required
                   },
@@ -2067,8 +1723,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                       height: 250,
                     ),
                     onTap: () {
-                      UiUtils.imageGallaryView(context,
-                          images: images, initalIndex: index);
+                      UiUtils.imageGallaryView(context, images: images, initalIndex: index);
                     },
                   ),
                 );
@@ -2113,8 +1768,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
       return BlocBuilder<FavoriteCubit, FavoriteState>(
         bloc: context.read<FavoriteCubit>(),
         builder: (context, favState) {
-          bool isLike = context
-              .select((FavoriteCubit cubit) => cubit.isItemFavorite(model.id!));
+          bool isLike = context.select((FavoriteCubit cubit) => cubit.isItemFavorite(model.id!));
 
           return BlocConsumer<UpdateFavoriteCubit, UpdateFavoriteState>(
             bloc: context.read<UpdateFavoriteCubit>(),
@@ -2149,11 +1803,8 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                             height: 22,
                             width: 22,
                           )
-                        : UiUtils.getSvg(
-                            isLike ? AppIcons.like_fill : AppIcons.like,
-                            color: context.color.territoryColor,
-                            width: 22,
-                            height: 22),
+                        : UiUtils.getSvg(isLike ? AppIcons.like_fill : AppIcons.like,
+                            color: context.color.territoryColor, width: 22, height: 22),
                   ));
             },
           );
@@ -2175,9 +1826,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
         child: Container(
             margin: EdgeInsets.all(marginVal),
             padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(cornerRadius),
-                color: backgroundColor),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(cornerRadius), color: backgroundColor),
             child: childWidget)
         //TODO: swap icons according to liked and non-liked -- favorite_border_rounded and favorite_rounded
         );
@@ -2188,9 +1837,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 3.0),
       width: currentPage == index ? 12.0 : 8.0,
       height: 8.0,
-      decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: currentPage == index ? Colors.white : Colors.grey),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: currentPage == index ? Colors.white : Colors.grey),
     );
   }
 
@@ -2206,17 +1853,13 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               child: Container(
                   decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                          width: 1,
-                          color:
-                              context.color.textDefaultColor.withOpacity(0.1))),
+                      border: Border.all(width: 1, color: context.color.textDefaultColor.withOpacity(0.1))),
                   padding: const EdgeInsets.symmetric(horizontal: 5),
                   height: 46,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      UiUtils.getSvg(AppIcons.eye,
-                          color: context.color.textDefaultColor),
+                      UiUtils.getSvg(AppIcons.eye, color: context.color.textDefaultColor),
                       const SizedBox(
                         width: 8,
                       ),
@@ -2232,28 +1875,19 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               child: Container(
                   decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                          width: 1,
-                          color:
-                              context.color.textDefaultColor.withOpacity(0.1))),
+                      border: Border.all(width: 1, color: context.color.textDefaultColor.withOpacity(0.1))),
                   padding: const EdgeInsets.symmetric(horizontal: 5),
                   height: 46,
                   //alignment: AlignmentDirectional.center,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      UiUtils.getSvg(AppIcons.like,
-                          color: context.color.textDefaultColor),
+                      UiUtils.getSvg(AppIcons.like, color: context.color.textDefaultColor),
                       const SizedBox(
                         width: 8,
                       ),
-                      CustomText(
-                          model.totalLikes == null
-                              ? "0"
-                              : model.totalLikes.toString(),
-                          color:
-                              context.color.textDefaultColor.withOpacity(0.8),
-                          fontSize: context.font.large)
+                      CustomText(model.totalLikes == null ? "0" : model.totalLikes.toString(),
+                          color: context.color.textDefaultColor.withOpacity(0.8), fontSize: context.font.large)
                     ],
                   ))),
         ],
@@ -2262,13 +1896,11 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
   }
 
   Widget setRejectedReason() {
-    if (model.status == "rejected" &&
-        (model.rejectedReason != null || model.rejectedReason != "")) {
+    if (model.status == "rejected" && (model.rejectedReason != null || model.rejectedReason != "")) {
       return Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-              color: context.color.textDefaultColor.withOpacity(0.1)),
+          border: Border.all(color: context.color.textDefaultColor.withOpacity(0.1)),
 
           // Background color
         ),
@@ -2395,14 +2027,12 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5.0),
       child: Row(
-        mainAxisAlignment:
-            (isDate) ? MainAxisAlignment.spaceBetween : MainAxisAlignment.start,
+        mainAxisAlignment: (isDate) ? MainAxisAlignment.spaceBetween : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SvgPicture.asset(
             AppIcons.location,
-            colorFilter:
-                ColorFilter.mode(context.color.territoryColor, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.color.territoryColor, BlendMode.srcIn),
           ),
           Expanded(
             flex: 3,
@@ -2416,11 +2046,13 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
           ),
           (isDate)
               ? Expanded(
+                  flex: 2,
                   child: CustomText(
-                  model.created!.formatDate(format: "d MMM yyyy"),
-                  maxLines: 1,
-                  color: context.color.textDefaultColor.withOpacity(0.3),
-                ))
+                    model.created!.formatDate(format: "d MMM yyyy", withJM: false),
+                    maxLines: 1,
+                    textAlign: TextAlign.end,
+                    color: context.color.textDefaultColor.withOpacity(0.3),
+                  ))
               : const SizedBox.shrink()
           //TODO: add DATE from model
         ],
@@ -2489,8 +2121,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               onTap: (latLng) {
                 _navigateToGoogleMapScreen(context);
               },
-              initialCameraPosition:
-                  CameraPosition(target: currentPosition, zoom: 13),
+              initialCameraPosition: CameraPosition(target: currentPosition, zoom: 13),
               mapType: MapType.normal,
               markers: {
                 Marker(
@@ -2510,88 +2141,72 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
   }
 
   Widget setReportAd() {
-    return AnimatedCrossFade(
-      duration: Duration(milliseconds: 500),
-      crossFadeState: isShowReportAds
-          ? CrossFadeState.showFirst
-          : CrossFadeState.showSecond,
-      firstChild: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-              color: context.color.textDefaultColor.withOpacity(0.1)),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: context.color.textDefaultColor.withOpacity(0.1)),
 
-          // Background color
-        ),
-        margin: const EdgeInsets.symmetric(vertical: 10),
-        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-                //crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.report,
-                    size: 20,
-                    color: Colors.red, // Icon color can be adjusted
-                  ),
-                  SizedBox(
-                    width: 5,
-                  ),
-                  Expanded(
-                    child: CustomText(
-                      "didYouFindAnyProblemWithThisItem".translate(context),
-                      maxLines: 2,
-                      fontSize: context.font.large,
-                    ),
-                  ),
-                ]),
-            SizedBox(height: 15),
-            BlocListener<ItemReportCubit, ItemReportState>(
-              listener: (context, state) {
-                if (state is ItemReportFailure) {
-                  HelperUtils.showSnackBarMessage(
-                      context, state.error.toString());
-                }
-                if (state is ItemReportInSuccess) {
-                  HelperUtils.showSnackBarMessage(
-                      context, state.responseMessage.toString());
-                  context.read<UpdatedReportItemCubit>().addItem(model);
-                }
-
-                if (!Constant.isDemoModeOn)
-                  setState(() {
-                    isShowReportAds = false;
-                  });
-              },
-              child: GestureDetector(
-                onTap: () {
-                  UiUtils.checkUser(
-                      onNotGuest: () {
-                        _bottomSheet(model.id!);
-                      },
-                      context: context);
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: context.color.territoryColor
-                        .withOpacity(0.1), // Button color can be adjusted
-                  ),
+        // Background color
+      ),
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+              //crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.report,
+                  size: 20,
+                  color: Colors.red, // Icon color can be adjusted
+                ),
+                SizedBox(
+                  width: 5,
+                ),
+                Expanded(
                   child: CustomText(
-                    "reportThisAd".translate(context),
-                    color: context.color.territoryColor,
+                    "didYouFindAnyProblemWithThisItem".translate(context),
+                    maxLines: 2,
+                    fontSize: context.font.large,
                   ),
                 ),
+              ]),
+          SizedBox(height: 15),
+          BlocListener<ItemReportCubit, ItemReportState>(
+            listener: (context, state) {
+              if (state is ItemReportFailure) {
+                HelperUtils.showSnackBarMessage(context, state.error.toString());
+              }
+              if (state is ItemReportInSuccess) {
+                HelperUtils.showSnackBarMessage(context, state.responseMessage.toString());
+                context.read<UpdatedReportItemCubit>().addItem(model);
+              }
+            },
+            child: GestureDetector(
+              onTap: () {
+                UiUtils.checkUser(
+                    onNotGuest: () {
+                      _bottomSheet(model.id!);
+                    },
+                    context: context);
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: context.color.territoryColor.withOpacity(0.1), // Button color can be adjusted
+                ),
+                child: CustomText(
+                  "reportThisAd".translate(context),
+                  color: context.color.territoryColor,
+                ),
               ),
-            )
-          ],
-        ),
+            ),
+          )
+        ],
       ),
-      secondChild: SizedBox.shrink(),
     );
   }
 
@@ -2607,11 +2222,9 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
         isAcceptContainerPush: true,
         onAccept: () => Future.value().then((_) {
           if (_offerFormKey.currentState!.validate()) {
-            context.read<MakeAnOfferItemCubit>().makeAnOfferItem(
-                id: model.id!,
-                from: "offer",
-                amount:
-                    double.parse(_makeAnOffermessageController.text.trim()));
+            context
+                .read<MakeAnOfferItemCubit>()
+                .makeAnOfferItem(id: model.id!, from: "offer", amount: double.parse(_makeAnOffermessageController.text.trim()));
             Navigator.pop(context);
             return;
           }
@@ -2647,46 +2260,32 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               RichText(
                 text: TextSpan(
                   text: '${"sellerPrice".translate(context)} ',
-                  style: TextStyle(
-                      color: context.color.textDefaultColor.withOpacity(0.3),
-                      fontSize: 16),
+                  style: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: 16),
                   children: <TextSpan>[
                     TextSpan(
                       text: model.price!.currencyFormat,
-                      style: TextStyle(
-                          color: context.color.textDefaultColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold),
+                      style: TextStyle(color: context.color.textDefaultColor, fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
               ),
               Padding(
-                padding: EdgeInsetsDirectional.only(
-                    bottom: isBottomPaddingNegative ? 0 : bottomPadding,
-                    start: 20,
-                    end: 20,
-                    top: 18),
+                padding: EdgeInsetsDirectional.only(bottom: isBottomPaddingNegative ? 0 : bottomPadding, start: 20, end: 20, top: 18),
                 child: TextFormField(
                   maxLines: null,
                   textAlign: TextAlign.center,
                   keyboardType: TextInputType.number,
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 22,
-                      color: context.color.textDefaultColor),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: context.color.textDefaultColor),
                   controller: _makeAnOffermessageController,
                   cursorColor: context.color.territoryColor,
                   //autovalidateMode: AutovalidateMode.always,
                   validator: (val) {
                     if (val == null || val.isEmpty) {
-                      return Validator.nullCheckValidator(val,
-                          context: context);
+                      return Validator.nullCheckValidator(val, context: context);
                     } else {
                       double parsedVal = double.parse(val);
                       if (parsedVal <= 0.0) {
-                        return "valueMustBeGreaterThanZeroLbl"
-                            .translate(context);
+                        return "valueMustBeGreaterThanZeroLbl".translate(context);
                       } else if (parsedVal > model.price!) {
                         return "offerPriceWarning".translate(context);
                       }
@@ -2696,26 +2295,16 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                   decoration: InputDecoration(
                       fillColor: context.color.borderColor.darken(20),
                       filled: true,
-                      contentPadding:
-                          EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                      contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
                       hintText: "yourOffer".translate(context),
-                      hintStyle: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 22,
-                          color:
-                              context.color.textDefaultColor.withOpacity(0.3)),
+                      hintStyle:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: context.color.textDefaultColor.withOpacity(0.3)),
                       focusColor: context.color.territoryColor,
                       enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                              color: context.color.borderColor.darken(60))),
+                          borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: context.color.borderColor.darken(60))),
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                              color: context.color.borderColor.darken(60))),
-                      focusedBorder: OutlineInputBorder(
-                          borderSide:
-                              BorderSide(color: context.color.territoryColor))),
+                          borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: context.color.borderColor.darken(60))),
+                      focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: context.color.territoryColor))),
                 ),
               ),
             ],
@@ -2786,10 +2375,8 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                   width: 60,
                   child: ClipRRect(
                       borderRadius: BorderRadius.circular(10),
-                      child: model.user!.profile != null &&
-                              model.user!.profile != ""
-                          ? UiUtils.getImage(model.user!.profile!,
-                              fit: BoxFit.fill)
+                      child: model.user!.profile != null && model.user!.profile != ""
+                          ? UiUtils.getImage(model.user!.profile!, fit: BoxFit.fill)
                           : UiUtils.getSvg(
                               AppIcons.defaultPersonLogo,
                               color: context.color.territoryColor,
@@ -2798,94 +2385,70 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(10.0),
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (model.user!.isVerified == 1)
-                          Container(
-                            decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(5),
-                                color: context.color.forthColor),
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 5, vertical: 1),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    if (model.user!.isVerified == 1)
+                      Container(
+                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(5), color: context.color.forthColor),
+                        padding: EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            UiUtils.getSvg(AppIcons.verifiedIcon, width: 14, height: 14),
+                            SizedBox(
+                              width: 4,
+                            ),
+                            CustomText(
+                              "verifiedLbl".translate(context),
+                              color: context.color.secondaryColor,
+                              fontWeight: FontWeight.w500,
+                            )
+                          ],
+                        ),
+                      ),
+                    CustomText(model.user!.name!, fontWeight: FontWeight.bold, fontSize: context.font.large),
+                    if (context.watch<FetchSellerRatingsCubit>().sellerData() != null)
+                      if (context.watch<FetchSellerRatingsCubit>().sellerData()!.averageRating != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 3),
+                          child: RichText(
+                            text: TextSpan(
                               children: [
-                                UiUtils.getSvg(AppIcons.verifiedIcon,
-                                    width: 14, height: 14),
-                                SizedBox(
-                                  width: 4,
+                                WidgetSpan(
+                                  child: Icon(Icons.star_rounded, size: 17, color: context.color.textDefaultColor), // Star icon
                                 ),
-                                CustomText(
-                                  "verifiedLbl".translate(context),
-                                  color: context.color.secondaryColor,
-                                  fontWeight: FontWeight.w500,
-                                )
+                                TextSpan(
+                                  text:
+                                      '\t${context.watch<FetchSellerRatingsCubit>().sellerData()!.averageRating!.toStringAsFixed(2).toString()}',
+                                  // Rating value
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: context.color.textDefaultColor,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: '  |  ',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: context.color.textDefaultColor.withOpacity(0.3),
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: '${context.watch<FetchSellerRatingsCubit>().totalSellerRatings()}\t${"ratings".translate(context)}',
+                                  // Rating count text
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: context.color.textDefaultColor.withOpacity(0.3),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
-                        CustomText(model.user!.name!,
-                            fontWeight: FontWeight.bold,
-                            fontSize: context.font.large),
-                        if (context
-                                .watch<FetchSellerRatingsCubit>()
-                                .sellerData() !=
-                            null)
-                          if (context
-                                  .watch<FetchSellerRatingsCubit>()
-                                  .sellerData()!
-                                  .averageRating !=
-                              null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 3),
-                              child: RichText(
-                                text: TextSpan(
-                                  children: [
-                                    WidgetSpan(
-                                      child: Icon(Icons.star_rounded,
-                                          size: 17,
-                                          color: context.color
-                                              .textDefaultColor), // Star icon
-                                    ),
-                                    TextSpan(
-                                      text:
-                                          '\t${context.watch<FetchSellerRatingsCubit>().sellerData()!.averageRating!.toStringAsFixed(2).toString()}',
-                                      // Rating value
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: context.color.textDefaultColor,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text: '  |  ',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: context.color.textDefaultColor
-                                            .withOpacity(0.3),
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text:
-                                          '${context.watch<FetchSellerRatingsCubit>().totalSellerRatings()}\t${"ratings".translate(context)}',
-                                      // Rating count text
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: context.color.textDefaultColor
-                                            .withOpacity(0.3),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                        if (model.user!.showPersonalDetails == 1)
-                          if (model.user!.email != null ||
-                              model.user!.email != "")
-                            CustomText(model.user!.email!,
-                                color: context.color.textLightColor,
-                                fontSize: context.font.small),
-                      ]),
+                        ),
+                    if (model.user!.showPersonalDetails == 1)
+                      if (model.user!.email != null || model.user!.email != "")
+                        CustomText(model.user!.email!, color: context.color.textLightColor, fontSize: context.font.small),
+                  ]),
                 ),
               ),
               if (model.user!.showPersonalDetails == 1)
@@ -2897,8 +2460,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                             isTelephone: false,
                             isSMS: true,
                             isMail: false,
-                            value: formatPhoneNumber(model.user!.mobile!,
-                                Constant.defaultCountryCode),
+                            value: formatPhoneNumber(model.user!.mobile!, Constant.defaultCountryCode),
                             context: context);
                       }),
               SizedBox(width: 10),
@@ -2911,8 +2473,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                             isTelephone: true,
                             isSMS: false,
                             isMail: false,
-                            value: formatPhoneNumber(model.user!.mobile!,
-                                Constant.defaultCountryCode),
+                            value: formatPhoneNumber(model.user!.mobile!, Constant.defaultCountryCode),
                             context: context);
                       })
             ]),
@@ -2924,18 +2485,11 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      Navigator.pushNamed(context, Routes.sellerProfileScreen,
-                          arguments: {
-                            "model": model.user!,
-                            "total": context
-                                    .read<FetchSellerRatingsCubit>()
-                                    .totalSellerRatings() ??
-                                0,
-                            "rating": context
-                                .read<FetchSellerRatingsCubit>()
-                                .sellerData()
-                                ?.averageRating,
-                          });
+                      Navigator.pushNamed(context, Routes.sellerProfileScreen, arguments: {
+                        "model": model.user!,
+                        "total": context.read<FetchSellerRatingsCubit>().totalSellerRatings() ?? 0,
+                        "rating": context.read<FetchSellerRatingsCubit>().sellerData()?.averageRating,
+                      });
                     },
                     icon: Icon(Icons.person, color: context.color.buttonColor),
                     label: CustomText(
@@ -2950,27 +2504,28 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                     ),
                   ),
                 ),
-                SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      _showServiceReviewDialog(
-                          serviceId: model.id!,
-                          userId: model.userId!,
-                          name: model.name ?? "Service",
-                          image: model.image,
-                          isExperience: model.itemType == "experience");
-                    },
-                    icon: Icon(Icons.rate_review,
-                        color: context.color.buttonColor),
-                    label: CustomText(
-                      "Write Review",
-                      color: context.color.buttonColor,
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.color.territoryColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                _userHasRatedItemBuilder(child: SizedBox(width: 10)),
+                _userHasRatedItemBuilder(
+                  child: Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        _showServiceReviewDialog(
+                            serviceId: model.id!,
+                            userId: model.userId!,
+                            name: model.name ?? "Service",
+                            image: model.image,
+                            isExperience: model.itemType == "experience");
+                      },
+                      icon: Icon(Icons.rate_review, color: context.color.buttonColor),
+                      label: CustomText(
+                        "Write Review",
+                        color: context.color.buttonColor,
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: context.color.territoryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
                   ),
@@ -2983,16 +2538,19 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
       onTap: () {
         Navigator.pushNamed(context, Routes.sellerProfileScreen, arguments: {
           "model": model.user!,
-          "total":
-              context.read<FetchSellerRatingsCubit>().totalSellerRatings() ?? 0,
-          "rating": context
-              .read<FetchSellerRatingsCubit>()
-              .sellerData()!
-              .averageRating,
+          "total": context.read<FetchSellerRatingsCubit>().totalSellerRatings() ?? 0,
+          "rating": context.read<FetchSellerRatingsCubit>().sellerData()!.averageRating,
         });
       },
     );
   }
+
+  Widget _userHasRatedItemBuilder({required Widget child}) => BlocBuilder<UserHasRatedItemCubit, UserHasRatedItemState>(
+        builder: (context, state) {
+          if (state is! UserHasRatedItemInSuccess || state.userHasRatedItem) return Container();
+          return child;
+        },
+      );
 
   // Show service/experience review dialog
   void _showServiceReviewDialog({
@@ -3013,8 +2571,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               child: ReviewDialog(
                 targetId: serviceId,
                 userId: userId,
-                reviewType:
-                    isExperience ? ReviewType.experience : ReviewType.service,
+                reviewType: isExperience ? ReviewType.experience : ReviewType.service,
                 name: name,
                 image: image,
               ),
@@ -3026,9 +2583,8 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
             if (mounted) {
               if (model.id != null) {
                 // Refresh the reviews from the API
-                context
-                    .read<FetchItemReviewsCubit>()
-                    .fetchItemReviews(itemId: model.id!);
+                context.read<FetchItemReviewsCubit>().fetchItemReviews(itemId: model.id!);
+                context.read<UserHasRatedItemCubit>().userHasRatedItem(itemId: model.id!);
               }
             }
           }
@@ -3045,8 +2601,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: context.color.secondaryColor,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           title: Center(
             child: Text(
               "Login Required",
@@ -3157,9 +2712,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                   child: TextButton(
                     onPressed: () {
                       if (model.id != null) {
-                        context
-                            .read<FetchItemReviewsCubit>()
-                            .fetchItemReviews(itemId: model.id!);
+                        context.read<FetchItemReviewsCubit>().fetchItemReviews(itemId: model.id!);
                       }
                     },
                     child: CustomText(
@@ -3198,8 +2751,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
           }
 
           // If reviews exist, display them (limited to 3)
-          int displayCount =
-              state.reviews.length > 3 ? 3 : state.reviews.length;
+          int displayCount = state.reviews.length > 3 ? 3 : state.reviews.length;
 
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 10.0),
@@ -3239,19 +2791,12 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                     // Use either reviewer or buyer field
                     final userDetails = review.reviewer ?? review.buyer;
 
-                    final hasProfile = userDetails != null &&
-                        userDetails.profile != null &&
-                        userDetails.profile!.isNotEmpty;
+                    final hasProfile = userDetails != null && userDetails.profile != null && userDetails.profile!.isNotEmpty;
 
-                    final reviewerName =
-                        userDetails != null && userDetails.name != null
-                            ? userDetails.name!
-                            : "Anonymous";
+                    final reviewerName = userDetails != null && userDetails.name != null ? userDetails.name! : "Anonymous";
 
                     // Add a subtle "You" indicator if this is your own review
-                    final isOwnReview = userDetails != null &&
-                        userDetails.id != null &&
-                        userDetails.id.toString() == HiveUtils.getUserId();
+                    final isOwnReview = userDetails != null && userDetails.id != null && userDetails.id.toString() == HiveUtils.getUserId();
 
                     return Card(
                       color: context.color.secondaryColor,
@@ -3273,8 +2818,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                                     ),
                                   )
                                 : CircleAvatar(
-                                    backgroundColor:
-                                        context.color.territoryColor,
+                                    backgroundColor: context.color.territoryColor,
                                     child: Icon(
                                       Icons.person,
                                       color: context.color.buttonColor,
@@ -3286,21 +2830,17 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       CustomText(
-                                        isOwnReview
-                                            ? "$reviewerName (You)"
-                                            : reviewerName,
+                                        isOwnReview ? "$reviewerName (You)" : reviewerName,
                                         fontWeight: FontWeight.bold,
                                       ),
                                       if (review.createdAt != null)
                                         CustomText(
                                           _formatDate(review.createdAt!),
                                           fontSize: context.font.small,
-                                          color: context.color.textDefaultColor
-                                              .withOpacity(0.6),
+                                          color: context.color.textDefaultColor.withOpacity(0.6),
                                         ),
                                     ],
                                   ),
@@ -3309,9 +2849,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                                     children: [
                                       for (int i = 0; i < 5; i++)
                                         Icon(
-                                          i < (review.ratings ?? 0).floor()
-                                              ? Icons.star
-                                              : Icons.star_border,
+                                          i < (review.ratings ?? 0).floor() ? Icons.star : Icons.star_border,
                                           color: Colors.amber,
                                           size: 16,
                                         ),
@@ -3352,9 +2890,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                       child: TextButton(
                         onPressed: () {
                           if (model.id != null) {
-                            context
-                                .read<FetchItemReviewsCubit>()
-                                .fetchMoreItemReviews(itemId: model.id!);
+                            context.read<FetchItemReviewsCubit>().fetchMoreItemReviews(itemId: model.id!);
                           }
                         },
                         child: CustomText(
@@ -3415,19 +2951,12 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                   // Use either reviewer or buyer field
                   final userDetails = review.reviewer ?? review.buyer;
 
-                  final hasProfile = userDetails != null &&
-                      userDetails.profile != null &&
-                      userDetails.profile!.isNotEmpty;
+                  final hasProfile = userDetails != null && userDetails.profile != null && userDetails.profile!.isNotEmpty;
 
-                  final reviewerName =
-                      userDetails != null && userDetails.name != null
-                          ? userDetails.name!
-                          : "Anonymous";
+                  final reviewerName = userDetails != null && userDetails.name != null ? userDetails.name! : "Anonymous";
 
                   // Add a subtle "You" indicator if this is your own review
-                  final isOwnReview = userDetails != null &&
-                      userDetails.id != null &&
-                      userDetails.id.toString() == HiveUtils.getUserId();
+                  final isOwnReview = userDetails != null && userDetails.id != null && userDetails.id.toString() == HiveUtils.getUserId();
 
                   return Card(
                     color: context.color.secondaryColor,
@@ -3461,21 +2990,17 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     CustomText(
-                                      isOwnReview
-                                          ? "$reviewerName (You)"
-                                          : reviewerName,
+                                      isOwnReview ? "$reviewerName (You)" : reviewerName,
                                       fontWeight: FontWeight.bold,
                                     ),
                                     if (review.createdAt != null)
                                       CustomText(
                                         _formatDate(review.createdAt!),
                                         fontSize: context.font.small,
-                                        color: context.color.textDefaultColor
-                                            .withOpacity(0.6),
+                                        color: context.color.textDefaultColor.withOpacity(0.6),
                                       ),
                                   ],
                                 ),
@@ -3484,9 +3009,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                                   children: [
                                     for (int i = 0; i < 5; i++)
                                       Icon(
-                                        i < (review.ratings ?? 0).floor()
-                                            ? Icons.star
-                                            : Icons.star_border,
+                                        i < (review.ratings ?? 0).floor() ? Icons.star : Icons.star_border,
                                         color: Colors.amber,
                                         size: 16,
                                       ),
@@ -3575,19 +3098,13 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                         // Use either reviewer or buyer field
                         final userDetails = review.reviewer ?? review.buyer;
 
-                        final hasProfile = userDetails != null &&
-                            userDetails.profile != null &&
-                            userDetails.profile!.isNotEmpty;
+                        final hasProfile = userDetails != null && userDetails.profile != null && userDetails.profile!.isNotEmpty;
 
-                        final reviewerName =
-                            userDetails != null && userDetails.name != null
-                                ? userDetails.name!
-                                : "Anonymous";
+                        final reviewerName = userDetails != null && userDetails.name != null ? userDetails.name! : "Anonymous";
 
                         // Add a subtle "You" indicator if this is your own review
-                        final isOwnReview = userDetails != null &&
-                            userDetails.id != null &&
-                            userDetails.id.toString() == HiveUtils.getUserId();
+                        final isOwnReview =
+                            userDetails != null && userDetails.id != null && userDetails.id.toString() == HiveUtils.getUserId();
 
                         return Card(
                           color: context.color.secondaryColor,
@@ -3609,8 +3126,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                                         ),
                                       )
                                     : CircleAvatar(
-                                        backgroundColor:
-                                            context.color.territoryColor,
+                                        backgroundColor: context.color.territoryColor,
                                         child: Icon(
                                           Icons.person,
                                           color: context.color.buttonColor,
@@ -3619,26 +3135,20 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                                 SizedBox(width: 10),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
                                           CustomText(
-                                            isOwnReview
-                                                ? "$reviewerName (You)"
-                                                : reviewerName,
+                                            isOwnReview ? "$reviewerName (You)" : reviewerName,
                                             fontWeight: FontWeight.bold,
                                           ),
                                           if (review.createdAt != null)
                                             CustomText(
                                               _formatDate(review.createdAt!),
                                               fontSize: context.font.small,
-                                              color: context
-                                                  .color.textDefaultColor
-                                                  .withOpacity(0.6),
+                                              color: context.color.textDefaultColor.withOpacity(0.6),
                                             ),
                                         ],
                                       ),
@@ -3647,9 +3157,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                                         children: [
                                           for (int i = 0; i < 5; i++)
                                             Icon(
-                                              i < (review.ratings ?? 0).floor()
-                                                  ? Icons.star
-                                                  : Icons.star_border,
+                                              i < (review.ratings ?? 0).floor() ? Icons.star : Icons.star_border,
                                               color: Colors.amber,
                                               size: 16,
                                             ),
@@ -3715,9 +3223,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
   }) {
     return Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: context.color.borderColor.darken(30))),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), border: Border.all(color: context.color.borderColor.darken(30))),
         child: Padding(
             padding: const EdgeInsets.all(5),
             child: InkWell(
@@ -3725,8 +3231,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                 child: SvgPicture.asset(
                   assetName,
                   colorFilter: color == null
-                      ? ColorFilter.mode(
-                          context.color.territoryColor, BlendMode.srcIn)
+                      ? ColorFilter.mode(context.color.territoryColor, BlendMode.srcIn)
                       : ColorFilter.mode(color, BlendMode.srcIn),
                 ))));
   }
@@ -3752,45 +3257,42 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: reasons?.length ?? 0,
-                  physics: const BouncingScrollPhysics(),
-                  separatorBuilder: (context, index) {
-                    return const SizedBox(height: 10);
-                  },
-                  itemBuilder: (context, index) {
-                    return InkWell(
-                      borderRadius: BorderRadius.circular(10),
-                      onTap: () {
-                        setState(() {
-                          selectedId = reasons![index].id;
-                        });
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: context.color.primaryColor,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: selectedId == reasons![index].id
-                                ? context.color.territoryColor
-                                : context.color.borderColor,
-                            width: 1.5,
+                if ((reasons?.length ?? 0) > 1)
+                  ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: reasons?.length ?? 0,
+                    physics: const BouncingScrollPhysics(),
+                    separatorBuilder: (context, index) {
+                      return const SizedBox(height: 10);
+                    },
+                    itemBuilder: (context, index) {
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: () {
+                          setState(() {
+                            selectedId = reasons![index].id;
+                          });
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: context.color.primaryColor,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: selectedId == reasons![index].id ? context.color.territoryColor : context.color.borderColor,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(14.0),
+                            child: CustomText(
+                              reasons![index].reason.firstUpperCase(),
+                              color: selectedId == reasons![index].id ? context.color.territoryColor : context.color.textColorDark,
+                            ),
                           ),
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(14.0),
-                          child: CustomText(
-                            reasons![index].reason.firstUpperCase(),
-                            color: selectedId == reasons![index].id
-                                ? context.color.territoryColor
-                                : context.color.textColorDark,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  ),
                 if (selectedId.isNegative)
                   Padding(
                     padding: EdgeInsetsDirectional.only(
@@ -3853,8 +3355,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
           // For women tag
           if (model.specialTags != null &&
               model.specialTags!.containsKey('exclusive_women') &&
-              (model.specialTags!['exclusive_women'] == true ||
-                  model.specialTags!['exclusive_women'] == "true"))
+              (model.specialTags!['exclusive_women'] == true || model.specialTags!['exclusive_women'] == "true"))
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -3876,9 +3377,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
             ),
 
           // Category tag
-          if (model.category != null &&
-              model.category!.name != null &&
-              model.category!.name!.isNotEmpty)
+          if (model.category != null && model.category!.name != null && model.category!.name!.isNotEmpty)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -3888,10 +3387,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  UiUtils.getSvg(AppIcons.categoryIcon,
-                      width: 16,
-                      height: 16,
-                      color: context.color.territoryColor),
+                  UiUtils.getSvg(AppIcons.categoryIcon, width: 16, height: 16, color: context.color.territoryColor),
                   const SizedBox(width: 4),
                   CustomText(
                     model.category!.name!,
@@ -3905,8 +3401,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
           // Corporate tag
           if (model.specialTags != null &&
               model.specialTags!.containsKey('corporate_package') &&
-              (model.specialTags!['corporate_package'] == true ||
-                  model.specialTags!['corporate_package'] == "true"))
+              (model.specialTags!['corporate_package'] == true || model.specialTags!['corporate_package'] == "true"))
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -3930,4 +3425,76 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
       ),
     );
   }
+
+  Widget _deleteButton() => BlocProvider(
+        create: (context) => DeleteItemCubit(),
+        child: Builder(builder: (context) {
+          return BlocListener<DeleteItemCubit, DeleteItemState>(
+            listener: (context, deleteState) {
+              if (deleteState is DeleteItemSuccess) {
+                HelperUtils.showSnackBarMessage(context, "deleteItemSuccessMsg".translate(context));
+
+                context.read<FetchMyItemsCubit>().deleteItem(model);
+                Navigator.pop(context, "refresh");
+              } else if (deleteState is DeleteItemFailure) {
+                HelperUtils.showSnackBarMessage(context, deleteState.errorMessage);
+              }
+            },
+            child: _buildButton("lblremove".translate(context), () {
+              Future.delayed(
+                Duration.zero,
+                () {
+                  context.read<DeleteItemCubit>().deleteItem(model.id!);
+                },
+              );
+            }, null, null),
+          );
+        }),
+      );
+
+  Widget _editButton(ColorScheme contextColor) => _buildButton("editBtnLbl".translate(context), () {
+        addCloudData("edit_request", model);
+        addCloudData("edit_from", model.status);
+        Navigator.pushNamed(context, Routes.addItemDetails, arguments: {"isEdit": true}).then((value) {
+          // When we return from edit screen, refresh the detail view with the latest data
+          if (value == "refresh" || value == true) {
+            // Force cache reset and refresh the current screen with updated data
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              print("Refreshing item details after edit with slug: ${model.slug}");
+
+              // Show loading indicator
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("Refreshing..."),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+
+              // Get a reference to the current cubit
+              final cubit = BlocProvider.of<FetchItemFromSlugCubit>(context, listen: false);
+
+              // First set it to initial state to force a full refresh
+              cubit.emit(FetchItemFromSlugInitial());
+
+              // Then trigger a new fetch with a slight delay
+              Future.delayed(Duration(milliseconds: 300), () {
+                if (mounted) {
+                  cubit.fetchItemFromSlug(slug: model.slug ?? "");
+                }
+              });
+            });
+
+            // Update related items cubit if needed
+            if (model.categoryId != null) {
+              context.read<FetchRelatedItemsCubit>().fetchRelatedItems(
+                    categoryId: model.categoryId!,
+                    country: model.country,
+                    state: model.state,
+                    city: model.city,
+                    areaId: model.areaId,
+                  );
+            }
+          }
+        });
+      }, contextColor.secondaryColor, contextColor.territoryColor);
 }

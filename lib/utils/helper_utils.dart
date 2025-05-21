@@ -4,6 +4,14 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:country_picker/country_picker.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:http/http.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:tlobni/data/helper/custom_exception.dart';
 import 'package:tlobni/settings.dart';
 import 'package:tlobni/ui/theme/theme.dart';
@@ -12,13 +20,6 @@ import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/hive_utils.dart';
-import 'package:encrypt/encrypt.dart' as encrypt;
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:http/http.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 enum MessageType {
@@ -31,22 +32,34 @@ enum MessageType {
   const MessageType(this.value);
 }
 
-extension StringCasingExtension on String {
-  String toCapitalized() =>
-      length > 0 ? '${this[0].toUpperCase()}${substring(1).toLowerCase()}' : '';
+void showCountryCode(BuildContext context, void Function(Country value) onSelect) {
+  showCountryPicker(
+    context: context,
+    showWorldWide: false,
+    showPhoneCode: true,
+    exclude: ['IL'],
+    favorite: ['LB'],
+    countryListTheme: CountryListThemeData(
+      borderRadius: BorderRadius.circular(11),
+      searchTextStyle: TextStyle(
+        color: context.color.textColorDark,
+        fontSize: 16,
+      ),
+    ),
+    onSelect: onSelect,
+  );
+}
 
-  String toTitleCase() => replaceAll(RegExp(' +'), ' ')
-      .split(' ')
-      .map((str) => str.toCapitalized())
-      .join(' ');
+extension StringCasingExtension on String {
+  String toCapitalized() => length > 0 ? '${this[0].toUpperCase()}${substring(1).toLowerCase()}' : '';
+
+  String toTitleCase() => replaceAll(RegExp(' +'), ' ').split(' ').map((str) => str.toCapitalized()).join(' ');
 }
 
 class HelperUtils {
   static String decryptString(String encryptedText) {
     try {
-      final encrypter = encrypt.Encrypter(encrypt.AES(
-          encrypt.Key.fromUtf8("0123456789123456"),
-          mode: encrypt.AESMode.cbc));
+      final encrypter = encrypt.Encrypter(encrypt.AES(encrypt.Key.fromUtf8("0123456789123456"), mode: encrypt.AESMode.cbc));
 
       final encryptedValue = encrypt.Encrypted.fromBase64(encryptedText);
       final ivBytes = encrypt.IV.fromUtf8("DFGDxdfdfEREfgvC");
@@ -81,8 +94,7 @@ class HelperUtils {
   static Future<void> precacheSVG(List<String> urls) async {
     for (String imageUrl in urls) {
       var loader = SvgAssetLoader(imageUrl);
-      await svg.cache
-          .putIfAbsent(loader.cacheKey(null), () => loader.loadBytes(null));
+      await svg.cache.putIfAbsent(loader.cacheKey(null), () => loader.loadBytes(null));
     }
   }
 
@@ -118,8 +130,7 @@ class HelperUtils {
 
                 Future.delayed(Duration.zero, () {
                   Navigator.pop(context);
-                  HelperUtils.showSnackBarMessage(
-                      context, "copied".translate(context));
+                  HelperUtils.showSnackBarMessage(context, "copied".translate(context));
                 });
               },
             ),
@@ -137,9 +148,7 @@ class HelperUtils {
 
                 String text =
                     "Exciting find! 🏡 Check out this amazing item I came across.  Let me know what you think! ⭐\n Here are the details:\n$deepLink.";
-                await Share.share(text,
-                    sharePositionOrigin:
-                        box!.localToGlobal(Offset.zero) & box.size);
+                await Share.share(text, sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size);
               },
             ),
           ],
@@ -173,10 +182,7 @@ class HelperUtils {
   }
 
   static dynamic showSnackBarMessage(BuildContext context, String message,
-      {int messageDuration = 3,
-      MessageType? type,
-      bool? isFloating,
-      VoidCallback? onClose}) async {
+      {int messageDuration = 3, MessageType? type, bool? isFloating, VoidCallback? onClose}) async {
     var snackBar = ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: CustomText(message),
@@ -192,9 +198,7 @@ class HelperUtils {
   }
 
   static Future<String> getJsonResponse(BuildContext context,
-      {bool isfromfile = false,
-      StreamedResponse? streamedResponse,
-      Response? response}) async {
+      {bool isfromfile = false, StreamedResponse? streamedResponse, Response? response}) async {
     int code;
     if (isfromfile) {
       code = streamedResponse!.statusCode;
@@ -232,8 +236,7 @@ class HelperUtils {
         throw UnauthorisedException(response!.body.toString());
       case 500:
       default:
-        throw FetchDataException(
-            'Error occurred while Communication with Server with StatusCode: $code');
+        throw FetchDataException('Error occurred while Communication with Server with StatusCode: $code');
     }
   }
 
@@ -245,12 +248,10 @@ class HelperUtils {
   }
 
   static void killPreviousPages(BuildContext context, var nextpage, var args) {
-    Navigator.of(context)
-        .pushNamedAndRemoveUntil(nextpage, (route) => false, arguments: args);
+    Navigator.of(context).pushNamedAndRemoveUntil(nextpage, (route) => false, arguments: args);
   }
 
-  static void goToNextPage(var nextpage, BuildContext bcontext, bool isreplace,
-      {Map? args}) {
+  static void goToNextPage(var nextpage, BuildContext bcontext, bool isreplace, {Map? args}) {
     if (isreplace) {
       Navigator.of(bcontext).pushReplacementNamed(nextpage, arguments: args);
     } else {
@@ -263,9 +264,7 @@ class HelperUtils {
     return value.toTitleCase();
   }
 
-  static Widget checkVideoType(String url,
-      {required Widget Function() onYoutubeVideo,
-      required Widget Function() onOtherVideo}) {
+  static Widget checkVideoType(String url, {required Widget Function() onYoutubeVideo, required Widget Function() onOtherVideo}) {
     List youtubeDomains = ["youtu.be", "youtube.com"];
 
     Uri uri = Uri.parse(url);
@@ -330,11 +329,12 @@ class HelperUtils {
       redirectUri = Uri(
         scheme: 'mailto',
         path: value,
-        query:
-            'subject=${Constant.appName}&body=${"mailMsgLbl".translate(context)}',
+        query: 'subject=${Constant.appName}&body=${"mailMsgLbl".translate(context)}',
       );
-    } else {
+    } else if (isSMS) {
       redirectUri = Uri.parse("sms:$value");
+    } else {
+      redirectUri = Uri.parse('http://$value');
     }
 
     if (await canLaunchUrl(redirectUri)) {

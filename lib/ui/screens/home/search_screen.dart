@@ -1,6 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/item/fetch_popular_items_cubit.dart';
@@ -12,6 +16,8 @@ import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/data/model/item_filter_model.dart';
 import 'package:tlobni/data/model/user_model.dart';
+import 'package:tlobni/ui/screens/filter/item_listing_filter_screen.dart';
+import 'package:tlobni/ui/screens/filter/provider_filter_screen.dart';
 import 'package:tlobni/ui/screens/home/home_screen.dart';
 import 'package:tlobni/ui/screens/home/widgets/item_horizontal_card.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
@@ -27,17 +33,17 @@ import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/hive_keys.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hive_flutter/adapters.dart';
+
+enum SearchScreenType { provider, itemListing }
 
 class SearchScreen extends StatefulWidget {
-  final bool autoFocus;
+  final ItemFilterModel? initialItemFilter;
+  final SearchScreenType screenType;
 
   const SearchScreen({
     super.key,
-    required this.autoFocus,
+    required this.screenType,
+    this.initialItemFilter,
   });
 
   static Route route(RouteSettings settings) {
@@ -45,13 +51,14 @@ class SearchScreen extends StatefulWidget {
 
     // Extract the filter if it's passed in the arguments
     ItemFilterModel? itemFilter =
-        arguments != null && arguments.containsKey('itemFilter')
-            ? arguments['itemFilter'] as ItemFilterModel
-            : null;
+        arguments != null && arguments.containsKey('itemFilter') ? arguments['itemFilter'] as ItemFilterModel : null;
+
+    SearchScreenType? screenType = arguments?['screenType'];
+
+    assert(screenType != null);
 
     // Debug log to trace filter passing
-    print(
-        "DEBUG ROUTE: Creating search route with filter: ${itemFilter?.toJson()}");
+    print("DEBUG ROUTE: Creating search route with filter: ${itemFilter?.toJson()}");
 
     return BlurredRouter(
       builder: (context) => MultiBlocProvider(
@@ -61,8 +68,7 @@ class SearchScreen extends StatefulWidget {
                 final cubit = SearchItemCubit();
                 // Don't trigger search here, let initState handle it
                 // This prevents double API calls
-                print(
-                    "DEBUG ROUTE: Created SearchItemCubit (search will be triggered in initState)");
+                print("DEBUG ROUTE: Created SearchItemCubit (search will be triggered in initState)");
                 return cubit;
               },
             ),
@@ -71,8 +77,7 @@ class SearchScreen extends StatefulWidget {
                 final cubit = SearchProvidersCubit();
                 // Don't trigger search here, let initState handle it
                 // This prevents double API calls
-                print(
-                    "DEBUG ROUTE: Created SearchProvidersCubit (search will be triggered in initState)");
+                print("DEBUG ROUTE: Created SearchProvidersCubit (search will be triggered in initState)");
                 return cubit;
               },
             ),
@@ -81,7 +86,8 @@ class SearchScreen extends StatefulWidget {
             ),
           ],
           child: SearchScreen(
-            autoFocus: arguments?['autoFocus'] ?? false,
+            initialItemFilter: itemFilter,
+            screenType: screenType!,
           )),
     );
   }
@@ -90,8 +96,7 @@ class SearchScreen extends StatefulWidget {
   SearchScreenState createState() => SearchScreenState();
 }
 
-class SearchScreenState extends State<SearchScreen>
-    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin<SearchScreen> {
+class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixin, AutomaticKeepAliveClientMixin<SearchScreen> {
   @override
   bool get wantKeepAlive => true;
   bool isFocused = false;
@@ -101,10 +106,10 @@ class SearchScreenState extends State<SearchScreen>
   final ScrollController popularController = ScrollController();
   final ScrollController providerController = ScrollController();
   Timer? _searchDelay;
-  ItemFilterModel? filter;
+  late ItemFilterModel? filter = widget.initialItemFilter;
 
   // To determine if we're showing providers or services
-  bool get isProviderSearch => filter != null && filter!.userType != null;
+  bool get isProviderSearch => widget.screenType == SearchScreenType.provider; //filter != null && filter!.userType != null;
 
   //to store selected filter categories
   List<CategoryModel> categoryList = [];
@@ -112,8 +117,6 @@ class SearchScreenState extends State<SearchScreen>
   @override
   void initState() {
     super.initState();
-    // Initialize filter from Constant if it exists
-    filter = Constant.itemFilter;
 
     print("DEBUG: Search screen initialized with filter: ${filter?.toJson()}");
 
@@ -126,50 +129,45 @@ class SearchScreenState extends State<SearchScreen>
     providerController.addListener(pageProviderScrollListen);
 
     // If we have a filter, initiate a search immediately
-    if (filter != null) {
-      // Prevent double initialization
-      bool shouldInitiateSearch = true;
+    // if (filter != null) {
+    // Prevent double initialization
+    bool shouldInitiateSearch = true;
 
-      print(
-          "DEBUG: Preparing to search with filter. Provider search: $isProviderSearch");
+    print("DEBUG: Preparing to search with filter. Provider search: $isProviderSearch");
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!shouldInitiateSearch) {
-          print("DEBUG: Search already initiated, skipping duplicate search");
-          return;
-        }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!shouldInitiateSearch) {
+        print("DEBUG: Search already initiated, skipping duplicate search");
+        return;
+      }
 
-        shouldInitiateSearch = false;
+      shouldInitiateSearch = false;
 
-        if (isProviderSearch) {
-          // Provider search
-          print(
-              "DEBUG: Initiating provider search with filter: ${filter?.toJson()}");
-          context.read<SearchProvidersCubit>().searchProviders(
-                searchController.text,
-                page: 1,
-                filter: filter,
-              );
-        } else {
-          // Service search
-          print(
-              "DEBUG: Initiating service search with filter: ${filter?.toJson()}");
-          context.read<SearchItemCubit>().searchItem(
-                searchController.text,
-                page: 1,
-                filter: filter,
-              );
-        }
-      });
-    }
+      if (isProviderSearch) {
+        // Provider search
+        print("DEBUG: Initiating provider search with filter: ${filter?.toJson()}");
+        context.read<SearchProvidersCubit>().searchProviders(
+              searchController.text,
+              page: 1,
+              filter: filter,
+            );
+      } else {
+        // Service search
+        print("DEBUG: Initiating service search with filter: ${filter?.toJson()}");
+        context.read<SearchItemCubit>().searchItem(
+              searchController.text,
+              page: 1,
+              filter: filter,
+            );
+      }
+    });
+    // }
   }
 
   void pageScrollListen() {
     if (controller.isEndReached()) {
       if (context.read<SearchItemCubit>().hasMoreData()) {
-        context
-            .read<SearchItemCubit>()
-            .fetchMoreSearchData(searchController.text, Constant.itemFilter);
+        context.read<SearchItemCubit>().fetchMoreSearchData(searchController.text, Constant.itemFilter);
       }
     }
   }
@@ -177,9 +175,7 @@ class SearchScreenState extends State<SearchScreen>
   void pageProviderScrollListen() {
     if (providerController.isEndReached()) {
       if (context.read<SearchProvidersCubit>().hasMoreData()) {
-        context
-            .read<SearchProvidersCubit>()
-            .fetchMoreProviders(searchController.text, Constant.itemFilter);
+        context.read<SearchProvidersCubit>().fetchMoreProviders(searchController.text, Constant.itemFilter);
       }
     }
   }
@@ -227,10 +223,24 @@ class SearchScreenState extends State<SearchScreen>
     }
   }
 
+  void refreshData() {
+    switch (widget.screenType) {
+      case SearchScreenType.provider:
+        context.read<SearchProvidersCubit>().searchProviders(
+              searchController.text,
+              page: 1,
+              filter: filter,
+            );
+        break;
+      case SearchScreenType.itemListing:
+        context.read<SearchItemCubit>().searchItem(searchController.text, page: 1, filter: filter);
+        break;
+    }
+  }
+
   PreferredSizeWidget appBarWidget() {
     return AppBar(
-      systemOverlayStyle:
-          SystemUiOverlayStyle(statusBarColor: context.color.backgroundColor),
+      systemOverlayStyle: SystemUiOverlayStyle(statusBarColor: context.color.backgroundColor),
       bottom: PreferredSize(
           preferredSize: Size.fromHeight(64),
           child: LayoutBuilder(builder: (context, c) {
@@ -239,8 +249,7 @@ class SearchScreenState extends State<SearchScreen>
                 child: FittedBox(
                   fit: BoxFit.none,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 14, horizontal: 18.0),
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18.0),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -250,65 +259,39 @@ class SearchScreenState extends State<SearchScreen>
                             alignment: AlignmentDirectional.center,
                             decoration: BoxDecoration(
                                 border: Border.all(
-                                    width: context
-                                                .watch<AppThemeCubit>()
-                                                .state
-                                                .appTheme ==
-                                            AppTheme.dark
-                                        ? 0
-                                        : 1,
-                                    color:
-                                        context.color.borderColor.darken(30)),
-                                borderRadius:
-                                    const BorderRadius.all(Radius.circular(10)),
+                                    width: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark ? 0 : 1,
+                                    color: context.color.borderColor.darken(30)),
+                                borderRadius: const BorderRadius.all(Radius.circular(10)),
                                 color: context.color.secondaryColor),
                             child: buildSearchTextField()),
                         const SizedBox(
                           width: 14,
                         ),
                         GestureDetector(
-                          onTap: () {
-                            Navigator.pushNamed(context, Routes.filterScreen,
-                                arguments: {
-                                  "update": getFilterValue,
-                                  "from": "search",
-                                  "categoryList": categoryList,
-                                }).then((value) {
-                              if (value == true) {
-                                if (isProviderSearch) {
-                                  // Provider search
-                                  context
-                                      .read<SearchProvidersCubit>()
-                                      .searchProviders(
-                                        searchController.text,
-                                        page: 1,
-                                        filter: filter,
-                                      );
-                                } else {
-                                  // Service search
-                                  context.read<SearchItemCubit>().searchItem(
-                                      searchController.text,
-                                      page: 1,
-                                      filter: filter);
-                                }
-                              }
-                            });
+                          onTap: () async {
+                            final filter = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => switch (widget.screenType) {
+                                  SearchScreenType.provider => ProviderFilterScreen(initialFilter: this.filter),
+                                  SearchScreenType.itemListing => ItemListingFilterScreen(initialFilter: this.filter),
+                                },
+                              ),
+                            );
+                            if (filter == null) return;
+                            this.filter = filter;
+                            refreshData();
                           },
                           child: Container(
                             width: 50,
                             height: 50,
                             decoration: BoxDecoration(
-                              border: Border.all(
-                                  width: 1,
-                                  color: context.color.borderColor.darken(30)),
+                              border: Border.all(width: 1, color: context.color.borderColor.darken(30)),
                               color: context.color.secondaryColor,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Center(
-                              child: UiUtils.getSvg(
-                                  filter != null
-                                      ? AppIcons.filterByIcon
-                                      : AppIcons.filter,
+                              child: UiUtils.getSvg(filter != null ? AppIcons.filterByIcon : AppIcons.filter,
                                   color: context.color.territoryColor),
                             ),
                           ),
@@ -332,23 +315,13 @@ class SearchScreenState extends State<SearchScreen>
               child: Directionality(
                   textDirection: Directionality.of(context),
                   child: RotatedBox(
-                    quarterTurns:
-                        Directionality.of(context) == TextDirection.rtl
-                            ? 2
-                            : -4,
-                    child: UiUtils.getSvg(AppIcons.arrowLeft,
-                        fit: BoxFit.none,
-                        color: context.color.textDefaultColor),
+                    quarterTurns: Directionality.of(context) == TextDirection.rtl ? 2 : -4,
+                    child: UiUtils.getSvg(AppIcons.arrowLeft, fit: BoxFit.none, color: context.color.textDefaultColor),
                   ))),
         ),
       ),
-      elevation: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark
-          ? 0
-          : 6,
-      shadowColor:
-          context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark
-              ? null
-              : context.color.textDefaultColor.withOpacity(0.2),
+      elevation: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark ? 0 : 6,
+      shadowColor: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark ? null : context.color.textDefaultColor.withOpacity(0.2),
       backgroundColor: context.color.backgroundColor,
     );
   }
@@ -446,7 +419,7 @@ class SearchScreenState extends State<SearchScreen>
       },
       child: Scaffold(
         appBar: appBarWidget(),
-        body: bodyData(),
+        body: RefreshIndicator(onRefresh: () async => refreshData(), child: bodyData()),
         backgroundColor: context.color.backgroundColor,
       ),
     );
@@ -460,26 +433,15 @@ class SearchScreenState extends State<SearchScreen>
           // Add any specific listener logic for SearchProvidersCubit state changes if needed
         },
         builder: (context, searchState) {
-          bool hasSearchResults = searchState is SearchProvidersSuccess &&
-              searchState.searchedProviders.isNotEmpty;
+          bool hasSearchResults = searchState is SearchProvidersSuccess && searchState.searchedProviders.isNotEmpty;
 
-          ScrollController activeController =
-              hasSearchResults ? providerController : popularController;
+          ScrollController activeController = hasSearchResults ? providerController : popularController;
 
           return SingleChildScrollView(
+            padding: EdgeInsets.only(top: 10),
+            physics: AlwaysScrollableScrollPhysics(),
             controller: activeController,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                buildHistoryItemList(),
-                if (searchController.text.isNotEmpty ||
-                    hasSearchResults ||
-                    filter != null)
-                  providersItemsWidget()
-                else
-                  popularItemsWidget(),
-              ],
-            ),
+            child: providersItemsWidget(),
           );
         },
       );
@@ -490,26 +452,15 @@ class SearchScreenState extends State<SearchScreen>
           // Add any specific listener logic for SearchItemCubit state changes if needed
         },
         builder: (context, searchState) {
-          bool hasSearchResults = searchState is SearchItemSuccess &&
-              searchState.searchedItems.isNotEmpty;
+          bool hasSearchResults = searchState is SearchItemSuccess && searchState.searchedItems.isNotEmpty;
 
-          ScrollController activeController =
-              hasSearchResults ? controller : popularController;
+          ScrollController activeController = hasSearchResults ? controller : popularController;
 
           return SingleChildScrollView(
+            padding: EdgeInsets.only(top: 10),
+            physics: AlwaysScrollableScrollPhysics(),
             controller: activeController,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                buildHistoryItemList(),
-                if (searchController.text.isNotEmpty ||
-                    hasSearchResults ||
-                    filter != null)
-                  searchItemsWidget()
-                else
-                  popularItemsWidget(),
-              ],
-            ),
+            child: searchItemsWidget(),
           );
         },
       );
@@ -580,10 +531,7 @@ class SearchScreenState extends State<SearchScreen>
                           child: RichText(
                             text: TextSpan(
                               text: "${items[index].name!}\tin\t",
-                              style: TextStyle(
-                                  color: context.color.textDefaultColor
-                                      .withOpacity(0.3),
-                                  overflow: TextOverflow.ellipsis),
+                              style: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), overflow: TextOverflow.ellipsis),
                               children: <TextSpan>[
                                 TextSpan(
                                   text: items[index].category!.name,
@@ -668,17 +616,7 @@ class SearchScreenState extends State<SearchScreen>
 
         if (state is SearchProvidersSuccess) {
           if (state.searchedProviders.isEmpty) {
-            return SingleChildScrollView(
-              child: NoDataFound(
-                onTap: () {
-                  context.read<SearchProvidersCubit>().searchProviders(
-                        searchController.text.toString(),
-                        page: 1,
-                        filter: filter,
-                      );
-                },
-              ),
-            );
+            return SingleChildScrollView(child: NoDataFound(onTap: refreshData));
           }
 
           return Padding(
@@ -689,16 +627,6 @@ class SearchScreenState extends State<SearchScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: EdgeInsetsDirectional.only(start: 5.0),
-                  child: CustomText(
-                    filter?.userType == 'expert'
-                        ? "Experts".translate(context)
-                        : "Businesses".translate(context),
-                    color: context.color.textDefaultColor.withOpacity(0.3),
-                    fontSize: context.font.normal,
-                  ),
-                ),
                 SizedBox(height: 3),
                 ListView.separated(
                   shrinkWrap: true,
@@ -721,6 +649,10 @@ class SearchScreenState extends State<SearchScreen>
                               name: provider.name,
                               email: provider.email,
                               mobile: provider.mobile,
+                              categoriesIds: provider.categoriesIds,
+                              country: provider.country,
+                              city: provider.city,
+                              state: provider.state,
                               type: provider.type,
                               profile: provider.profile,
                               bio: provider.bio,
@@ -731,8 +663,7 @@ class SearchScreenState extends State<SearchScreen>
                               tiktok: provider.tiktok,
                               address: provider.address,
                               isVerified: provider.isVerified,
-                              showPersonalDetails:
-                                  provider.isPersonalDetailShow,
+                              showPersonalDetails: provider.isPersonalDetailShow,
                               createdAt: provider.createdAt,
                               updatedAt: provider.updatedAt,
                             ),
@@ -762,106 +693,91 @@ class SearchScreenState extends State<SearchScreen>
   }
 
   Widget searchItemsWidget() {
-    return BlocBuilder<SearchItemCubit, SearchItemState>(
-      builder: (context, state) {
-        if (state is SearchItemFetchProgress) {
-          return shimmerEffect();
-        }
-
-        if (state is SearchItemFailure) {
-          if (state.errorMessage is ApiException) {
-            if (state.errorMessage == "no-internet") {
-              return SingleChildScrollView(
-                child: NoInternet(
-                  onRetry: () {
-                    context.read<SearchItemCubit>().searchItem(
-                        searchController.text.toString(),
-                        page: 1,
-                        filter: filter);
-                  },
-                ),
-              );
-            }
+    return RefreshIndicator(
+      onRefresh: () async => refreshData(),
+      child: BlocBuilder<SearchItemCubit, SearchItemState>(
+        builder: (context, state) {
+          if (state is SearchItemFetchProgress) {
+            return shimmerEffect();
           }
 
-          return Center(child: const SomethingWentWrong());
-        }
+          if (state is SearchItemFailure) {
+            if (state.errorMessage is ApiException) {
+              if (state.errorMessage == "no-internet") {
+                return SingleChildScrollView(
+                  physics: AlwaysScrollableScrollPhysics(),
+                  child: NoInternet(
+                    onRetry: () {
+                      context.read<SearchItemCubit>().searchItem(searchController.text.toString(), page: 1, filter: filter);
+                    },
+                  ),
+                );
+              }
+            }
 
-        if (state is SearchItemSuccess) {
-          if (state.searchedItems.isEmpty) {
-            return SingleChildScrollView(
-              child: NoDataFound(
-                onTap: () {
-                  context.read<SearchItemCubit>().searchItem(
-                      searchController.text.toString(),
-                      page: 1,
-                      filter: filter);
-                },
+            return Center(child: const SomethingWentWrong());
+          }
+
+          if (state is SearchItemSuccess) {
+            if (state.searchedItems.isEmpty) {
+              return _noDataFound();
+            }
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: sidePadding,
+                vertical: 8,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    height: 3,
+                  ),
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    separatorBuilder: (context, index) {
+                      return Container(
+                        height: 8,
+                      );
+                    },
+                    itemBuilder: (context, index) {
+                      ItemModel item = state.searchedItems[index];
+
+                      return InkWell(
+                        onTap: () {
+                          insertNewItem(item);
+                          Navigator.pushNamed(
+                            context,
+                            Routes.adDetailsScreen,
+                            arguments: {
+                              'model': item,
+                            },
+                          );
+                        },
+                        child: ItemHorizontalCard(
+                          item: item,
+                          showLikeButton: true,
+                          additionalImageWidth: 8,
+                        ),
+                      );
+                    },
+                    itemCount: state.searchedItems.length,
+                  ),
+                  if (state.isLoadingMore)
+                    Center(
+                      child: UiUtils.progress(
+                        normalProgressColor: context.color.territoryColor,
+                      ),
+                    )
+                ],
               ),
             );
           }
-
-          return Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: sidePadding,
-              vertical: 8,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                    padding: EdgeInsetsDirectional.only(start: 5.0),
-                    child: CustomText(
-                      "searchedItems".translate(context),
-                      color: context.color.textDefaultColor.withOpacity(0.3),
-                      fontSize: context.font.normal,
-                    )),
-                SizedBox(
-                  height: 3,
-                ),
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                  separatorBuilder: (context, index) {
-                    return Container(
-                      height: 8,
-                    );
-                  },
-                  itemBuilder: (context, index) {
-                    ItemModel item = state.searchedItems[index];
-
-                    return InkWell(
-                      onTap: () {
-                        insertNewItem(item);
-                        Navigator.pushNamed(
-                          context,
-                          Routes.adDetailsScreen,
-                          arguments: {
-                            'model': item,
-                          },
-                        );
-                      },
-                      child: ItemHorizontalCard(
-                        item: item,
-                        showLikeButton: true,
-                        additionalImageWidth: 8,
-                      ),
-                    );
-                  },
-                  itemCount: state.searchedItems.length,
-                ),
-                if (state.isLoadingMore)
-                  Center(
-                    child: UiUtils.progress(
-                      normalProgressColor: context.color.territoryColor,
-                    ),
-                  )
-              ],
-            ),
-          );
-        }
-        return Container();
-      },
+          return Container();
+        },
+      ),
     );
   }
 
@@ -957,10 +873,7 @@ class SearchScreenState extends State<SearchScreen>
   }
 
   Widget setSearchIcon() {
-    return Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: UiUtils.getSvg(AppIcons.search,
-            color: context.color.territoryColor));
+    return Padding(padding: const EdgeInsets.all(8.0), child: UiUtils.getSvg(AppIcons.search, color: context.color.territoryColor));
   }
 
   Widget setSuffixIcon() {
@@ -987,15 +900,14 @@ class SearchScreenState extends State<SearchScreen>
 
   Widget buildSearchTextField() {
     return TextFormField(
-        autofocus: widget.autoFocus,
+        autofocus: false,
         controller: searchController,
         decoration: InputDecoration(
           border: InputBorder.none,
           fillColor: Theme.of(context).colorScheme.secondaryColor,
           hintText: "searchHintLbl".translate(context),
           prefixIcon: setSearchIcon(),
-          prefixIconConstraints:
-              const BoxConstraints(minHeight: 5, minWidth: 5),
+          prefixIconConstraints: const BoxConstraints(minHeight: 5, minWidth: 5),
         ),
         enableSuggestions: true,
         onEditingComplete: () {
@@ -1029,6 +941,8 @@ class SearchScreenState extends State<SearchScreen>
     providerController.dispose();
     super.dispose();
   }
+
+  Widget _noDataFound() => SingleChildScrollView(physics: AlwaysScrollableScrollPhysics(), child: NoDataFound(onTap: refreshData));
 }
 
 // Provider card widget to display provider search results
@@ -1104,14 +1018,15 @@ class ProviderCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 // Provider type
                 CustomText(
-                  provider.type ?? "",
+                  provider.categoriesModels?.isEmpty ?? false
+                      ? provider.type ?? ''
+                      : UiUtils.categoriesListToString(provider.categoriesModels!),
                   fontSize: 14,
                   color: context.color.textDefaultColor.withOpacity(0.7),
                 ),
                 const SizedBox(height: 8),
                 // Location
-                if (provider.address != null &&
-                    provider.address.toString().isNotEmpty)
+                if (provider.location != null)
                   Row(
                     children: [
                       Icon(
@@ -1122,12 +1037,11 @@ class ProviderCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Expanded(
                         child: CustomText(
-                          provider.address.toString(),
+                          provider.location.toString(),
                           fontSize: 12,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          color:
-                              context.color.textDefaultColor.withOpacity(0.6),
+                          color: context.color.textDefaultColor.withOpacity(0.6),
                         ),
                       ),
                     ],

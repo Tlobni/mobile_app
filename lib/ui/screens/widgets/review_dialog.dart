@@ -161,24 +161,19 @@ class _ReviewDialogState extends State<ReviewDialog> {
             // Determine which API to call based on review type
             final AddUserReviewCubit cubit = context.read<AddUserReviewCubit>();
 
-            print(
-                "Submitting review - Type: ${widget.reviewType}, TargetID: ${widget.targetId}, Rating: $_rating");
+            print("Submitting review - Type: ${widget.reviewType}, TargetID: ${widget.targetId}, Rating: $_rating");
 
-            if (widget.reviewType == ReviewType.service ||
-                widget.reviewType == ReviewType.experience) {
+            if (widget.reviewType == ReviewType.service || widget.reviewType == ReviewType.experience) {
               // Service or Experience review
               if (widget.userId == null) {
-                HelperUtils.showSnackBarMessage(
-                    context, "Error: User ID is required for service reviews");
+                HelperUtils.showSnackBarMessage(context, "Error: User ID is required for service reviews");
                 return;
               }
 
               print("Service review - UserID: ${widget.userId}");
 
               // Show temporary debug SnackBar
-              HelperUtils.showSnackBarMessage(
-                  context, "Submitting service review...",
-                  messageDuration: 2);
+              HelperUtils.showSnackBarMessage(context, "Submitting service review...", messageDuration: 2);
 
               cubit.addServiceReview(
                 serviceId: widget.targetId,
@@ -191,9 +186,7 @@ class _ReviewDialogState extends State<ReviewDialog> {
               print("Profile review - Expert/Business");
 
               // Show temporary debug SnackBar
-              HelperUtils.showSnackBarMessage(
-                  context, "Submitting user review...",
-                  messageDuration: 2);
+              HelperUtils.showSnackBarMessage(context, "Submitting user review...", messageDuration: 2);
 
               cubit.addUserReview(
                 userId: widget.targetId,

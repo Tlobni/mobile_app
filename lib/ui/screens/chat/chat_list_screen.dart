@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/chat/blocked_users_list_cubit.dart';
 import 'package:tlobni/data/cubits/chat/get_buyer_chat_users_cubit.dart';
@@ -14,9 +17,6 @@ import 'package:tlobni/utils/app_icon.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shimmer/shimmer.dart';
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -33,12 +33,16 @@ class ChatListScreen extends StatefulWidget {
   State<ChatListScreen> createState() => _ChatListScreenState();
 }
 
-class _ChatListScreenState extends State<ChatListScreen>
-    with AutomaticKeepAliveClientMixin {
+class _ChatListScreenState extends State<ChatListScreen> with AutomaticKeepAliveClientMixin {
   ScrollController chatScreenController = ScrollController();
 
   @override
   void initState() {
+    reload();
+    super.initState();
+  }
+
+  void reload() {
     if (HiveUtils.isUserAuthenticated()) {
       context.read<GetBuyerChatListCubit>().fetch();
       context.read<GetSellerChatListCubit>().fetch();
@@ -54,8 +58,6 @@ class _ChatListScreenState extends State<ChatListScreen>
         }
       });
     }
-
-    super.initState();
   }
 
   @override
@@ -73,8 +75,7 @@ class _ChatListScreenState extends State<ChatListScreen>
           title: "message".translate(context),
           actions: [
             InkWell(
-              child: UiUtils.getSvg(AppIcons.blockedUserIcon,
-                  color: context.color.textDefaultColor),
+              child: UiUtils.getSvg(AppIcons.blockedUserIcon, color: context.color.textDefaultColor),
               onTap: () {
                 Navigator.pushNamed(context, Routes.blockedUserListScreen);
               },
@@ -98,18 +99,14 @@ class _ChatListScreenState extends State<ChatListScreen>
           return BlocBuilder<GetSellerChatListCubit, GetSellerChatListState>(
             builder: (context, sellerState) {
               // Handle loading states
-              if (buyerState is GetBuyerChatListInProgress ||
-                  sellerState is GetSellerChatListInProgress) {
+              if (buyerState is GetBuyerChatListInProgress || sellerState is GetSellerChatListInProgress) {
                 return buildChatListLoadingShimmer();
               }
 
               // Handle error states
-              if ((buyerState is GetBuyerChatListFailed &&
-                  sellerState is GetSellerChatListFailed)) {
-                if ((buyerState.error is ApiException &&
-                        buyerState.error.errorMessage == "no-internet") ||
-                    (sellerState.error is ApiException &&
-                        sellerState.error.errorMessage == "no-internet")) {
+              if ((buyerState is GetBuyerChatListFailed && sellerState is GetSellerChatListFailed)) {
+                if ((buyerState.error is ApiException && buyerState.error.errorMessage == "no-internet") ||
+                    (sellerState.error is ApiException && sellerState.error.errorMessage == "no-internet")) {
                   return NoInternet(
                     onRetry: () {
                       context.read<GetBuyerChatListCubit>().fetch();
@@ -167,11 +164,10 @@ class _ChatListScreenState extends State<ChatListScreen>
                 children: [
                   Expanded(
                     child: ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       controller: chatScreenController,
-                      shrinkWrap: true,
                       itemCount: combinedChats.length,
-                      padding: const EdgeInsetsDirectional.symmetric(
-                          horizontal: 8, vertical: 4),
+                      padding: const EdgeInsetsDirectional.symmetric(horizontal: 8, vertical: 4),
                       itemBuilder: (context, index) {
                         final chatData = combinedChats[index];
                         final ChatUser chatUser = chatData['chat'];
@@ -185,38 +181,19 @@ class _ChatListScreenState extends State<ChatListScreen>
                               id: chatUser.sellerId.toString(),
                               itemId: chatUser.itemId.toString(),
                               isBuyerList: true,
-                              profilePicture: chatUser.seller != null &&
-                                      chatUser.seller!.profile != null
-                                  ? chatUser.seller!.profile!
-                                  : "",
-                              userName: chatUser.seller != null &&
-                                      chatUser.seller!.name != null
-                                  ? chatUser.seller!.name!
-                                  : "",
-                              itemPicture: chatUser.item != null &&
-                                      chatUser.item!.image != null
-                                  ? chatUser.item!.image!
-                                  : "",
-                              itemName: chatUser.item != null &&
-                                      chatUser.item!.name != null
-                                  ? chatUser.item!.name!
-                                  : "",
+                              profilePicture: chatUser.seller != null && chatUser.seller!.profile != null ? chatUser.seller!.profile! : "",
+                              userName: chatUser.seller != null && chatUser.seller!.name != null ? chatUser.seller!.name! : "",
+                              itemPicture: chatUser.item != null && chatUser.item!.image != null ? chatUser.item!.image! : "",
+                              itemName: chatUser.item != null && chatUser.item!.name != null ? chatUser.item!.name! : "",
                               pendingMessageCount: "5",
                               date: chatUser.createdAt!,
                               itemOfferId: chatUser.id!,
-                              itemPrice: chatUser.item != null &&
-                                      chatUser.item!.price != null
-                                  ? chatUser.item!.price!
-                                  : 0.0,
+                              itemPrice: chatUser.item != null && chatUser.item!.price != null ? chatUser.item!.price! : 0.0,
                               itemAmount: chatUser.amount ?? null,
-                              status: chatUser.item != null &&
-                                      chatUser.item!.status != null
-                                  ? chatUser.item!.status!
-                                  : null,
+                              status: chatUser.item != null && chatUser.item!.status != null ? chatUser.item!.status! : null,
                               buyerId: chatUser.buyerId.toString(),
                               isPurchased: chatUser.item!.isPurchased ?? 0,
-                              alreadyReview:
-                                  chatUser.item!.review == null ? false : true,
+                              alreadyReview: chatUser.item!.review == null ? false : true,
                               unreadCount: chatUser.unreadCount,
                             ),
                           );
@@ -230,30 +207,17 @@ class _ChatListScreenState extends State<ChatListScreen>
                               isBuyerList: false,
                               profilePicture: chatUser.buyer?.profile ?? "",
                               userName: chatUser.buyer?.name ?? "",
-                              itemPicture: chatUser.item != null &&
-                                      chatUser.item!.image != null
-                                  ? chatUser.item!.image!
-                                  : "",
-                              itemName: chatUser.item != null &&
-                                      chatUser.item!.name != null
-                                  ? chatUser.item!.name!
-                                  : "",
+                              itemPicture: chatUser.item != null && chatUser.item!.image != null ? chatUser.item!.image! : "",
+                              itemName: chatUser.item != null && chatUser.item!.name != null ? chatUser.item!.name! : "",
                               pendingMessageCount: "5",
                               date: chatUser.createdAt ?? '',
                               itemOfferId: chatUser.id!,
-                              itemPrice: chatUser.item != null &&
-                                      chatUser.item!.price != null
-                                  ? chatUser.item!.price!
-                                  : 0,
+                              itemPrice: chatUser.item != null && chatUser.item!.price != null ? chatUser.item!.price! : 0,
                               itemAmount: chatUser.amount ?? null,
-                              status: chatUser.item != null &&
-                                      chatUser.item!.status != null
-                                  ? chatUser.item!.status!
-                                  : null,
+                              status: chatUser.item != null && chatUser.item!.status != null ? chatUser.item!.status! : null,
                               buyerId: chatUser.buyerId.toString(),
                               isPurchased: chatUser.item?.isPurchased ?? 0,
-                              alreadyReview:
-                                  chatUser.item!.review == null ? false : true,
+                              alreadyReview: chatUser.item!.review == null ? false : true,
                               unreadCount: chatUser.unreadCount,
                             ),
                           );
@@ -261,10 +225,8 @@ class _ChatListScreenState extends State<ChatListScreen>
                       },
                     ),
                   ),
-                  if ((buyerState is GetBuyerChatListSuccess &&
-                          buyerState.isLoadingMore) ||
-                      (sellerState is GetSellerChatListSuccess &&
-                          sellerState.isLoadingMore))
+                  if ((buyerState is GetBuyerChatListSuccess && buyerState.isLoadingMore) ||
+                      (sellerState is GetSellerChatListSuccess && sellerState.isLoadingMore))
                     UiUtils.progress()
                 ],
               );
@@ -291,8 +253,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                   children: [
                     Shimmer.fromColors(
                       baseColor: Theme.of(context).colorScheme.shimmerBaseColor,
-                      highlightColor:
-                          Theme.of(context).colorScheme.shimmerHighlightColor,
+                      highlightColor: Theme.of(context).colorScheme.shimmerHighlightColor,
                       child: Stack(
                         children: [
                           const SizedBox(
@@ -307,8 +268,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                               clipBehavior: Clip.antiAlias,
                               decoration: BoxDecoration(
                                   color: Colors.grey,
-                                  border: Border.all(
-                                      width: 1.5, color: Colors.white),
+                                  border: Border.all(width: 1.5, color: Colors.white),
                                   borderRadius: BorderRadius.circular(10)),
                             ),
                           ),
@@ -318,10 +278,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                             child: GestureDetector(
                               onTap: () {},
                               child: Container(
-                                decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                        color: Colors.white, width: 2)),
+                                decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
                                 child: CircleAvatar(
                                   radius: 15,
                                   backgroundColor: context.color.territoryColor,

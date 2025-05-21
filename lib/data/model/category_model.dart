@@ -55,8 +55,7 @@ class CategoryModel {
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
     try {
       List<dynamic> childData = json['subcategories'] ?? [];
-      List<CategoryModel> children =
-          childData.map((child) => CategoryModel.fromJson(child)).toList();
+      List<CategoryModel> children = childData.map((child) => CategoryModel.fromJson(child)).toList();
 
       return CategoryModel(
           id: json['id'],
@@ -90,4 +89,10 @@ class CategoryModel {
   String toString() {
     return 'CategoryModel( id: $id, translated_name:$name, url: $url, descrtiption:$description, type: ${type?.value}, children: $children,subcategories_count:$subcategoriesCount)';
   }
+
+  @override
+  bool operator ==(Object other) => identical(this, other) || other is CategoryModel && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

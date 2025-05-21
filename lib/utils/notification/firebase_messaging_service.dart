@@ -2,18 +2,17 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:tlobni/utils/constant.dart';
-import 'package:tlobni/utils/hive_utils.dart';
-import 'package:tlobni/utils/notification/awsome_notification.dart';
-import 'package:tlobni/utils/notification/notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:tlobni/utils/constant.dart';
+import 'package:tlobni/utils/hive_utils.dart';
+import 'package:tlobni/utils/notification/awsome_notification.dart';
+import 'package:tlobni/utils/notification/notification_service.dart';
 
 class FirebaseMessagingService {
-  static final FirebaseMessagingService _instance =
-      FirebaseMessagingService._internal();
+  static final FirebaseMessagingService _instance = FirebaseMessagingService._internal();
 
   factory FirebaseMessagingService() {
     return _instance;
@@ -22,13 +21,12 @@ class FirebaseMessagingService {
   FirebaseMessagingService._internal();
 
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-  final LocalAwesomeNotification _localNotification =
-      LocalAwesomeNotification();
+  final LocalAwesomeNotification _localNotification = LocalAwesomeNotification();
 
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
 
-  Future<void> initialize() async {
+  Future<void> initialize(BuildContext context) async {
     // Get permission for iOS
     if (Platform.isIOS) {
       await _requestPermission();
@@ -37,8 +35,10 @@ class FirebaseMessagingService {
     // Get FCM token
     await getToken();
 
+    // await _firebaseMessaging.subscribeToTopic('all');
+
     // Configure message handling
-    _configureMessageHandling();
+    _configureMessageHandling(context);
   }
 
   Future<void> _requestPermission() async {
@@ -57,7 +57,7 @@ class FirebaseMessagingService {
     debugPrint('FCM Token: $_fcmToken');
 
     // Store token in secure storage if user is authenticated
-    if (HiveUtils.isUserAuthenticated() && _fcmToken != null) {
+    if (_fcmToken != null) {
       HiveUtils.setFcmToken(_fcmToken!);
     }
 
@@ -103,32 +103,36 @@ class FirebaseMessagingService {
     }
   }
 
-  void _configureMessageHandling() {
+  StreamSubscription<RemoteMessage>? _firebaseMessagingSubscription;
+
+  void _configureMessageHandling(BuildContext context) {
     // Handle messages when app is in foreground
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    if (_firebaseMessagingSubscription != null) {
+      _firebaseMessagingSubscription?.cancel();
+    }
+    _firebaseMessagingSubscription = FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('Got a message whilst in the foreground!');
       debugPrint('Message data: ${message.data}');
 
       if (message.notification != null) {
-        debugPrint(
-            'Message also contained a notification: ${message.notification}');
+        debugPrint('Message also contained a notification: ${message.notification}');
       }
 
-      NotificationService.handleNotification(message, false);
+      NotificationService.handleNotification(message, false, context);
     });
 
-    // Handle messages when app is in background and user taps the notification
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint('Message clicked (background): ${message.data}');
-      NotificationService.handleNotification(message, false);
-    });
+    // // Handle messages when app is in background and user taps the notification
+    // FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    //   debugPrint('Message clicked (background): ${message.data}');
+    //   NotificationService.handleNotification(message, false);
+    // });
 
     // Check if app was opened from a notification
     _firebaseMessaging.getInitialMessage().then((RemoteMessage? message) {
       if (message != null) {
         debugPrint('Initial message: ${message.data}');
         Future.delayed(const Duration(seconds: 1), () {
-          NotificationService.handleNotification(message, true);
+          NotificationService.handleNotification(message, true, context);
         });
       }
     });

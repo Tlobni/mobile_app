@@ -1,16 +1,17 @@
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:country_picker/country_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/auth/authentication_cubit.dart';
 import 'package:tlobni/data/cubits/system/app_theme_cubit.dart';
-import 'package:tlobni/data/repositories/auth_repository.dart';
-import 'package:tlobni/data/repositories/category_repository.dart';
 import 'package:tlobni/data/model/category_model.dart';
-import 'package:tlobni/ui/screens/auth/sign_up/email_verification_screen.dart';
+import 'package:tlobni/data/repositories/category_repository.dart';
+import 'package:tlobni/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/custom_text_form_field.dart';
 import 'package:tlobni/ui/theme/theme.dart';
@@ -23,18 +24,13 @@ import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/login/lib/payloads.dart';
+import 'package:tlobni/utils/notification/firebase_messaging_service.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hive/hive.dart';
 
 class SignupScreen extends StatefulWidget {
   final String? emailId;
   final String? userType; // 'Provider' or 'Client'
-  final String?
-      providerType; // 'Expert' or 'Business' (only if userType is 'Provider')
+  final String? providerType; // 'Expert' or 'Business' (only if userType is 'Provider')
 
   const SignupScreen({
     super.key,
@@ -75,29 +71,23 @@ class _SignupScreenState extends CloudState<SignupScreen> {
   bool _isLoading = false; // Loading state for signup process
 
   // Expert fields
-  final TextEditingController _expertFullNameController =
-      TextEditingController();
+  final TextEditingController _expertFullNameController = TextEditingController();
   String? _expertGender; // example: 'Male','Female'
-  String? _expertCountry; // Store selected country name
-  final TextEditingController _expertLocationController =
-      TextEditingController();
   final TextEditingController _expertPhoneController = TextEditingController();
 
   // Business fields
   final TextEditingController _businessNameController = TextEditingController();
-  String? _businessCountry; // Store selected country name
-  final TextEditingController _businessLocationController =
-      TextEditingController();
-  final TextEditingController _businessPhoneController =
-      TextEditingController();
+  final TextEditingController _businessPhoneController = TextEditingController();
 
   // Client fields
-  final TextEditingController _clientFullNameController =
-      TextEditingController();
+  final TextEditingController _clientFullNameController = TextEditingController();
   String? _clientGender;
-  String? _clientCountry; // Store selected country name
-  final TextEditingController _clientLocationController =
-      TextEditingController();
+
+  final TextEditingController _locationController = TextEditingController();
+  String? _country;
+  String _countryCode = '961';
+  String? _city;
+  String? _state;
 
   // Categories
   // Replace hardcoded categories with fetched categories
@@ -114,6 +104,44 @@ class _SignupScreenState extends CloudState<SignupScreen> {
   // Add these new methods to the class
   // Track expanded subcategories
   final Set<int> _expandedSubcategories = {};
+
+  Widget get _locationWidget => LocationAutocomplete(
+        controller: _locationController,
+        hintText: "Location *".translate(context),
+        onSelected: (String location) {
+          // Basic handling when only the string is returned
+        },
+        fontSize: null,
+        padding: const EdgeInsets.all(16),
+        radius: BorderRadius.circular(8),
+        onLocationSelected: (Map<String, String> locationData) {
+          setState(() {
+            _city = locationData['city'] ?? "";
+            _state = locationData['state'] ?? "";
+            _country = locationData['country'] ?? "";
+          });
+        },
+      );
+
+  Widget get _phonePrefixCountryCode => SizedBox(
+        width: 55,
+        child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: GestureDetector(
+              onTap: () {
+                showCountryCode(context, (country) => setState(() => _countryCode = country.phoneCode));
+              },
+              child: Container(
+                  // color: Colors.red,
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8),
+                  child: Center(
+                      child: CustomText(
+                    "+$_countryCode",
+                    fontSize: context.font.large,
+                    textAlign: TextAlign.center,
+                  ))),
+            )),
+      );
 
   bool _isSubcategoryExpanded(int subcategoryId) {
     return _expandedSubcategories.contains(subcategoryId);
@@ -186,16 +214,13 @@ class _SignupScreenState extends CloudState<SignupScreen> {
     try {
       final CategoryRepository categoryRepository = CategoryRepository();
       // Fetch only provider categories for sign up page
-      final result = await categoryRepository.fetchCategories(
-          page: 1, type: CategoryType.providers);
+      final result = await categoryRepository.fetchCategories(page: 1, type: CategoryType.providers);
 
       log(result.toString());
 
       setState(() {
         // Only store categories with type 'providers'
-        _categories = result.modelList
-            .where((category) => category.type == CategoryType.providers)
-            .toList();
+        _categories = result.modelList.where((category) => category.type == CategoryType.providers).toList();
         // Initialize expanded state for each category
         _expandedPanels = List.generate(_categories.length, (_) => false);
         _isLoadingCategories = false;
@@ -228,13 +253,11 @@ class _SignupScreenState extends CloudState<SignupScreen> {
   void dispose() {
     // Dispose of new controllers
     _expertFullNameController.dispose();
-    _expertLocationController.dispose();
     _expertPhoneController.dispose();
     _businessNameController.dispose();
-    _businessLocationController.dispose();
     _businessPhoneController.dispose();
     _clientFullNameController.dispose();
-    _clientLocationController.dispose();
+    _locationController.dispose();
 
     // Existing
     _emailController.dispose();
@@ -263,53 +286,40 @@ class _SignupScreenState extends CloudState<SignupScreen> {
 
       try {
         // Prepare categories as a string
-        final String categoriesString = _userType == "Provider"
-            ? _selectedCategoryIds.map((id) => id.toString()).join(',')
-            : "";
+        final String categoriesString = _userType == "Provider" ? _selectedCategoryIds.map((id) => id.toString()).join(',') : "";
 
         log('Categories as string: $categoriesString');
 
         // Get name based on user type
         String name = "";
         if (_userType == "Provider") {
-          name = _providerType == "Expert"
-              ? _expertFullNameController.text.trim()
-              : _businessNameController.text.trim();
+          name = _providerType == "Expert" ? _expertFullNameController.text.trim() : _businessNameController.text.trim();
         } else {
           name = _clientFullNameController.text.trim();
         }
+
+        await FirebaseMessagingService().getToken();
 
         // Collect all user data
         final userData = {
           'email': _emailController.text.trim(),
           'password': _passwordController.text.trim(),
-          'type': _userType == "Provider"
-              ? (_providerType == "Expert" ? "Expert" : "Business")
-              : "Client",
+          'type': _userType == "Provider" ? (_providerType == "Expert" ? "Expert" : "Business") : "Client",
           'userType': _userType,
           'providerType': _userType == "Provider" ? _providerType : null,
           'fullName': name, // Use name for all user types
           'name': name, // Add name parameter for API consistency
-          'gender': _userType == "Provider" && _providerType == "Expert"
-              ? _expertGender
-              : _clientGender,
-          'location': _userType == "Provider"
-              ? (_providerType == "Expert"
-                  ? _expertCountry ?? ""
-                  : _businessCountry ?? "")
-              : _clientCountry ?? "",
-          'city': _userType == "Provider"
-              ? (_providerType == "Expert"
-                  ? _expertLocationController.text.trim()
-                  : _businessLocationController.text.trim())
-              : _clientLocationController.text.trim(),
+          'gender': _userType == "Provider" && _providerType == "Expert" ? _expertGender : _clientGender,
+          'country': _country,
+          'state': _state,
+          'city': _city,
+          'country_code': _countryCode,
           'categories': categoriesString,
           'phone': _userType == "Provider"
-              ? (_providerType == "Expert"
-                  ? _expertPhoneController.text.trim()
-                  : _businessPhoneController.text.trim())
+              ? (_providerType == "Expert" ? _expertPhoneController.text.trim() : _businessPhoneController.text.trim())
               : null,
           'platform_type': Platform.isAndroid ? "android" : "ios",
+          'fcm_token': HiveUtils.getFcmToken(),
         };
 
         // Add debug log to show what is being sent to the API
@@ -328,9 +338,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           }
 
           // Store user data
-          final userData = response.containsKey("user")
-              ? response["user"]
-              : response["data"];
+          final userData = response.containsKey("user") ? response["user"] : response["data"];
 
           // Determine the correct user type for storage
           String userTypeForStorage = _userType;
@@ -344,38 +352,27 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           String nameForStorage = name;
 
           HiveUtils.setUserData({
-            'id': userData?["id"] != null
-                ? int.parse(userData["id"].toString())
-                : 0,
+            'id': userData?["id"] != null ? int.parse(userData["id"].toString()) : 0,
             'name': userData?["name"] ?? nameForStorage,
             'email': userData?["email"] ?? _emailController.text.trim(),
             'mobile': _userType == "Provider"
-                ? (_providerType == "Expert"
-                    ? _expertPhoneController.text.trim()
-                    : _businessPhoneController.text.trim())
+                ? (_providerType == "Expert" ? _expertPhoneController.text.trim() : _businessPhoneController.text.trim())
                 : null,
             'profile': userData?["profile"] ?? "",
-            'type':
-                userTypeForStorage, // Use our explicit userTypeForStorage instead of roles
+            'type': userTypeForStorage, // Use our explicit userTypeForStorage instead of roles
             'firebaseId': userData?["firebase_id"] ?? "",
             'fcmId': userData?["fcm_id"] ?? "",
             'notification': userData?["notification"] ?? 1,
             'address': userData?["address"] ?? "",
             'categories': categoriesString,
             'phone': _userType == "Provider"
-                ? (_providerType == "Expert"
-                    ? _expertPhoneController.text.trim()
-                    : _businessPhoneController.text.trim())
+                ? (_providerType == "Expert" ? _expertPhoneController.text.trim() : _businessPhoneController.text.trim())
                 : null,
-            'gender': _userType == "Provider" && _providerType == "Expert"
-                ? _expertGender
-                : _clientGender,
-            'location': _userType == "Provider"
-                ? (_providerType == "Expert"
-                    ? _expertCountry ?? ""
-                    : _businessCountry ?? "")
-                : _clientCountry ?? "",
-            'countryCode': "",
+            'gender': _userType == "Provider" && _providerType == "Expert" ? _expertGender : _clientGender,
+            'country': _country,
+            'state': _state,
+            'city': _city,
+            'countryCode': _countryCode,
             'isProfileCompleted': true,
             'showPersonalDetails': 1,
             'autoApproveItem': true,
@@ -402,8 +399,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
               arguments: {"from": "signup"},
             );
 
-            Navigator.pushNamed(Constant.navigatorKey.currentContext!,
-                Routes.subscriptionPackageListRoute);
+            Navigator.pushNamed(Constant.navigatorKey.currentContext!, Routes.subscriptionPackageListRoute);
           } else {
             // Client users should just go to the main screen
             log('Navigating Client to main screen only');
@@ -420,8 +416,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
 
           // Show error message
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(response["message"] ?? "Registration failed")),
+            SnackBar(content: Text(response["message"] ?? "Registration failed")),
           );
         }
       } catch (e) {
@@ -438,8 +433,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
         if (e.toString().contains('The selected type is invalid')) {
           errorMessage = 'Invalid account type selected. Please try again.';
         } else if (e.toString().contains('The email has already been taken')) {
-          errorMessage =
-              'This email is already registered. Please use another email or try logging in.';
+          errorMessage = 'This email is already registered. Please use another email or try logging in.';
         } else {
           // For other errors, just show the error message as is
           errorMessage = e.toString();
@@ -472,17 +466,14 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                   // Get user role from Hive
                   final userDetails = HiveUtils.getUserDetails();
                   final userRole = userDetails.type ?? "Client";
-                  if (userRole == "Provider" ||
-                      userRole == "Expert" ||
-                      userRole == "Business") {
+                  if (userRole == "Provider" || userRole == "Expert" || userRole == "Business") {
                     Navigator.pushReplacementNamed(
                       context,
                       Routes.main,
                       arguments: {"from": "signup"},
                     );
 
-                    Navigator.pushNamed(Constant.navigatorKey.currentContext!,
-                        Routes.subscriptionPackageListRoute);
+                    Navigator.pushNamed(Constant.navigatorKey.currentContext!, Routes.subscriptionPackageListRoute);
                   } else {
                     // Client users should just go to the main screen
                     Navigator.pushReplacementNamed(
@@ -506,8 +497,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                 key: _formKey,
                 child: SingleChildScrollView(
                   child: Padding(
-                    padding:
-                        const EdgeInsets.only(left: 18.0, right: 18, top: 0),
+                    padding: const EdgeInsets.only(left: 18.0, right: 18, top: 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -559,12 +549,8 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                         const SizedBox(height: 24),
 
                         // Conditionally show fields for Expert, Business, or Client
-                        if (_userType == 'Provider' &&
-                            _providerType == 'Expert')
-                          _buildExpertFields(),
-                        if (_userType == 'Provider' &&
-                            _providerType == 'Business')
-                          _buildBusinessFields(),
+                        if (_userType == 'Provider' && _providerType == 'Expert') _buildExpertFields(),
+                        if (_userType == 'Provider' && _providerType == 'Business') _buildBusinessFields(),
                         if (_userType == 'Client') _buildClientFields(),
 
                         const SizedBox(height: 20),
@@ -590,11 +576,8 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                               });
                             },
                             icon: Icon(
-                              isObscure
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                              color:
-                                  context.color.textColorDark.withOpacity(0.3),
+                              isObscure ? Icons.visibility_off : Icons.visibility,
+                              color: context.color.textColorDark.withOpacity(0.3),
                             ),
                           ),
                           hintText: "Password *".translate(context),
@@ -611,8 +594,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                           radius: 10,
                           disabled: _isLoading,
                           height: 46,
-                          disabledColor:
-                              const Color.fromARGB(255, 104, 102, 106),
+                          disabledColor: const Color.fromARGB(255, 104, 102, 106),
                           textColor: const Color(0xFFE6CBA8),
                         ),
                         const SizedBox(height: 36),
@@ -698,53 +680,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           borderColor: context.color.borderColor.darken(50),
         ),
         const SizedBox(height: 14),
-
-        // Country Selection
-        CustomTextFormField(
-          fillColor: context.color.secondaryColor,
-          hintText: _expertCountry ?? "Country *",
-          readOnly: true,
-          onTap: () {
-            showCountryPicker(
-              context: context,
-              showPhoneCode: false,
-              countryListTheme: CountryListThemeData(
-                borderRadius: BorderRadius.circular(11),
-                searchTextStyle: TextStyle(
-                  color: context.color.textColorDark,
-                  fontSize: 16,
-                ),
-              ),
-              countryFilter: [
-                'SA',
-                'AE',
-                'QA',
-                'OM',
-                'KW',
-                'LB',
-                'EG',
-                'JO',
-                'IQ',
-              ],
-              onSelect: (Country country) {
-                setState(() => _expertCountry = country.name);
-              },
-            );
-          },
-          suffix: const Icon(Icons.arrow_drop_down),
-          validator: CustomTextFieldValidator.nullCheck,
-          controller: TextEditingController(text: _expertCountry),
-          borderColor: context.color.borderColor.darken(50),
-        ),
-        const SizedBox(height: 14),
-
-        // Location
-        CustomTextFormField(
-          controller: _expertLocationController,
-          fillColor: context.color.secondaryColor,
-          hintText: "City/Area (optional)",
-          borderColor: context.color.borderColor.darken(50),
-        ),
+        _locationWidget,
         const SizedBox(height: 14),
 
         // Categories (multiple selection)
@@ -759,6 +695,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           validator: CustomTextFieldValidator.phoneNumber,
           keyboard: TextInputType.phone,
           borderColor: context.color.borderColor.darken(50),
+          fixedPrefix: _phonePrefixCountryCode,
         ),
       ],
     );
@@ -778,53 +715,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           borderColor: context.color.borderColor.darken(50),
         ),
         const SizedBox(height: 14),
-
-        // Country Selection
-        CustomTextFormField(
-          fillColor: context.color.secondaryColor,
-          hintText: _businessCountry ?? "Country *",
-          readOnly: true,
-          onTap: () {
-            showCountryPicker(
-              context: context,
-              showPhoneCode: false,
-              countryListTheme: CountryListThemeData(
-                borderRadius: BorderRadius.circular(11),
-                searchTextStyle: TextStyle(
-                  color: context.color.textColorDark,
-                  fontSize: 16,
-                ),
-              ),
-              countryFilter: [
-                'SA',
-                'AE',
-                'QA',
-                'OM',
-                'KW',
-                'LB',
-                'EG',
-                'JO',
-                'IQ',
-              ],
-              onSelect: (Country country) {
-                setState(() => _businessCountry = country.name);
-              },
-            );
-          },
-          suffix: const Icon(Icons.arrow_drop_down),
-          validator: CustomTextFieldValidator.nullCheck,
-          controller: TextEditingController(text: _businessCountry),
-          borderColor: context.color.borderColor.darken(50),
-        ),
-        const SizedBox(height: 14),
-
-        // Location
-        CustomTextFormField(
-          controller: _businessLocationController,
-          fillColor: context.color.secondaryColor,
-          hintText: "City/Area (optional)",
-          borderColor: context.color.borderColor.darken(50),
-        ),
+        _locationWidget,
         const SizedBox(height: 14),
 
         // Categories
@@ -839,6 +730,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           validator: CustomTextFieldValidator.phoneNumber,
           keyboard: TextInputType.phone,
           borderColor: context.color.borderColor.darken(50),
+          fixedPrefix: _phonePrefixCountryCode,
         ),
       ],
     );
@@ -888,53 +780,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           borderColor: context.color.borderColor.darken(50),
         ),
         const SizedBox(height: 14),
-
-        // Country Selection
-        CustomTextFormField(
-          fillColor: context.color.secondaryColor,
-          hintText: _clientCountry ?? "Country *",
-          readOnly: true,
-          onTap: () {
-            showCountryPicker(
-              context: context,
-              showPhoneCode: false,
-              countryListTheme: CountryListThemeData(
-                borderRadius: BorderRadius.circular(11),
-                searchTextStyle: TextStyle(
-                  color: context.color.textColorDark,
-                  fontSize: 16,
-                ),
-              ),
-              countryFilter: [
-                'SA',
-                'AE',
-                'QA',
-                'OM',
-                'KW',
-                'LB',
-                'EG',
-                'JO',
-                'IQ',
-              ],
-              onSelect: (Country country) {
-                setState(() => _clientCountry = country.name);
-              },
-            );
-          },
-          suffix: const Icon(Icons.arrow_drop_down),
-          validator: CustomTextFieldValidator.nullCheck,
-          controller: TextEditingController(text: _clientCountry),
-          borderColor: context.color.borderColor.darken(50),
-        ),
-        const SizedBox(height: 14),
-
-        // Location
-        CustomTextFormField(
-          controller: _clientLocationController,
-          fillColor: context.color.secondaryColor,
-          hintText: "City/Area (optional)",
-          borderColor: context.color.borderColor.darken(50),
-        ),
+        _locationWidget,
       ],
     );
   }
@@ -960,9 +806,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    _selectedCategoryIds.isEmpty
-                        ? "Choose Categories *"
-                        : "${_selectedCategoryIds.length} categories selected",
+                    _selectedCategoryIds.isEmpty ? "Choose Categories *" : "${_selectedCategoryIds.length} categories selected",
                     style: TextStyle(
                       color: context.color.textColorDark.withOpacity(0.7),
                       fontSize: context.font.large,
@@ -1010,9 +854,8 @@ class _SignupScreenState extends CloudState<SignupScreen> {
         return StatefulBuilder(builder: (context, setState) {
           // Load categories when dialog opens
           if (isDialogLoading) {
-            _loadCategoriesForDialog(
-                    setState, filteredCategories, dialogExpandedPanels)
-                .then((_) {
+            _loadCategoriesForDialog(setState, filteredCategories, dialogExpandedPanels).then((_) {
+              filteredCategories = filteredCategories.toSet().toList();
               setState(() {
                 isDialogLoading = false;
               });
@@ -1024,10 +867,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
             if (query.isEmpty) {
               setState(() {
                 // Only include categories with type 'providers'
-                filteredCategories = _categories
-                    .where(
-                        (category) => category.type == CategoryType.providers)
-                    .toList();
+                filteredCategories = _categories.where((category) => category.type == CategoryType.providers).toList();
               });
               return;
             }
@@ -1041,15 +881,11 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                   return false;
                 }
 
-                final matchesMainCategory =
-                    category.name?.toLowerCase().contains(query) ?? false;
+                final matchesMainCategory = category.name?.toLowerCase().contains(query) ?? false;
 
                 // Check if any subcategory matches
-                final hasMatchingSubcategory = category.children?.any(
-                        (subcategory) =>
-                            subcategory.name?.toLowerCase().contains(query) ??
-                            false) ??
-                    false;
+                final hasMatchingSubcategory =
+                    category.children?.any((subcategory) => subcategory.name?.toLowerCase().contains(query) ?? false) ?? false;
 
                 return matchesMainCategory || hasMatchingSubcategory;
               }).toList();
@@ -1058,14 +894,10 @@ class _SignupScreenState extends CloudState<SignupScreen> {
               for (int i = 0; i < filteredCategories.length; i++) {
                 final category = filteredCategories[i];
                 final originalIndex = _categories.indexOf(category);
-                final hasSubcategories =
-                    category.children != null && category.children!.isNotEmpty;
+                final hasSubcategories = category.children != null && category.children!.isNotEmpty;
 
-                final hasMatchingSubcategory = category.children?.any(
-                        (subcategory) =>
-                            subcategory.name?.toLowerCase().contains(query) ??
-                            false) ??
-                    false;
+                final hasMatchingSubcategory =
+                    category.children?.any((subcategory) => subcategory.name?.toLowerCase().contains(query) ?? false) ?? false;
 
                 if (hasMatchingSubcategory) {
                   dialogExpandedPanels[_categories.indexOf(category)] = true;
@@ -1083,8 +915,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                 children: [
                   // Header with title and close button
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: context.color.secondaryColor,
                       border: Border(
@@ -1132,8 +963,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            vertical: 12, horizontal: 16),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                       ),
                       onChanged: filterCategories,
                     ),
@@ -1144,17 +974,13 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                     child: isDialogLoading
                         ? const Center(child: CircularProgressIndicator())
                         : filteredCategories.isEmpty
-                            ? const Center(
-                                child: Text("No matching categories found"))
+                            ? const Center(child: Text("No matching categories found"))
                             : ListView.builder(
                                 itemCount: filteredCategories.length,
                                 itemBuilder: (context, index) {
                                   final category = filteredCategories[index];
-                                  final originalIndex =
-                                      _categories.indexOf(category);
-                                  final hasSubcategories =
-                                      category.children != null &&
-                                          category.children!.isNotEmpty;
+                                  final originalIndex = _categories.indexOf(category);
+                                  final hasSubcategories = category.children != null && category.children!.isNotEmpty;
 
                                   return Column(
                                     children: [
@@ -1164,8 +990,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                                           color: context.color.secondaryColor,
                                           border: Border(
                                             bottom: BorderSide(
-                                              color: context.color.borderColor
-                                                  .darken(10),
+                                              color: context.color.borderColor.darken(10),
                                               width: 0.5,
                                             ),
                                           ),
@@ -1173,55 +998,34 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                                         child: ListTile(
                                           title: Text(
                                             category.name ?? "Unknown",
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.w500),
+                                            style: const TextStyle(fontWeight: FontWeight.w500),
                                           ),
                                           leading: Checkbox(
-                                            value: _isCategorySelected(
-                                                category.id ?? 0),
+                                            value: _isCategorySelected(category.id ?? 0),
                                             onChanged: (bool? value) {
                                               if (category.id != null) {
                                                 setState(() {
                                                   if (value == true) {
-                                                    if (!_selectedCategoryIds
-                                                        .contains(
-                                                            category.id!)) {
-                                                      _selectedCategoryIds
-                                                          .add(category.id!);
+                                                    if (!_selectedCategoryIds.contains(category.id!)) {
+                                                      _selectedCategoryIds.add(category.id!);
                                                     }
 
                                                     // Also select all subcategories
                                                     if (hasSubcategories) {
-                                                      for (var subcategory
-                                                          in category
-                                                              .children!) {
-                                                        if (subcategory.id !=
-                                                                null &&
-                                                            !_selectedCategoryIds
-                                                                .contains(
-                                                                    subcategory
-                                                                        .id!)) {
-                                                          _selectedCategoryIds
-                                                              .add(subcategory
-                                                                  .id!);
+                                                      for (var subcategory in category.children!) {
+                                                        if (subcategory.id != null && !_selectedCategoryIds.contains(subcategory.id!)) {
+                                                          _selectedCategoryIds.add(subcategory.id!);
                                                         }
                                                       }
                                                     }
                                                   } else {
-                                                    _selectedCategoryIds
-                                                        .remove(category.id!);
+                                                    _selectedCategoryIds.remove(category.id!);
 
                                                     // Also deselect all subcategories
                                                     if (hasSubcategories) {
-                                                      for (var subcategory
-                                                          in category
-                                                              .children!) {
-                                                        if (subcategory.id !=
-                                                            null) {
-                                                          _selectedCategoryIds
-                                                              .remove(
-                                                                  subcategory
-                                                                      .id!);
+                                                      for (var subcategory in category.children!) {
+                                                        if (subcategory.id != null) {
+                                                          _selectedCategoryIds.remove(subcategory.id!);
                                                         }
                                                       }
                                                     }
@@ -1233,23 +1037,15 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                                           // Only show trailing arrow if there are subcategories
                                           trailing: hasSubcategories
                                               ? Icon(
-                                                  dialogExpandedPanels[
-                                                          originalIndex]
-                                                      ? Icons.keyboard_arrow_up
-                                                      : Icons
-                                                          .keyboard_arrow_down,
-                                                  color: context
-                                                      .color.textColorDark,
+                                                  dialogExpandedPanels[originalIndex] ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                                  color: context.color.textColorDark,
                                                 )
                                               : null,
                                           // Make the entire row clickable to expand/collapse if it has subcategories
                                           onTap: hasSubcategories
                                               ? () {
                                                   setState(() {
-                                                    dialogExpandedPanels[
-                                                            originalIndex] =
-                                                        !dialogExpandedPanels[
-                                                            originalIndex];
+                                                    dialogExpandedPanels[originalIndex] = !dialogExpandedPanels[originalIndex];
                                                   });
                                                 }
                                               : null,
@@ -1257,158 +1053,90 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                                       ),
 
                                       // Subcategories (if expanded and has subcategories)
-                                      if (hasSubcategories &&
-                                          dialogExpandedPanels[originalIndex])
+                                      if (hasSubcategories && dialogExpandedPanels[originalIndex])
                                         Container(
-                                          color: context.color.secondaryColor
-                                              .withOpacity(0.5),
+                                          color: context.color.secondaryColor.withOpacity(0.5),
                                           child: Column(
-                                            children: category.children!
-                                                .map((subcategory) {
+                                            children: category.children!.map((subcategory) {
                                               // Filter subcategories if search is active
-                                              if (searchController
-                                                  .text.isNotEmpty) {
-                                                final query = searchController
-                                                    .text
-                                                    .toLowerCase();
-                                                if (!(subcategory.name
-                                                        ?.toLowerCase()
-                                                        .contains(query) ??
-                                                    false)) {
+                                              if (searchController.text.isNotEmpty) {
+                                                final query = searchController.text.toLowerCase();
+                                                if (!(subcategory.name?.toLowerCase().contains(query) ?? false)) {
                                                   return Container(); // Skip non-matching subcategories
                                                 }
                                               }
 
                                               final hasNestedSubcategories =
-                                                  subcategory.children !=
-                                                          null &&
-                                                      subcategory
-                                                          .children!.isNotEmpty;
+                                                  subcategory.children != null && subcategory.children!.isNotEmpty;
 
                                               return Column(
                                                 children: [
                                                   Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            left: 20.0),
+                                                    padding: const EdgeInsets.only(left: 20.0),
                                                     child: ListTile(
-                                                      title: Text(
-                                                          subcategory.name ??
-                                                              "Unknown"),
+                                                      title: Text(subcategory.name ?? "Unknown"),
                                                       leading: Checkbox(
-                                                        value:
-                                                            _isCategorySelected(
-                                                                subcategory
-                                                                        .id ??
-                                                                    0),
-                                                        onChanged:
-                                                            (bool? value) {
-                                                          if (subcategory.id !=
-                                                              null) {
+                                                        value: _isCategorySelected(subcategory.id ?? 0),
+                                                        onChanged: (bool? value) {
+                                                          if (subcategory.id != null) {
                                                             setState(() {
-                                                              if (value ==
-                                                                  true) {
-                                                                if (!_selectedCategoryIds
-                                                                    .contains(
-                                                                        subcategory
-                                                                            .id!)) {
-                                                                  _selectedCategoryIds.add(
-                                                                      subcategory
-                                                                          .id!);
+                                                              if (value == true) {
+                                                                if (!_selectedCategoryIds.contains(subcategory.id!)) {
+                                                                  _selectedCategoryIds.add(subcategory.id!);
                                                                 }
                                                                 // Also select all nested subcategories
                                                                 if (hasNestedSubcategories) {
-                                                                  _selectAllNestedSubcategories(
-                                                                      subcategory);
+                                                                  _selectAllNestedSubcategories(subcategory);
                                                                 }
                                                               } else {
-                                                                _selectedCategoryIds
-                                                                    .remove(
-                                                                        subcategory
-                                                                            .id!);
+                                                                _selectedCategoryIds.remove(subcategory.id!);
                                                                 // Also deselect all nested subcategories
                                                                 if (hasNestedSubcategories) {
-                                                                  _deselectAllNestedSubcategories(
-                                                                      subcategory);
+                                                                  _deselectAllNestedSubcategories(subcategory);
                                                                 }
                                                               }
                                                             });
                                                           }
                                                         },
                                                       ),
-                                                      trailing:
-                                                          hasNestedSubcategories
-                                                              ? Icon(
-                                                                  _isSubcategoryExpanded(
-                                                                          subcategory.id ??
-                                                                              0)
-                                                                      ? Icons
-                                                                          .keyboard_arrow_up
-                                                                      : Icons
-                                                                          .keyboard_arrow_down,
-                                                                  color: context
-                                                                      .color
-                                                                      .textColorDark,
-                                                                )
-                                                              : null,
-                                                      onTap:
-                                                          hasNestedSubcategories
-                                                              ? () {
-                                                                  setState(() {
-                                                                    _toggleSubcategoryExpansion(
-                                                                        subcategory.id ??
-                                                                            0);
-                                                                  });
-                                                                }
-                                                              : null,
+                                                      trailing: hasNestedSubcategories
+                                                          ? Icon(
+                                                              _isSubcategoryExpanded(subcategory.id ?? 0)
+                                                                  ? Icons.keyboard_arrow_up
+                                                                  : Icons.keyboard_arrow_down,
+                                                              color: context.color.textColorDark,
+                                                            )
+                                                          : null,
+                                                      onTap: hasNestedSubcategories
+                                                          ? () {
+                                                              setState(() {
+                                                                _toggleSubcategoryExpansion(subcategory.id ?? 0);
+                                                              });
+                                                            }
+                                                          : null,
                                                     ),
                                                   ),
                                                   // Nested subcategories
-                                                  if (hasNestedSubcategories &&
-                                                      _isSubcategoryExpanded(
-                                                          subcategory.id ?? 0))
+                                                  if (hasNestedSubcategories && _isSubcategoryExpanded(subcategory.id ?? 0))
                                                     Container(
-                                                      color: context
-                                                          .color.secondaryColor
-                                                          .withOpacity(0.3),
+                                                      color: context.color.secondaryColor.withOpacity(0.3),
                                                       child: Column(
-                                                        children: subcategory
-                                                            .children!
-                                                            .map(
-                                                                (nestedSubcategory) {
+                                                        children: subcategory.children!.map((nestedSubcategory) {
                                                           return Padding(
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .only(
-                                                                    left: 40.0),
+                                                            padding: const EdgeInsets.only(left: 40.0),
                                                             child: ListTile(
-                                                              title: Text(
-                                                                  nestedSubcategory
-                                                                          .name ??
-                                                                      "Unknown"),
+                                                              title: Text(nestedSubcategory.name ?? "Unknown"),
                                                               leading: Checkbox(
-                                                                value: _isCategorySelected(
-                                                                    nestedSubcategory
-                                                                            .id ??
-                                                                        0),
-                                                                onChanged:
-                                                                    (bool?
-                                                                        value) {
-                                                                  if (nestedSubcategory
-                                                                          .id !=
-                                                                      null) {
-                                                                    setState(
-                                                                        () {
-                                                                      if (value ==
-                                                                          true) {
-                                                                        if (!_selectedCategoryIds
-                                                                            .contains(nestedSubcategory.id!)) {
-                                                                          _selectedCategoryIds
-                                                                              .add(nestedSubcategory.id!);
+                                                                value: _isCategorySelected(nestedSubcategory.id ?? 0),
+                                                                onChanged: (bool? value) {
+                                                                  if (nestedSubcategory.id != null) {
+                                                                    setState(() {
+                                                                      if (value == true) {
+                                                                        if (!_selectedCategoryIds.contains(nestedSubcategory.id!)) {
+                                                                          _selectedCategoryIds.add(nestedSubcategory.id!);
                                                                         }
                                                                       } else {
-                                                                        _selectedCategoryIds
-                                                                            .remove(nestedSubcategory.id!);
+                                                                        _selectedCategoryIds.remove(nestedSubcategory.id!);
                                                                       }
                                                                     });
                                                                   }
@@ -1447,17 +1175,13 @@ class _SignupScreenState extends CloudState<SignupScreen> {
     try {
       final CategoryRepository categoryRepository = CategoryRepository();
       // Fetch only provider categories for the dialog
-      final result = await categoryRepository.fetchCategories(
-          page: 1, type: CategoryType.providers);
+      final result = await categoryRepository.fetchCategories(page: 1, type: CategoryType.providers);
 
       setState(() {
         _categories = result.modelList;
         // Only add categories with type 'providers' to filteredCategories
-        filteredCategories.addAll(_categories
-            .where((category) => category.type == CategoryType.providers)
-            .toList());
-        dialogExpandedPanels
-            .addAll(List.generate(_categories.length, (_) => false));
+        filteredCategories.addAll(_categories.where((category) => category.type == CategoryType.providers).toList());
+        dialogExpandedPanels.addAll(List.generate(_categories.length, (_) => false));
         _expandedPanels = List.generate(_categories.length, (_) => false);
         _isLoadingCategories = false;
       });
@@ -1507,11 +1231,9 @@ class _SignupScreenState extends CloudState<SignupScreen> {
             ),
             showElevation: false,
             buttonColor: secondaryColor_,
-            border:
-                context.watch<AppThemeCubit>().state.appTheme != AppTheme.dark
-                    ? BorderSide(
-                        color: context.color.textDefaultColor.withOpacity(0.3))
-                    : null,
+            border: context.watch<AppThemeCubit>().state.appTheme != AppTheme.dark
+                ? BorderSide(color: context.color.textDefaultColor.withOpacity(0.3))
+                : null,
             textColor: textDarkColor,
             onPressed: () {
               context.read<AuthenticationCubit>().setData(
@@ -1534,11 +1256,9 @@ class _SignupScreenState extends CloudState<SignupScreen> {
             ),
             showElevation: false,
             buttonColor: secondaryColor_,
-            border:
-                context.watch<AppThemeCubit>().state.appTheme != AppTheme.dark
-                    ? BorderSide(
-                        color: context.color.textDefaultColor.withOpacity(0.3))
-                    : null,
+            border: context.watch<AppThemeCubit>().state.appTheme != AppTheme.dark
+                ? BorderSide(color: context.color.textDefaultColor.withOpacity(0.3))
+                : null,
             textColor: textDarkColor,
             onPressed: () {
               context.read<AuthenticationCubit>().setData(
@@ -1558,8 +1278,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
 
   Widget termAndPolicyTxt() {
     return Padding(
-      padding: const EdgeInsetsDirectional.only(
-          bottom: 15.0, start: 25.0, end: 25.0),
+      padding: const EdgeInsetsDirectional.only(bottom: 15.0, start: 25.0, end: 25.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         mainAxisSize: MainAxisSize.min,
@@ -1584,10 +1303,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                 onTap: () => Navigator.pushNamed(
                   context,
                   Routes.profileSettings,
-                  arguments: {
-                    'title': "termsConditions".translate(context),
-                    'param': Api.termsAndConditions
-                  },
+                  arguments: {'title': "termsConditions".translate(context), 'param': Api.termsAndConditions},
                 ),
               ),
               const SizedBox(width: 5.0),
@@ -1607,10 +1323,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                 onTap: () => Navigator.pushNamed(
                   context,
                   Routes.profileSettings,
-                  arguments: {
-                    'title': "privacyPolicy".translate(context),
-                    'param': Api.privacyPolicy
-                  },
+                  arguments: {'title': "privacyPolicy".translate(context), 'param': Api.privacyPolicy},
                 ),
               ),
             ],

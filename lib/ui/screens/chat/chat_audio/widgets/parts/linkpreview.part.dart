@@ -3,6 +3,7 @@ part of "../chat_widget.dart";
 class LinkPreviw extends StatefulWidget {
   final String link;
   final AsyncSnapshot snapshot;
+
   const LinkPreviw({
     super.key,
     required this.snapshot,
@@ -26,14 +27,11 @@ class _LinkPreviwState extends State<LinkPreviw> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () async {
-        await launchUrl(Uri.parse(widget.link),
-            mode: LaunchMode.externalApplication);
+        await launchUrl(Uri.parse(widget.link), mode: LaunchMode.externalApplication);
       },
       child: Container(
         clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(4),
-            color: context.color.territoryColor),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(4), color: context.color.territoryColor),
         child: Padding(
           padding: const EdgeInsets.all(3.0),
           child: Column(
@@ -52,8 +50,7 @@ class _LinkPreviwState extends State<LinkPreviw> {
                         (widget.snapshot.data as Metadata).image!,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
-                          WidgetsBinding.instance
-                              .addPostFrameCallback((timeStamp) {
+                          WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
                             _errorChecker.value = true;
                           });
                           return const SizedBox.shrink();
@@ -67,9 +64,7 @@ class _LinkPreviwState extends State<LinkPreviw> {
                 fontSize: context.font.small,
               ),
               CustomText((widget.snapshot.data as Metadata).desc ?? "",
-                  maxLines: 1,
-                  color: context.color.primaryColor.withOpacity(0.8),
-                  fontSize: context.font.smaller),
+                  maxLines: 1, color: context.color.primaryColor.withOpacity(0.8), fontSize: context.font.smaller),
             ],
           ),
         ),

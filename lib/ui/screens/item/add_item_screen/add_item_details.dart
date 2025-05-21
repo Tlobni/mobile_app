@@ -1,16 +1,21 @@
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dotted_border/dotted_border.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/custom_field/fetch_custom_fields_cubit.dart';
-import 'package:tlobni/data/cubits/item/manage_item_cubit.dart';
 import 'package:tlobni/data/cubits/item/fetch_my_item_cubit.dart';
+import 'package:tlobni/data/cubits/item/manage_item_cubit.dart';
 import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
-import 'package:tlobni/ui/screens/item/add_item_screen/confirm_location_screen.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/models/post_type.dart';
-import 'package:tlobni/ui/screens/item/add_item_screen/select_category.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/widgets/image_adapter.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
 import 'package:tlobni/ui/screens/item/my_item_tab_screen.dart';
@@ -28,13 +33,6 @@ import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/image_picker.dart';
 import 'package:tlobni/utils/ui_utils.dart';
 import 'package:tlobni/utils/validator.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:path_provider/path_provider.dart' as path_provider;
-import 'package:path/path.dart' as p;
 
 class AddItemDetails extends StatefulWidget {
   final List<CategoryModel>? breadCrumbItems;
@@ -47,8 +45,7 @@ class AddItemDetails extends StatefulWidget {
   });
 
   static Route route(RouteSettings settings) {
-    Map<String, dynamic>? arguments =
-        settings.arguments as Map<String, dynamic>?;
+    Map<String, dynamic>? arguments = settings.arguments as Map<String, dynamic>?;
     return BlurredRouter(
       builder: (context) {
         return MultiBlocProvider(
@@ -81,8 +78,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
   Future<File?> compressImage(File file) async {
     try {
       final dir = await path_provider.getTemporaryDirectory();
-      final targetPath =
-          p.join(dir.path, '${DateTime.now().millisecondsSinceEpoch}.jpg');
+      final targetPath = p.join(dir.path, '${DateTime.now().millisecondsSinceEpoch}.jpg');
 
       var result = await FlutterImageCompress.compressAndGetFile(
         file.absolute.path,
@@ -100,10 +96,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
   }
 
   // Variables for service and experience fields
-  Map<String, bool> _specialTags = {
-    "exclusive_women": false,
-    "corporate_package": false
-  };
+  Map<String, bool> _specialTags = {"exclusive_women": false, "corporate_package": false};
   String? _priceType;
   bool _atClientLocation = false;
   bool _atPublicVenue = false;
@@ -127,8 +120,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
   final TextEditingController adDescriptionController = TextEditingController();
   final TextEditingController adPriceController = TextEditingController();
   final TextEditingController adPhoneNumberController = TextEditingController();
-  final TextEditingController adAdditionalDetailsController =
-      TextEditingController();
+  final TextEditingController adAdditionalDetailsController = TextEditingController();
 
   void _onBreadCrumbItemTap(int index) {
     int popTimes = (widget.breadCrumbItems!.length - 1) - index;
@@ -198,8 +190,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         // Set location controller text - prioritize showing city and country
         // Build location text prioritizing city and country
         String cityCountry = "";
-        if ((item!.city != null && item!.city!.isNotEmpty) &&
-            (item!.country != null && item!.country!.isNotEmpty)) {
+        if ((item!.city != null && item!.city!.isNotEmpty) && (item!.country != null && item!.country!.isNotEmpty)) {
           cityCountry = "${item!.city}, ${item!.country}";
         }
 
@@ -208,12 +199,8 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
           locationController.text = cityCountry;
         } else {
           // Fallback to combining all location parts
-          String locationText = [
-            item!.area,
-            item!.city,
-            item!.state,
-            item!.country
-          ].where((part) => part != null && part.isNotEmpty).join(', ');
+          String locationText =
+              [item!.area, item!.city, item!.state, item!.country].where((part) => part != null && part.isNotEmpty).join(', ');
 
           if (locationText.isNotEmpty) {
             locationController.text = locationText;
@@ -231,17 +218,13 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
           if (item!.specialTags!.containsKey('exclusive_women')) {
             // Handle both boolean and string values
             var value = item!.specialTags!['exclusive_women'];
-            _specialTags['exclusive_women'] = (value == true) ||
-                (value == "true") ||
-                (value.toString().toLowerCase() == "true");
+            _specialTags['exclusive_women'] = (value == true) || (value == "true") || (value.toString().toLowerCase() == "true");
           }
 
           if (item!.specialTags!.containsKey('corporate_package')) {
             // Handle both boolean and string values
             var value = item!.specialTags!['corporate_package'];
-            _specialTags['corporate_package'] = (value == true) ||
-                (value == "true") ||
-                (value.toString().toLowerCase() == "true");
+            _specialTags['corporate_package'] = (value == true) || (value == "true") || (value.toString().toLowerCase() == "true");
           }
         } catch (e) {
           print("Error loading special tags: $e");
@@ -265,9 +248,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     } else {
       List<int> ids = widget.breadCrumbItems!.map((item) => item.id!).toList();
 
-      context
-          .read<FetchCustomFieldsCubit>()
-          .fetchCustomFields(categoryIds: ids.join(','));
+      context.read<FetchCustomFieldsCubit>().fetchCustomFields(categoryIds: ids.join(','));
       selectedCategoryList = ids;
       adPhoneNumberController.text = HiveUtils.getUserDetails().mobile ?? "";
     }
@@ -304,6 +285,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
   // Safely update location data without immediate setState
   void _updateLocationData(Map<String, String> locationData) {
+    if (locationData.isEmpty) return;
     // Update the address component directly
     formatedAddress = AddressComponent(
       city: locationData['city'] ?? formatedAddress?.city,
@@ -315,9 +297,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     );
 
     // Always ensure the locationController has the consistent value
-    if (formatedAddress != null &&
-        formatedAddress!.mixed != null &&
-        formatedAddress!.mixed!.isNotEmpty) {
+    if (formatedAddress != null && formatedAddress!.mixed != null && formatedAddress!.mixed!.isNotEmpty) {
       // Only update if it's different to avoid unnecessary text controller changes
       if (locationController.text != formatedAddress!.mixed) {
         locationController.text = formatedAddress!.mixed!;
@@ -351,8 +331,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
             try {
               // If we have myAdsCubitReference (from MyItemTabScreen)
               String? statusKey = getCloudData('edit_from') as String?;
-              if (statusKey != null &&
-                  myAdsCubitReference.containsKey(statusKey)) {
+              if (statusKey != null && myAdsCubitReference.containsKey(statusKey)) {
                 // Update the specific tab's cubit
                 FetchMyItemsCubit tabCubit = myAdsCubitReference[statusKey]!;
                 tabCubit.edit(updatedItem);
@@ -360,20 +339,14 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
               }
 
               // Also try to update the cubit in the current context
-              context
-                  .read<ManageItemCubit>()
-                  .updateItemInOtherBlocs(updatedItem, context);
+              context.read<ManageItemCubit>().updateItemInOtherBlocs(updatedItem, context);
             } catch (e) {
               print("Error updating other BLoCs: $e");
             }
           }
 
           // Show success message
-          HelperUtils.showSnackBarMessage(
-              context,
-              widget.isEdit == true
-                  ? "Item updated successfully"
-                  : "Waiting for review");
+          HelperUtils.showSnackBarMessage(context, widget.isEdit == true ? "Item updated successfully" : "Data submitted");
 
           // Navigate based on edit or new item
           if (widget.isEdit == true) {
@@ -410,8 +383,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         }
       },
       child: AnnotatedRegion(
-        value: UiUtils.getSystemUiOverlayStyle(
-            context: context, statusBarColor: context.color.secondaryColor),
+        value: UiUtils.getSystemUiOverlayStyle(context: context, statusBarColor: context.color.secondaryColor),
         child: PopScope(
           canPop: true,
           onPopInvokedWithResult: (didPop, result) {
@@ -419,8 +391,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
           },
           child: SafeArea(
             child: Scaffold(
-              appBar: UiUtils.buildAppBar(context,
-                  showBackButton: true, title: "AdDetails".translate(context)),
+              appBar: UiUtils.buildAppBar(context, showBackButton: true, title: "AdDetails".translate(context)),
               bottomNavigationBar: Container(
                 color: Colors.transparent,
                 child: Padding(
@@ -436,8 +407,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
                     // Get post type
                     dynamic rawPostType = getCloudData("post_type");
-                    PostType? postType =
-                        rawPostType is PostType ? rawPostType : null;
+                    PostType? postType = rawPostType is PostType ? rawPostType : null;
 
                     // Validate required fields for both types
                     if (!_validateRequiredFields(postType)) {
@@ -454,8 +424,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
                     // Check if the item already has location data in edit mode
                     if (isEdit && item != null) {
-                      hasLocationData = (item!.city != null &&
-                              item!.city!.isNotEmpty) ||
+                      hasLocationData = (item!.city != null && item!.city!.isNotEmpty) ||
                           (item!.area != null && item!.area!.isNotEmpty) ||
                           (item!.country != null && item!.country!.isNotEmpty);
                     }
@@ -464,30 +433,23 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                     if (postType == PostType.experience ||
                         hasLocationData ||
                         (formatedAddress != null &&
-                            !((formatedAddress!.city == "" ||
-                                    formatedAddress!.city == null) &&
-                                (formatedAddress!.area == "" ||
-                                    formatedAddress!.area == null)) &&
-                            !(formatedAddress!.country == "" ||
-                                formatedAddress!.country == null))) {
+                            !((formatedAddress!.city == "" || formatedAddress!.city == null) &&
+                                (formatedAddress!.area == "" || formatedAddress!.area == null)) &&
+                            !(formatedAddress!.country == "" || formatedAddress!.country == null))) {
                       try {
                         // Create a fresh cloudData map to ensure we're collecting current values
                         // This avoids using potentially stale data from getCloudData("with_more_details")
                         Map<String, dynamic> cloudData = {};
 
                         // Merge any existing custom fields data which might have been set in more_details screen
-                        Map<String, dynamic> existingData =
-                            getCloudData("with_more_details") ?? {};
+                        Map<String, dynamic> existingData = getCloudData("with_more_details") ?? {};
                         if (existingData.containsKey('custom_fields')) {
-                          cloudData['custom_fields'] =
-                              existingData['custom_fields'];
+                          cloudData['custom_fields'] = existingData['custom_fields'];
                         } else if (AbstractField.fieldsData.isNotEmpty) {
                           // If we have data in AbstractField.fieldsData but it wasn't in more_details,
                           // encode it directly
-                          cloudData['custom_fields'] =
-                              json.encode(AbstractField.fieldsData);
-                          print(
-                              "Using AbstractField.fieldsData directly: ${AbstractField.fieldsData}");
+                          cloudData['custom_fields'] = json.encode(AbstractField.fieldsData);
+                          print("Using AbstractField.fieldsData directly: ${AbstractField.fieldsData}");
                         }
 
                         // Preserve any file references or binary data from the previous screen
@@ -504,20 +466,17 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         cloudData['contact'] = adPhoneNumberController.text;
 
                         // Handle the video link - validate URL format or set to empty
-                        String videoLink =
-                            adAdditionalDetailsController.text.trim();
+                        String videoLink = adAdditionalDetailsController.text.trim();
                         if (videoLink.isEmpty) {
                           cloudData['video_link'] = '';
-                        } else if (videoLink.startsWith('http://') ||
-                            videoLink.startsWith('https://')) {
+                        } else if (videoLink.startsWith('http://') || videoLink.startsWith('https://')) {
                           cloudData['video_link'] = videoLink;
                         } else {
                           // Show error for invalid URL and return
                           setState(() {
                             _isSubmitting = false;
                           });
-                          HelperUtils.showSnackBarMessage(context,
-                              "Please enter a valid URL starting with http:// or https://");
+                          HelperUtils.showSnackBarMessage(context, "Please enter a valid URL starting with http:// or https://");
                           return;
                         }
 
@@ -529,16 +488,14 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                           }
                         } else {
                           // For new item, get the last (most specific) category ID from the breadcrumb
-                          if (widget.breadCrumbItems != null &&
-                              widget.breadCrumbItems!.isNotEmpty) {
+                          if (widget.breadCrumbItems != null && widget.breadCrumbItems!.isNotEmpty) {
                             // Get the most specific category (last one in breadcrumb)
                             int categoryId = widget.breadCrumbItems!.last.id!;
                             cloudData['category_id'] = categoryId.toString();
 
                             // If the API requires the full category path, we can also add it
                             if (selectedCategoryList.isNotEmpty) {
-                              cloudData['category_hierarchy'] =
-                                  selectedCategoryList.join(',');
+                              cloudData['category_hierarchy'] = selectedCategoryList.join(',');
                             }
                           }
                         }
@@ -555,16 +512,14 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         cloudData['price_type'] = _priceType;
 
                         // Add post type
-                        cloudData['post_type'] =
-                            postType?.toString() ?? PostType.service.toString();
+                        cloudData['post_type'] = postType?.toString() ?? PostType.service.toString();
 
                         // Add service location options if applicable
                         if (postType == PostType.service) {
                           // Create a list to gather location types
                           List<String> locationTypes = [];
 
-                          if (_atClientLocation)
-                            locationTypes.add('client_location');
+                          if (_atClientLocation) locationTypes.add('client_location');
                           if (_atPublicVenue) locationTypes.add('public_venue');
                           if (_atMyLocation) locationTypes.add('my_location');
                           if (_isVirtual) locationTypes.add('virtual');
@@ -576,12 +531,10 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                           if (locationTypes.isNotEmpty) {
                             if (widget.isEdit == true) {
                               // For edit, send as array/list (original format from loaded item)
-                              cloudData['location_type'] =
-                                  locationTypes.join(',');
+                              cloudData['location_type'] = locationTypes.join(',');
                             } else {
                               // For new posts, try both formats to ensure compatibility
-                              cloudData['location_type'] =
-                                  locationTypes.join(',');
+                              cloudData['location_type'] = locationTypes.join(',');
                             }
                           }
 
@@ -595,12 +548,10 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         // Add expiration date/time if applicable
                         if (postType == PostType.experience) {
                           if (_expirationDate != null) {
-                            cloudData['expiration_date'] =
-                                _expirationDate!.toIso8601String();
+                            cloudData['expiration_date'] = _expirationDate!.toIso8601String();
                           }
                           if (_expirationTime != null) {
-                            cloudData['expiration_time'] =
-                                '${_expirationTime!.hour}:${_expirationTime!.minute}';
+                            cloudData['expiration_time'] = '${_expirationTime!.hour}:${_expirationTime!.minute}';
                           }
                         }
 
@@ -608,16 +559,11 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         if (formatedAddress != null) {
                           cloudData['address'] = formatedAddress?.mixed;
                           cloudData['country'] = formatedAddress!.country;
-                          cloudData['city'] = (formatedAddress!.city == "" ||
-                                  formatedAddress!.city == null)
-                              ? (formatedAddress!.area == "" ||
-                                      formatedAddress!.area == null
-                                  ? null
-                                  : formatedAddress!.area)
+                          cloudData['city'] = (formatedAddress!.city == "" || formatedAddress!.city == null)
+                              ? (formatedAddress!.area == "" || formatedAddress!.area == null ? null : formatedAddress!.area)
                               : formatedAddress!.city;
                           cloudData['state'] = formatedAddress!.state;
-                          if (formatedAddress!.areaId != null)
-                            cloudData['area_id'] = formatedAddress!.areaId;
+                          if (formatedAddress!.areaId != null) cloudData['area_id'] = formatedAddress!.areaId;
                         }
 
                         // Get main image with compression
@@ -625,16 +571,11 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         if (_pickTitleImage.pickedFile != null) {
                           try {
                             // Check if pickedFile is a List<File> or a single File
-                            if (_pickTitleImage.pickedFile is List<File> &&
-                                (_pickTitleImage.pickedFile as List<File>)
-                                    .isNotEmpty) {
-                              File originalFile =
-                                  (_pickTitleImage.pickedFile as List<File>)
-                                      .first;
+                            if (_pickTitleImage.pickedFile is List<File> && (_pickTitleImage.pickedFile as List<File>).isNotEmpty) {
+                              File originalFile = (_pickTitleImage.pickedFile as List<File>).first;
                               mainImage = await compressImage(originalFile);
                             } else if (_pickTitleImage.pickedFile is File) {
-                              File originalFile =
-                                  _pickTitleImage.pickedFile as File;
+                              File originalFile = _pickTitleImage.pickedFile as File;
                               mainImage = await compressImage(originalFile);
                             }
 
@@ -646,8 +587,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                             setState(() {
                               _isSubmitting = false;
                             });
-                            HelperUtils.showSnackBarMessage(context,
-                                "Failed to process main image. Try a different image.");
+                            HelperUtils.showSnackBarMessage(context, "Failed to process main image. Try a different image.");
                             return;
                           }
                         }
@@ -668,14 +608,12 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                           setState(() {
                             _isSubmitting = false;
                           });
-                          HelperUtils.showSnackBarMessage(context,
-                              "Failed to process some additional images.");
+                          HelperUtils.showSnackBarMessage(context, "Failed to process some additional images.");
                           return;
                         }
 
                         // Add deleted image IDs if editing
-                        if (widget.isEdit == true &&
-                            deleteItemImageList.isNotEmpty) {
+                        if (widget.isEdit == true && deleteItemImageList.isNotEmpty) {
                           cloudData['deleted_images'] = deleteItemImageList;
                         }
 
@@ -685,25 +623,16 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                             // Add item ID for editing
                             cloudData['id'] = item?.id;
 
-                            context.read<ManageItemCubit>().manage(
-                                ManageItemType.edit,
-                                cloudData,
-                                mainImage,
-                                otherImages);
+                            context.read<ManageItemCubit>().manage(ManageItemType.edit, cloudData, mainImage, otherImages);
                           } else {
-                            context.read<ManageItemCubit>().manage(
-                                ManageItemType.add,
-                                cloudData,
-                                mainImage,
-                                otherImages);
+                            context.read<ManageItemCubit>().manage(ManageItemType.add, cloudData, mainImage, otherImages);
                           }
                         } catch (e) {
                           print("Error during API call: $e");
                           setState(() {
                             _isSubmitting = false;
                           });
-                          HelperUtils.showSnackBarMessage(
-                              context, "Failed to upload. Please try again.");
+                          HelperUtils.showSnackBarMessage(context, "Failed to upload. Please try again.");
                           return;
                         }
                       } catch (e, st) {
@@ -712,16 +641,14 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         setState(() {
                           _isSubmitting = false;
                         });
-                        HelperUtils.showSnackBarMessage(
-                            context, "An error occurred. Please try again.");
+                        HelperUtils.showSnackBarMessage(context, "An error occurred. Please try again.");
                       }
                     } else {
                       // Reset loading state when validation fails
                       setState(() {
                         _isSubmitting = false;
                       });
-                      HelperUtils.showSnackBarMessage(
-                          context, "cityRequired".translate(context));
+                      HelperUtils.showSnackBarMessage(context, "cityRequired".translate(context));
                       Future.delayed(Duration(seconds: 2), () {
                         dialogueBottomSheet(
                             controller: cityTextController,
@@ -741,9 +668,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                       disabled: false,
                       isInProgress: _isSubmitting,
                       width: double.maxFinite,
-                      buttonTitle: widget.isEdit == true
-                          ? "Update Post".translate(context)
-                          : "postNow".translate(context),
+                      buttonTitle: widget.isEdit == true ? "Update Post".translate(context) : "postNow".translate(context),
                       textColor: const Color(0xFFE6CBA8)),
                 ),
               ),
@@ -776,9 +701,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                                   scrollDirection: Axis.horizontal,
                                   physics: const NeverScrollableScrollPhysics(),
                                   itemBuilder: (context, index) {
-                                    bool isNotLast =
-                                        (widget.breadCrumbItems!.length - 1) !=
-                                            index;
+                                    bool isNotLast = (widget.breadCrumbItems!.length - 1) != index;
 
                                     return Row(
                                       children: [
@@ -787,19 +710,12 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                                               _onBreadCrumbItemTap(index);
                                             },
                                             child: CustomText(
-                                              widget.breadCrumbItems![index]
-                                                  .name!,
-                                              color: isNotLast
-                                                  ? context.color.textColorDark
-                                                  : context
-                                                      .color.territoryColor,
+                                              widget.breadCrumbItems![index].name!,
+                                              color: isNotLast ? context.color.textColorDark : context.color.territoryColor,
                                               firstUpperCaseWidget: true,
                                             )),
-                                        if (index <
-                                            widget.breadCrumbItems!.length - 1)
-                                          CustomText(" > ",
-                                              color:
-                                                  context.color.territoryColor),
+                                        if (index < widget.breadCrumbItems!.length - 1)
+                                          CustomText(" > ", color: context.color.territoryColor),
                                       ],
                                     );
                                   },
@@ -819,10 +735,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                           action: TextInputAction.next,
                           capitalization: TextCapitalization.sentences,
                           hintText: "adTitleHere".translate(context),
-                          hintTextStyle: TextStyle(
-                              color: context.color.textDefaultColor
-                                  .withOpacity(0.3),
-                              fontSize: context.font.large),
+                          hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
                         ),
                         SizedBox(
                           height: 15,
@@ -839,10 +752,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                           hintText: "writeSomething".translate(context),
                           maxLine: 100,
                           minLine: 6,
-                          hintTextStyle: TextStyle(
-                              color: context.color.textDefaultColor
-                                  .withOpacity(0.3),
-                              fontSize: context.font.large),
+                          hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
                         ),
                         SizedBox(
                           height: 15,
@@ -881,10 +791,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         ),
                         Wrap(
                           children: [
-                            if (_pickTitleImage.pickedFile != null)
-                              ...[]
-                            else
-                              ...[],
+                            if (_pickTitleImage.pickedFile != null) ...[] else ...[],
                             titleImageListener(),
                           ],
                         ),
@@ -893,8 +800,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         ),
                         Row(
                           children: [
-                            CustomText("otherPictures".translate(context) +
-                                " (optional)"),
+                            CustomText("otherPictures".translate(context) + " (optional)"),
                             const SizedBox(
                               width: 3,
                             ),
@@ -921,22 +827,17 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                           action: TextInputAction.next,
                           prefix: CustomText("${Constant.currencySymbol} "),
                           formaters: [
-                            FilteringTextInputFormatter.allow(
-                                RegExp(r'^\d+\.?\d*')),
+                            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*')),
                           ],
                           keyboard: TextInputType.number,
                           validator: CustomTextFieldValidator.nullCheck,
                           hintText: "00",
-                          hintTextStyle: TextStyle(
-                              color: context.color.textDefaultColor
-                                  .withOpacity(0.3),
-                              fontSize: context.font.large),
+                          hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
                         ),
                         SizedBox(
                           height: 10,
                         ),
-                        CustomText(
-                            "phoneNumber".translate(context) + " (optional)"),
+                        CustomText("phoneNumber".translate(context) + " (optional)"),
                         SizedBox(
                           height: 10,
                         ),
@@ -944,34 +845,25 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                           controller: adPhoneNumberController,
                           action: TextInputAction.next,
                           formaters: [
-                            FilteringTextInputFormatter.allow(
-                                RegExp(r'^\d+\.?\d*')),
+                            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*')),
                           ],
                           keyboard: TextInputType.phone,
                           validator: CustomTextFieldValidator.phoneNumber,
                           hintText: "9876543210",
-                          hintTextStyle: TextStyle(
-                              color: context.color.textDefaultColor
-                                  .withOpacity(0.3),
-                              fontSize: context.font.large),
+                          hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
                         ),
                         SizedBox(
                           height: 10,
                         ),
-                        CustomText(
-                            "videoLink".translate(context) + " (optional)"),
+                        CustomText("videoLink".translate(context) + " (optional)"),
                         SizedBox(
                           height: 10,
                         ),
                         CustomTextFormField(
                           controller: adAdditionalDetailsController,
-                          validator:
-                              null, // Use null validator (no validation at form level)
+                          validator: null, // Use null validator (no validation at form level)
                           hintText: "http://example.com/video.mp4",
-                          hintTextStyle: TextStyle(
-                              color: context.color.textDefaultColor
-                                  .withOpacity(0.3),
-                              fontSize: context.font.large),
+                          hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
                         ),
                         SizedBox(
                           height: 15,
@@ -988,8 +880,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     );
   }
 
-  Future<void> showImageSourceDialog(
-      BuildContext context, Function(ImageSource) onSelected) async {
+  Future<void> showImageSourceDialog(BuildContext context, Function(ImageSource) onSelected) async {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -1021,8 +912,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     );
   }
 
-  Widget dialogueWidget(
-      String title, TextEditingController controller, String hintText) {
+  Widget dialogueWidget(String title, TextEditingController controller, String hintText) {
     double bottomPadding = (MediaQuery.of(context).viewInsets.bottom - 50);
     bool isBottomPaddingNagative = bottomPadding.isNegative;
     return SizedBox(
@@ -1044,23 +934,16 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                 color: context.color.borderColor.darken(30),
               ),
               Padding(
-                padding: EdgeInsetsDirectional.only(
-                    bottom: isBottomPaddingNagative ? 0 : bottomPadding,
-                    start: 20,
-                    end: 20,
-                    top: 18),
+                padding: EdgeInsetsDirectional.only(bottom: isBottomPaddingNagative ? 0 : bottomPadding, start: 20, end: 20, top: 18),
                 child: TextFormField(
                   maxLines: null,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: context.color.textDefaultColor.withOpacity(0.3)),
+                  style: TextStyle(fontWeight: FontWeight.bold, color: context.color.textDefaultColor.withOpacity(0.3)),
                   controller: controller,
                   cursorColor: context.color.territoryColor,
                   validator: (val) {
                     if (val == null || val.isEmpty) {
-                      return Validator.nullCheckValidator(val,
-                          context: context);
+                      return Validator.nullCheckValidator(val, context: context);
                     } else {
                       return null;
                     }
@@ -1068,25 +951,15 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                   decoration: InputDecoration(
                       fillColor: context.color.borderColor.darken(20),
                       filled: true,
-                      contentPadding:
-                          EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                      contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
                       hintText: hintText,
-                      hintStyle: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color:
-                              context.color.textDefaultColor.withOpacity(0.3)),
+                      hintStyle: TextStyle(fontWeight: FontWeight.bold, color: context.color.textDefaultColor.withOpacity(0.3)),
                       focusColor: context.color.territoryColor,
                       enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                              color: context.color.borderColor.darken(60))),
+                          borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: context.color.borderColor.darken(60))),
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                              color: context.color.borderColor.darken(60))),
-                      focusedBorder: OutlineInputBorder(
-                          borderSide:
-                              BorderSide(color: context.color.territoryColor))),
+                          borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: context.color.borderColor.darken(60))),
+                      focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: context.color.territoryColor))),
                 ),
               ),
             ],
@@ -1097,10 +970,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
   }
 
   void dialogueBottomSheet(
-      {required String title,
-      required TextEditingController controller,
-      required String hintText,
-      required int from}) async {
+      {required String title, required TextEditingController controller, required String hintText, required int from}) async {
     await UiUtils.showBlurredDialoge(
       context,
       dialoge: BlurredDialogBox(
@@ -1113,17 +983,11 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
               if (formatedAddress != null) {
                 // Update existing formatedAddress
                 if (from == 1) {
-                  formatedAddress = AddressComponent.copyWithFields(
-                      formatedAddress!,
-                      newCity: controller.text);
+                  formatedAddress = AddressComponent.copyWithFields(formatedAddress!, newCity: controller.text);
                 } else if (from == 2) {
-                  formatedAddress = AddressComponent.copyWithFields(
-                      formatedAddress!,
-                      newState: controller.text);
+                  formatedAddress = AddressComponent.copyWithFields(formatedAddress!, newState: controller.text);
                 } else if (from == 3) {
-                  formatedAddress = AddressComponent.copyWithFields(
-                      formatedAddress!,
-                      newCountry: controller.text);
+                  formatedAddress = AddressComponent.copyWithFields(formatedAddress!, newCountry: controller.text);
                 }
               } else {
                 // Create a new AddressComponent if formatedAddress is null
@@ -1169,8 +1033,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       if (titleImageURL.isNotEmpty) {
         currentWidget = GestureDetector(
           onTap: () {
-            UiUtils.showFullScreenImage(context,
-                provider: NetworkImage(titleImageURL));
+            UiUtils.showFullScreenImage(context, provider: NetworkImage(titleImageURL));
           },
           child: Container(
             width: 100,
@@ -1230,8 +1093,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                 },
                 child: Container(
                   clipBehavior: Clip.antiAlias,
-                  decoration:
-                      BoxDecoration(borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
                   alignment: AlignmentDirectional.center,
                   height: 48,
                   child: CustomText(
@@ -1284,11 +1146,9 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                 onTap: () {
                   HelperUtils.unfocus();
                   if (image is String) {
-                    UiUtils.showFullScreenImage(context,
-                        provider: NetworkImage(image));
+                    UiUtils.showFullScreenImage(context, provider: NetworkImage(image));
                   } else {
-                    UiUtils.showFullScreenImage(context,
-                        provider: FileImage(image));
+                    UiUtils.showFullScreenImage(context, provider: FileImage(image));
                   }
                 },
                 child: Container(
@@ -1310,11 +1170,9 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
                   if (matchingIndex != -1) {
                     print("Matching index: $matchingIndex");
-                    print(
-                        "Gallery Image ID: ${item!.galleryImages![matchingIndex].id}");
+                    print("Gallery Image ID: ${item!.galleryImages![matchingIndex].id}");
 
-                    deleteItemImageList
-                        .add(item!.galleryImages![matchingIndex].id!);
+                    deleteItemImageList.add(item!.galleryImages![matchingIndex].id!);
 
                     setState(() {});
                   } else {
@@ -1351,20 +1209,17 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                 },
                 child: Container(
                   clipBehavior: Clip.antiAlias,
-                  decoration:
-                      BoxDecoration(borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
                   alignment: AlignmentDirectional.center,
                   height: 48,
-                  child: CustomText("addOtherPicture".translate(context),
-                      color: context.color.textDefaultColor,
-                      fontSize: context.font.large),
+                  child:
+                      CustomText("addOtherPicture".translate(context), color: context.color.textDefaultColor, fontSize: context.font.large),
                 ),
               ),
             ),
           current,
           if (mixedItemImageList.length < 5)
-            if (files != null && files.isNotEmpty ||
-                mixedItemImageList.isNotEmpty)
+            if (files != null && files.isNotEmpty || mixedItemImageList.isNotEmpty)
               uploadPhotoCard(context, onTap: () {
                 showImageSourceDialog(context, (source) {
                   itemImagePicker.pick(
@@ -1389,9 +1244,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
           onTap.call();
         },
         child: Container(
-          decoration: BoxDecoration(
-              color: context.color.primaryColor.withOpacity(0.7),
-              borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(color: context.color.primaryColor.withOpacity(0.7), borderRadius: BorderRadius.circular(10)),
           child: Padding(
             padding: EdgeInsets.all(4.0),
             child: Icon(
@@ -1487,9 +1340,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
           Expanded(
             child: CustomText(
               title.translate(context),
-              color: value
-                  ? context.color.textColorDark
-                  : context.color.textColorDark,
+              color: value ? context.color.textColorDark : context.color.textColorDark,
               fontWeight: value ? FontWeight.w500 : FontWeight.normal,
             ),
           ),
@@ -1499,8 +1350,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
             inactiveTrackColor: const Color(0xFF0F2137),
             activeColor: const Color(0xFF0F2137),
             activeTrackColor: const Color(0xFF0F2137).withOpacity(0.5),
-            thumbIcon: WidgetStateProperty.resolveWith<Icon?>(
-                (Set<WidgetState> states) {
+            thumbIcon: WidgetStateProperty.resolveWith<Icon?>((Set<WidgetState> states) {
               if (states.contains(WidgetState.selected)) {
                 return const Icon(Icons.check, color: Colors.white, size: 16);
               }
@@ -1524,8 +1374,6 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       // Handle the case where post_type is not properly cast
       return SizedBox.shrink();
     }
-
-    if (postType == null) return SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1625,8 +1473,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     print("Virtual: $_isVirtual");
     print("Current location text: ${locationController.text}");
     if (formatedAddress != null) {
-      print(
-          "Formatted address - City: ${formatedAddress!.city}, Country: ${formatedAddress!.country}");
+      print("Formatted address - City: ${formatedAddress!.city}, Country: ${formatedAddress!.country}");
     }
 
     return Column(
@@ -1647,7 +1494,6 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
           hintText: "enterLocation".translate(context),
           onSelected: (value) {
             // Just update the controller, don't call setState() here
-            locationController.text = value;
           },
           onLocationSelected: (locationData) {
             // Use the shared method to update location data safely
@@ -1750,10 +1596,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         LocationAutocomplete(
           controller: locationController,
           hintText: "enterLocation".translate(context),
-          onSelected: (value) {
-            // Just update the controller, don't call setState
-            locationController.text = value;
-          },
+          onSelected: (value) {},
           onLocationSelected: (locationData) {
             // Use the shared method to update location data safely
             _updateLocationData(locationData);
@@ -1801,8 +1644,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                 onTap: () async {
                   final DateTime? picked = await showDatePicker(
                     context: context,
-                    initialDate: _expirationDate ??
-                        DateTime.now().add(Duration(days: 1)),
+                    initialDate: _expirationDate ?? DateTime.now().add(Duration(days: 1)),
                     firstDate: DateTime.now(),
                     lastDate: DateTime.now().add(Duration(days: 365)),
                   );
@@ -1825,9 +1667,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                         _expirationDate == null
                             ? "Select Date".translate(context)
                             : "${_expirationDate!.day}/${_expirationDate!.month}/${_expirationDate!.year}",
-                        color: _expirationDate == null
-                            ? context.color.textDefaultColor.withOpacity(0.5)
-                            : context.color.textDefaultColor,
+                        color: _expirationDate == null ? context.color.textDefaultColor.withOpacity(0.5) : context.color.textDefaultColor,
                       ),
                       Icon(
                         Icons.calendar_today,
@@ -1863,12 +1703,8 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       CustomText(
-                        _expirationTime == null
-                            ? "Select Time".translate(context)
-                            : "${_expirationTime!.format(context)}",
-                        color: _expirationTime == null
-                            ? context.color.textDefaultColor.withOpacity(0.5)
-                            : context.color.textDefaultColor,
+                        _expirationTime == null ? "Select Time".translate(context) : "${_expirationTime!.format(context)}",
+                        color: _expirationTime == null ? context.color.textDefaultColor.withOpacity(0.5) : context.color.textDefaultColor,
                       ),
                       Icon(
                         Icons.access_time,
@@ -1905,9 +1741,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
           color: isSelected ? const Color(0xFF0F2137) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected
-                ? const Color(0xFF0F2137)
-                : context.color.borderColor,
+            color: isSelected ? const Color(0xFF0F2137) : context.color.borderColor,
             width: isSelected ? 1.5 : 1.0,
           ),
         ),
@@ -1923,8 +1757,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                 groupValue: groupValue,
                 onChanged: onChanged,
                 activeColor: Colors.white,
-                fillColor: MaterialStateProperty.resolveWith<Color>(
-                    (Set<MaterialState> states) {
+                fillColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
                   if (states.contains(MaterialState.selected)) {
                     return Colors.white;
                   }
@@ -1936,9 +1769,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
             Flexible(
               child: CustomText(
                 title.translate(context),
-                color: isSelected
-                    ? context.color.primaryColor
-                    : context.color.textColorDark,
+                color: isSelected ? context.color.primaryColor : context.color.textColorDark,
                 fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
               ),
             ),
@@ -1983,9 +1814,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
             Flexible(
               child: CustomText(
                 title.translate(context),
-                color: value
-                    ? context.color.textColorDark
-                    : context.color.textColorDark,
+                color: value ? context.color.textColorDark : context.color.textColorDark,
                 fontWeight: value ? FontWeight.w500 : FontWeight.normal,
               ),
             ),
@@ -2020,8 +1849,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     }
 
     // Check main picture
-    bool hasMainPicture =
-        (_pickTitleImage.pickedFile != null) || titleImageURL.isNotEmpty;
+    bool hasMainPicture = (_pickTitleImage.pickedFile != null) || titleImageURL.isNotEmpty;
     if (!hasMainPicture) {
       missingFields.add("Main Picture");
     }
@@ -2033,10 +1861,8 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     if (!isEdit &&
         (formatedAddress == null ||
             ((formatedAddress!.city == "" || formatedAddress!.city == null) &&
-                (formatedAddress!.area == "" ||
-                    formatedAddress!.area == null)) ||
-            (formatedAddress!.country == "" ||
-                formatedAddress!.country == null))) {
+                (formatedAddress!.area == "" || formatedAddress!.area == null)) ||
+            (formatedAddress!.country == "" || formatedAddress!.country == null))) {
       // In edit mode, check if the item has location data
       if (isEdit && item != null) {
         bool hasLocationData = (item!.city != null && item!.city!.isNotEmpty) ||
@@ -2052,14 +1878,10 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
     // For experience type, check expiration date and time
     if (postType == PostType.experience) {
-      if (_expirationDate == null &&
-          !(isEdit && item?.expirationDate != null)) {
+      if (_expirationDate == null && !(isEdit && item?.expirationDate != null)) {
         missingFields.add("Expiration Date");
       }
-      if (_expirationTime == null &&
-          !(isEdit &&
-              item?.expirationTime != null &&
-              item!.expirationTime!.isNotEmpty)) {
+      if (_expirationTime == null && !(isEdit && item?.expirationTime != null && item!.expirationTime!.isNotEmpty)) {
         missingFields.add("Expiration Time");
       }
     }
@@ -2067,8 +1889,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     // If we have missing fields, show an error and return false
     if (missingFields.isNotEmpty) {
       String fieldList = missingFields.join(", ");
-      HelperUtils.showSnackBarMessage(
-          context, "Please complete the following required fields: $fieldList");
+      HelperUtils.showSnackBarMessage(context, "Please complete the following required fields: $fieldList");
       return false;
     }
 
@@ -2093,11 +1914,7 @@ class AddressComponent {
     this.mixed,
   }) {
     // Automatically set mixed if not provided but we have city and country
-    if (mixed == null &&
-        city != null &&
-        country != null &&
-        city!.isNotEmpty &&
-        country!.isNotEmpty) {
+    if (mixed == null && city != null && country != null && city!.isNotEmpty && country!.isNotEmpty) {
       mixed = "$city, $country";
     }
   }

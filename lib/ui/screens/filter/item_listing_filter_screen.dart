@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/category/fetch_category_cubit.dart';
 import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/item_filter_model.dart';
 import 'package:tlobni/ui/screens/filter_screen.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
-import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/theme/theme.dart';
 import 'package:tlobni/utils/app_icon.dart';
 import 'package:tlobni/utils/constant.dart';
@@ -15,24 +13,24 @@ import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/ui_utils.dart';
 
-class ServiceFilterScreen extends StatefulWidget {
-  final Function? update;
-  final String fromServiceType;
-
-  const ServiceFilterScreen({
+class ItemListingFilterScreen extends StatefulWidget {
+  const ItemListingFilterScreen({
     Key? key,
-    this.update,
-    required this.fromServiceType,
+    this.initialFilter,
   }) : super(key: key);
 
+  final ItemFilterModel? initialFilter;
+
   @override
-  State<ServiceFilterScreen> createState() => _ServiceFilterScreenState();
+  State<ItemListingFilterScreen> createState() => _ItemListingFilterScreenState();
 }
 
-class _ServiceFilterScreenState extends State<ServiceFilterScreen> {
+class _ItemListingFilterScreenState extends State<ItemListingFilterScreen> {
   TextEditingController minController = TextEditingController();
   TextEditingController maxController = TextEditingController();
   TextEditingController locationController = TextEditingController();
+
+  String? listingType;
 
   double _rating = 0;
   double _minRating = 0;
@@ -53,52 +51,55 @@ class _ServiceFilterScreenState extends State<ServiceFilterScreen> {
   void initState() {
     super.initState();
     // Initialize with existing filter values if any
-    if (Constant.itemFilter != null) {
-      minController.text = Constant.itemFilter?.minPrice ?? "";
-      maxController.text = Constant.itemFilter?.maxPrice ?? "";
+    if (widget.initialFilter != null) {
+      minController.text = widget.initialFilter?.minPrice ?? "";
+      maxController.text = widget.initialFilter?.maxPrice ?? "";
 
-      city = Constant.itemFilter?.city ?? "";
-      areaId = Constant.itemFilter?.areaId;
-      area = Constant.itemFilter?.area ?? "";
-      _state = Constant.itemFilter?.state ?? "";
-      country = Constant.itemFilter?.country ?? "";
-      latitude = Constant.itemFilter?.latitude;
-      longitude = Constant.itemFilter?.longitude;
+      city = widget.initialFilter?.city ?? "";
+      areaId = widget.initialFilter?.areaId;
+      area = widget.initialFilter?.area ?? "";
+      _state = widget.initialFilter?.state ?? "";
+      country = widget.initialFilter?.country ?? "";
+      latitude = widget.initialFilter?.latitude;
+      longitude = widget.initialFilter?.longitude;
+      listingType = widget.initialFilter?.serviceType;
+      categoryList = widget.initialFilter?.categories ??
+          (widget.initialFilter?.categoryId != null
+              ? widget.initialFilter!.categoryId!
+                  .split(',')
+                  .where((e) => e.isNotEmpty)
+                  .map((id) => CategoryModel(id: int.parse(id)))
+                  .toList()
+              : []);
 
       // Initialize rating range
-      if (Constant.itemFilter?.minRating != null) {
-        _minRating = Constant.itemFilter!.minRating!;
+      if (widget.initialFilter?.minRating != null) {
+        _minRating = widget.initialFilter!.minRating!;
       }
-      if (Constant.itemFilter?.maxRating != null) {
-        _maxRating = Constant.itemFilter!.maxRating!;
+      if (widget.initialFilter?.maxRating != null) {
+        _maxRating = widget.initialFilter!.maxRating!;
       }
 
       // Set location text
       if ([city, country].where((element) => element.isNotEmpty).isNotEmpty) {
-        locationController.text =
-            [city, country].where((element) => element.isNotEmpty).join(", ");
+        locationController.text = [city, country].where((element) => element.isNotEmpty).join(", ");
       }
 
       // Set special tags - debug the parsed values
-      if (Constant.itemFilter?.specialTags != null) {
-        print(
-            "DEBUG: Loading special tags from existing filter: ${Constant.itemFilter?.specialTags}");
+      if (widget.initialFilter?.specialTags != null) {
+        print("DEBUG: Loading special tags from existing filter: ${widget.initialFilter?.specialTags}");
 
         // Parse exclusive_women value
-        String? exclusiveForWomenValue =
-            Constant.itemFilter?.specialTags?["exclusive_women"];
-        print(
-            "DEBUG: Exclusive for women value from filter: $exclusiveForWomenValue");
+        String? exclusiveForWomenValue = widget.initialFilter?.specialTags?["exclusive_women"];
+        print("DEBUG: Exclusive for women value from filter: $exclusiveForWomenValue");
         if (exclusiveForWomenValue != null) {
           _exclusiveForWomen = exclusiveForWomenValue.toLowerCase() == "true";
           print("DEBUG: _exclusiveForWomen set to: $_exclusiveForWomen");
         }
 
         // Parse corporate_package value
-        String? corporatePackageValue =
-            Constant.itemFilter?.specialTags?["corporate_package"];
-        print(
-            "DEBUG: Corporate package value from filter: $corporatePackageValue");
+        String? corporatePackageValue = widget.initialFilter?.specialTags?["corporate_package"];
+        print("DEBUG: Corporate package value from filter: $corporatePackageValue");
         if (corporatePackageValue != null) {
           _corporatePackage = corporatePackageValue.toLowerCase() == "true";
           print("DEBUG: _corporatePackage set to: $_corporatePackage");
@@ -122,9 +123,7 @@ class _ServiceFilterScreenState extends State<ServiceFilterScreen> {
       appBar: UiUtils.buildAppBar(
         context,
         showBackButton: true,
-        title: widget.fromServiceType == 'service'
-            ? "Filter Services".translate(context)
-            : "Filter Experiences".translate(context),
+        title: "Filter Item Listings".translate(context),
       ),
       bottomNavigationBar: Container(
         height: kToolbarHeight + 16,
@@ -139,8 +138,7 @@ class _ServiceFilterScreenState extends State<ServiceFilterScreen> {
             ),
           ),
           onPressed: () {
-            print(
-                "DEBUG: Apply Filter button pressed in service_filter_screen");
+            print("DEBUG: Apply Filter button pressed in service_filter_screen");
 
             // Convert boolean values to string "true" or "false"
             Map<String, String> specialTags = {
@@ -149,17 +147,13 @@ class _ServiceFilterScreenState extends State<ServiceFilterScreen> {
             };
 
             print("DEBUG: Special tags values: ${specialTags.toString()}");
-            print(
-                "DEBUG: exclusive_women value: ${specialTags['exclusive_women']}");
-            print(
-                "DEBUG: corporate_package value: ${specialTags['corporate_package']}");
+            print("DEBUG: exclusive_women value: ${specialTags['exclusive_women']}");
+            print("DEBUG: corporate_package value: ${specialTags['corporate_package']}");
 
             ItemFilterModel filter = ItemFilterModel(
               maxPrice: maxController.text,
               minPrice: minController.text,
-              categoryId: categoryList.isNotEmpty
-                  ? categoryList.map((cat) => cat.id.toString()).join(',')
-                  : "",
+              categoryId: categoryList.isNotEmpty ? categoryList.map((cat) => cat.id.toString()).join(',') : "",
               city: city,
               areaId: areaId,
               state: _state,
@@ -167,10 +161,11 @@ class _ServiceFilterScreenState extends State<ServiceFilterScreen> {
               latitude: latitude,
               longitude: longitude,
               area: area,
-              serviceType: widget.fromServiceType,
+              serviceType: listingType,
               specialTags: specialTags,
               minRating: _minRating,
               maxRating: _maxRating,
+              categories: categoryList,
             );
 
             // Debug the filter model before sending
@@ -178,23 +173,19 @@ class _ServiceFilterScreenState extends State<ServiceFilterScreen> {
             print("DEBUG: Category IDs: ${filter.categoryId}");
             print("DEBUG: Service Type: ${filter.serviceType}");
 
-            Constant.itemFilter = filter;
+            Navigator.pop(context, filter);
 
-            // Navigate only once to prevent double calls
-            if (Navigator.of(context).canPop()) {
-              print("DEBUG: Popping and pushing replacement for search screen");
-              Navigator.of(context).pushReplacementNamed(
-                  Routes.searchScreenRoute,
-                  arguments: {"itemFilter": filter, "autoFocus": false});
-            } else {
-              print("DEBUG: Pushing named route to search screen");
-              Navigator.pushNamed(context, Routes.searchScreenRoute,
-                  arguments: {"itemFilter": filter, "autoFocus": false});
-            }
+            // // Navigate only once to prevent double calls
+            // final arguments = {"itemFilter": filter};
+            // if (Navigator.of(context).canPop()) {
+            //   print("DEBUG: Popping and pushing replacement for search screen");
+            //   Navigator.of(context).pushReplacementNamed(Routes.searchScreenRoute, arguments: arguments);
+            // } else {
+            //   print("DEBUG: Pushing named route to search screen");
+            //   Navigator.pushNamed(context, Routes.searchScreenRoute, arguments: arguments);
+            // }
           },
-          child: Text("Apply Filter".translate(context),
-              style:
-                  const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          child: Text("Apply Filter".translate(context), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
         ),
       ),
       body: SingleChildScrollView(
@@ -204,34 +195,28 @@ class _ServiceFilterScreenState extends State<ServiceFilterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _listingTypes(),
+              const SizedBox(height: 15),
               // Category Filter
-              CustomText('category'.translate(context),
-                  color: context.color.textDefaultColor,
-                  fontWeight: FontWeight.w600),
+              CustomText('category'.translate(context), color: context.color.textDefaultColor, fontWeight: FontWeight.w600),
               const SizedBox(height: 5),
               _buildCategoryWidget(context),
               const SizedBox(height: 15),
 
               // Location Filter
-              CustomText('locationLbl'.translate(context),
-                  color: context.color.textDefaultColor,
-                  fontWeight: FontWeight.w600),
+              CustomText('locationLbl'.translate(context), color: context.color.textDefaultColor, fontWeight: FontWeight.w600),
               const SizedBox(height: 5),
               _buildLocationWidget(context),
               const SizedBox(height: 15),
 
               // Price Range Filter
-              CustomText('budgetLbl'.translate(context),
-                  color: context.color.textDefaultColor,
-                  fontWeight: FontWeight.w600),
+              CustomText('budgetLbl'.translate(context), color: context.color.textDefaultColor, fontWeight: FontWeight.w600),
               const SizedBox(height: 5),
               _buildPriceRangeWidget(),
               const SizedBox(height: 15),
 
               // Special Tags Filter
-              CustomText('Special Tags'.translate(context),
-                  color: context.color.textDefaultColor,
-                  fontWeight: FontWeight.w600),
+              CustomText('Special Tags'.translate(context), color: context.color.textDefaultColor, fontWeight: FontWeight.w600),
               const SizedBox(height: 5),
               Column(
                 children: [
@@ -245,7 +230,6 @@ class _ServiceFilterScreenState extends State<ServiceFilterScreen> {
                       });
                     },
                   ),
-                  SizedBox(height: 10),
                   _buildSwitchOption(
                     context,
                     label: "Corporate Package",
@@ -261,9 +245,7 @@ class _ServiceFilterScreenState extends State<ServiceFilterScreen> {
               const SizedBox(height: 15),
 
               // Rating Filter
-              CustomText('Rating'.translate(context),
-                  color: context.color.textDefaultColor,
-                  fontWeight: FontWeight.w600),
+              CustomText('Rating'.translate(context), color: context.color.textDefaultColor, fontWeight: FontWeight.w600),
               const SizedBox(height: 10),
               _buildRatingFilter(),
             ],
@@ -272,6 +254,44 @@ class _ServiceFilterScreenState extends State<ServiceFilterScreen> {
       ),
     );
   }
+
+  Widget _listingTypes() => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Listing Type Filter (Service or Experience)
+          CustomText(
+            'Listing Type'.translate(context),
+            color: context.color.textDefaultColor,
+            fontWeight: FontWeight.w600,
+          ),
+          const SizedBox(height: 5),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              _listingTypeButton("All".translate(context), null),
+              const SizedBox(width: 10),
+              _listingTypeButton("Service".translate(context), "service"),
+              const SizedBox(width: 10),
+              _listingTypeButton("Experience".translate(context), "experience"),
+            ],
+          ),
+        ],
+      );
+
+  Widget _listingTypeButton(String text, String? value) => MaterialButton(
+        onPressed: () {
+          setState(() {
+            listingType = value;
+          });
+        },
+        color: listingType == value ? context.color.primary : null,
+        textColor: listingType == value ? context.color.onPrimary : null,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(100),
+          side: BorderSide(color: context.color.primary),
+        ),
+        child: Text(text.translate(context)),
+      );
 
   Widget _buildCategoryWidget(BuildContext context) {
     return InkWell(
@@ -301,8 +321,7 @@ class _ServiceFilterScreenState extends State<ServiceFilterScreen> {
             // Debug log to show selected categories
             print("DEBUG: Selected categories for service filter:");
             for (var category in categoryList) {
-              print(
-                  "DEBUG: Category ID: ${category.id}, Name: ${category.name}, Type: ${category.type}");
+              print("DEBUG: Category ID: ${category.id}, Name: ${category.name}, Type: ${category.type}");
             }
           });
         });
@@ -322,10 +341,8 @@ class _ServiceFilterScreenState extends State<ServiceFilterScreen> {
           child: Row(
             children: [
               categoryList.isNotEmpty
-                  ? UiUtils.getImage(categoryList[0].url!,
-                      height: 20, width: 20, fit: BoxFit.contain)
-                  : UiUtils.getSvg(AppIcons.categoryIcon,
-                      color: context.color.textDefaultColor),
+                  ? UiUtils.getImage(categoryList[0].url!, height: 20, width: 20, fit: BoxFit.contain)
+                  : UiUtils.getSvg(AppIcons.categoryIcon, color: context.color.textDefaultColor),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsetsDirectional.only(start: 15.0),
@@ -337,15 +354,12 @@ class _ServiceFilterScreenState extends State<ServiceFilterScreen> {
                               : "${categoryList.map((e) => e.name).join(' - ')}",
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis)
-                      : CustomText("Select Category".translate(context),
-                          color:
-                              context.color.textDefaultColor.withOpacity(0.3)),
+                      : CustomText("Select Category".translate(context), color: context.color.textDefaultColor.withOpacity(0.3)),
                 ),
               ),
               Padding(
                 padding: const EdgeInsetsDirectional.only(end: 14.0),
-                child: UiUtils.getSvg(AppIcons.downArrow,
-                    color: context.color.textDefaultColor),
+                child: UiUtils.getSvg(AppIcons.downArrow, color: context.color.textDefaultColor),
               ),
             ],
           ),
@@ -389,14 +403,16 @@ class _ServiceFilterScreenState extends State<ServiceFilterScreen> {
                 // Basic handling when only the string is returned
               },
               onLocationSelected: (Map<String, String> locationData) {
-                setState(() {
-                  city = locationData['city'] ?? "";
-                  _state = locationData['state'] ?? "";
-                  country = locationData['country'] ?? "";
-                  area = "";
-                  areaId = null;
-                  latitude = null;
-                  longitude = null;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  setState(() {
+                    city = locationData['city'] ?? "";
+                    _state = locationData['state'] ?? "";
+                    country = locationData['country'] ?? "";
+                    area = "";
+                    areaId = null;
+                    latitude = null;
+                    longitude = null;
+                  });
                 });
               },
             ),
@@ -415,35 +431,26 @@ class _ServiceFilterScreenState extends State<ServiceFilterScreen> {
           child: Container(
               alignment: AlignmentDirectional.center,
               decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.all(Radius.circular(10)),
-                  color: Theme.of(context).colorScheme.secondaryColor),
+                  borderRadius: const BorderRadius.all(Radius.circular(10)), color: Theme.of(context).colorScheme.secondaryColor),
               child: TextFormField(
                   controller: minController,
                   decoration: InputDecoration(
                       isDense: true,
                       focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide:
-                              BorderSide(color: context.color.territoryColor)),
+                          borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: context.color.territoryColor)),
                       enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(
-                              color: context.color.borderColor.darken(30))),
-                      labelStyle: TextStyle(
-                          color:
-                              context.color.textDefaultColor.withOpacity(0.3)),
+                          borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: context.color.borderColor.darken(30))),
+                      labelStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3)),
                       hintText: "00",
                       label: CustomText(
                         "minLbl".translate(context),
                       ),
                       prefixText: '${Constant.currencySymbol} ',
-                      prefixStyle: TextStyle(
-                          color: Theme.of(context).colorScheme.territoryColor),
+                      prefixStyle: TextStyle(color: Theme.of(context).colorScheme.territoryColor),
                       fillColor: Theme.of(context).colorScheme.secondaryColor,
                       border: const OutlineInputBorder()),
                   keyboardType: TextInputType.number,
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.territoryColor),
+                  style: TextStyle(color: Theme.of(context).colorScheme.territoryColor),
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
         ),
         const SizedBox(width: 10),
@@ -451,35 +458,26 @@ class _ServiceFilterScreenState extends State<ServiceFilterScreen> {
           child: Container(
               alignment: AlignmentDirectional.center,
               decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.all(Radius.circular(10)),
-                  color: Theme.of(context).colorScheme.secondaryColor),
+                  borderRadius: const BorderRadius.all(Radius.circular(10)), color: Theme.of(context).colorScheme.secondaryColor),
               child: TextFormField(
                   controller: maxController,
                   decoration: InputDecoration(
                       isDense: true,
                       focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide:
-                              BorderSide(color: context.color.territoryColor)),
+                          borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: context.color.territoryColor)),
                       enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(
-                              color: context.color.borderColor.darken(30))),
-                      labelStyle: TextStyle(
-                          color:
-                              context.color.textDefaultColor.withOpacity(0.3)),
+                          borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: context.color.borderColor.darken(30))),
+                      labelStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3)),
                       hintText: "00",
                       label: CustomText(
                         "maxLbl".translate(context),
                       ),
                       prefixText: '${Constant.currencySymbol} ',
-                      prefixStyle: TextStyle(
-                          color: Theme.of(context).colorScheme.territoryColor),
+                      prefixStyle: TextStyle(color: Theme.of(context).colorScheme.territoryColor),
                       fillColor: Theme.of(context).colorScheme.secondaryColor,
                       border: const OutlineInputBorder()),
                   keyboardType: TextInputType.number,
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.territoryColor),
+                  style: TextStyle(color: Theme.of(context).colorScheme.territoryColor),
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
         ),
       ],
@@ -542,9 +540,7 @@ class _ServiceFilterScreenState extends State<ServiceFilterScreen> {
                 children: List.generate(5, (index) {
                   return Icon(
                     index < _minRating.toInt() ? Icons.star : Icons.star_border,
-                    color: index < _minRating.toInt()
-                        ? Colors.amber
-                        : context.color.textDefaultColor.withOpacity(0.3),
+                    color: index < _minRating.toInt() ? Colors.amber : context.color.textDefaultColor.withOpacity(0.3),
                     size: 16,
                   );
                 }),
@@ -555,9 +551,7 @@ class _ServiceFilterScreenState extends State<ServiceFilterScreen> {
                 children: List.generate(5, (index) {
                   return Icon(
                     index < _maxRating.toInt() ? Icons.star : Icons.star_border,
-                    color: index < _maxRating.toInt()
-                        ? Colors.amber
-                        : context.color.textDefaultColor.withOpacity(0.3),
+                    color: index < _maxRating.toInt() ? Colors.amber : context.color.textDefaultColor.withOpacity(0.3),
                     size: 16,
                   );
                 }),

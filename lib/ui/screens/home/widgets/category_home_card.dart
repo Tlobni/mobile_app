@@ -8,6 +8,7 @@ class CategoryHomeCard extends StatelessWidget {
   final String title;
   final String url;
   final VoidCallback onTap;
+
   const CategoryHomeCard({
     super.key,
     required this.title,
@@ -38,8 +39,7 @@ class CategoryHomeCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(18),
                   color: const Color(0xFFE6CBA8),
-                  border: Border.all(
-                      color: context.color.borderColor.darken(60), width: 1),
+                  border: Border.all(color: context.color.borderColor.darken(60), width: 1),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: UiUtils.imageType(url, fit: BoxFit.cover),
@@ -50,8 +50,7 @@ class CategoryHomeCard extends StatelessWidget {
                 width: double.infinity,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                      color: context.color.borderColor.darken(60), width: 1),
+                  border: Border.all(color: context.color.borderColor.darken(60), width: 1),
                   color: const Color(0xFFE6CBA8),
                 ),
                 clipBehavior: Clip.antiAlias,

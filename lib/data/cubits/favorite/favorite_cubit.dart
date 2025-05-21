@@ -1,6 +1,6 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/data/repositories/favourites_repository.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 abstract class FavoriteState {}
 
@@ -70,30 +70,18 @@ class FavoriteCubit extends Cubit<FavoriteState> {
       if (e.toString() == "No Data Found") {
         //incase of 0 Favorite length - make it success for fresh users
         emit(FavoriteFetchSuccess(
-            favorite: [],
-            isLoadingMore: false,
-            totalFavoriteCount: 0,
-            page: 1,
-            hasMoreFetchError: false,
-            hasMore: false));
+            favorite: [], isLoadingMore: false, totalFavoriteCount: 0, page: 1, hasMoreFetchError: false, hasMore: false));
       } else {
         // When there's an API error or auth error, return empty favorites list
         // instead of emitting a failure state that might block the UI
         emit(FavoriteFetchSuccess(
-            favorite: [],
-            isLoadingMore: false,
-            totalFavoriteCount: 0,
-            page: 1,
-            hasMoreFetchError: false,
-            hasMore: false));
+            favorite: [], isLoadingMore: false, totalFavoriteCount: 0, page: 1, hasMoreFetchError: false, hasMore: false));
       }
     }
   }
 
   bool hasMoreFavorite() {
-    return (state is FavoriteFetchSuccess)
-        ? (state as FavoriteFetchSuccess).hasMore
-        : false;
+    return (state is FavoriteFetchSuccess) ? (state as FavoriteFetchSuccess).hasMore : false;
   }
 
   void getMoreFavorite() async {
@@ -103,10 +91,8 @@ class FavoriteCubit extends Cubit<FavoriteState> {
           return;
         }
         emit((state as FavoriteFetchSuccess).copyWith(isLoadingMore: true));
-        final result = await favoriteRepository.fetchFavorites(
-            page: (state as FavoriteFetchSuccess).page + 1);
-        List<ItemModel> updatedResults =
-            (state as FavoriteFetchSuccess).favorite;
+        final result = await favoriteRepository.fetchFavorites(page: (state as FavoriteFetchSuccess).page + 1);
+        List<ItemModel> updatedResults = (state as FavoriteFetchSuccess).favorite;
         updatedResults.addAll(result.modelList);
         emit(FavoriteFetchSuccess(
             isLoadingMore: false,
@@ -121,8 +107,7 @@ class FavoriteCubit extends Cubit<FavoriteState> {
             favorite: (state as FavoriteFetchSuccess).favorite,
             hasMoreFetchError: (e.toString() == "No Data Found") ? false : true,
             page: (state as FavoriteFetchSuccess).page + 1,
-            totalFavoriteCount:
-                (state as FavoriteFetchSuccess).totalFavoriteCount,
+            totalFavoriteCount: (state as FavoriteFetchSuccess).totalFavoriteCount,
             hasMore: (state as FavoriteFetchSuccess).hasMore));
       }
     }
@@ -142,8 +127,7 @@ class FavoriteCubit extends Cubit<FavoriteState> {
           favorite: List.from(favoriteList),
           hasMoreFetchError: true,
           page: (state as FavoriteFetchSuccess).page,
-          totalFavoriteCount:
-              (state as FavoriteFetchSuccess).totalFavoriteCount,
+          totalFavoriteCount: (state as FavoriteFetchSuccess).totalFavoriteCount,
           hasMore: (state as FavoriteFetchSuccess).hasMore));
     }
   }
@@ -153,8 +137,7 @@ class FavoriteCubit extends Cubit<FavoriteState> {
       final favorite = (state as FavoriteFetchSuccess).favorite;
 
       // Find the index of the item to be removed
-      int indexToRemove =
-          favorite.indexWhere((element) => element.id == model.id);
+      int indexToRemove = favorite.indexWhere((element) => element.id == model.id);
       if (indexToRemove != -1) {
         // Decrement totalLikes of the item being removed
         ItemModel removedItem = favorite[indexToRemove];
@@ -166,8 +149,7 @@ class FavoriteCubit extends Cubit<FavoriteState> {
           favorite: List.from(favorite),
           hasMoreFetchError: true,
           page: (state as FavoriteFetchSuccess).page,
-          totalFavoriteCount:
-              (state as FavoriteFetchSuccess).totalFavoriteCount,
+          totalFavoriteCount: (state as FavoriteFetchSuccess).totalFavoriteCount,
           hasMore: (state as FavoriteFetchSuccess).hasMore,
         ));
       }
@@ -177,9 +159,7 @@ class FavoriteCubit extends Cubit<FavoriteState> {
   bool isItemFavorite(int itemId) {
     if (state is FavoriteFetchSuccess) {
       final favorite = (state as FavoriteFetchSuccess).favorite;
-      return (favorite.isNotEmpty)
-          ? (favorite.indexWhere((element) => (element.id == itemId)) != -1)
-          : false;
+      return (favorite.isNotEmpty) ? (favorite.where((element) => (element.id == itemId)).isNotEmpty) : false;
     }
     return false;
   }
