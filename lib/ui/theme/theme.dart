@@ -4,7 +4,7 @@ import 'package:tlobni/utils/ui_utils.dart';
 
 ///Light Theme Colors
 ///This color format is different, isn't it? .You can use hex colors here also but you have to remove '#' symbol and add 0xff instead.
-const Color primaryColor_ = Color(0xFFF6F5FA);
+const Color primaryColor_ = Color(0xFFFFFFFF);
 const Color secondaryColor_ = Color(0xFFFFFFFF);
 const Color territoryColor_ = Color(0xFF08213e);
 const Color forthColor_ = Color(0xffFA6E53);

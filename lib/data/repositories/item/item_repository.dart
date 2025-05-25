@@ -381,6 +381,10 @@ class ItemRepository {
         print("DEBUG SEARCH: Explicitly set gender to ${filter.gender}");
       }
 
+      if (filter.itemSortBy != null) {
+        parameters['sort_by'] = filter.itemSortBy?.jsonName;
+      }
+
       parameters.addAll(filterMap);
 
       if (filter.areaId == null) {

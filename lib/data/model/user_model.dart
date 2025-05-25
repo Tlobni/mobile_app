@@ -30,6 +30,9 @@ class UserModel {
   String? country, city, state;
   List<int>? categoriesIds;
   List<CategoryModel>? categoriesModels;
+  int? totalReviews;
+  double? averageRating;
+  bool? isFeatured;
 
   UserModel({
     this.address,
@@ -57,6 +60,9 @@ class UserModel {
     this.isPersonalDetailShow,
     this.isVerified,
     this.categoriesModels,
+    this.totalReviews,
+    this.averageRating,
+    this.isFeatured,
   });
 
   UserModel.fromJson(Map<String, dynamic> json) {
@@ -102,6 +108,9 @@ class UserModel {
             ? json['show_personal_details']
             : int.parse(json['show_personal_details'].toString())
         : null);
+    totalReviews = json['total_reviews'];
+    averageRating = double.tryParse(json['average_rating'] ?? '');
+    isFeatured = json['is_featured'] == 1 || json['is_featured'] == true;
   }
 
   String? get location => country == null || city == null ? null : '$city, $country';
@@ -130,6 +139,16 @@ class UserModel {
     data['categories'] = categoriesIds?.join(',');
     data['show_personal_details'] = isPersonalDetailShow;
     data['is_verified'] = isVerified;
+    data['bio'] = bio;
+    data['website'] = website;
+    data['facebook'] = facebook;
+    data['twitter'] = twitter;
+    data['instagram'] = instagram;
+    data['tiktok'] = tiktok;
+    data['categories_models'] = categoriesModels?.map((e) => e.toJson()).toList();
+    data['total_reviews'] = totalReviews;
+    data['average_rating'] = averageRating?.toString();
+    data['is_featured'] = isFeatured;
     return data;
   }
 

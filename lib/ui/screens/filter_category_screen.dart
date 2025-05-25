@@ -14,6 +14,8 @@ import 'package:tlobni/ui/screens/main_activity.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/dynamic_field.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/text/description_text.dart';
+import 'package:tlobni/ui/widgets/text/small_text.dart';
 import 'package:tlobni/utils/api.dart';
 import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/custom_text.dart';
@@ -179,12 +181,9 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen> with Ticker
             onPressed: () {
               Navigator.pop(context);
             },
-            child: Text(
+            child: SmallText(
               "Done",
-              style: TextStyle(
-                color: context.color.territoryColor,
-                fontWeight: FontWeight.w600,
-              ),
+              weight: FontWeight.w600,
             ),
           ),
         ],
@@ -196,6 +195,7 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen> with Ticker
             padding: const EdgeInsets.all(16),
             child: TextField(
               controller: searchController,
+              style: context.textTheme.bodyMedium,
               decoration: InputDecoration(
                 hintText: "Search categories".translate(context),
                 prefixIcon: const Icon(Icons.search),
@@ -248,14 +248,14 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen> with Ticker
 
                 if (state is FetchCategoryFailure) {
                   return Center(
-                    child: Text(state.errorMessage),
+                    child: DescriptionText(state.errorMessage),
                   );
                 }
 
                 if (state is FetchCategorySuccess) {
                   if (filteredCategories.isEmpty) {
                     return Center(
-                      child: CustomText("No Data Found".translate(context)),
+                      child: DescriptionText("No Data Found".translate(context)),
                     );
                   }
 
@@ -291,9 +291,9 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen> with Ticker
                               ),
                             ),
                             child: ListTile(
-                              title: Text(
+                              title: DescriptionText(
                                 category.name ?? "Unknown",
-                                style: const TextStyle(fontWeight: FontWeight.w500),
+                                weight: FontWeight.w500,
                               ),
                               leading: Checkbox(
                                 value: isCategorySelected(category.id ?? 0),
@@ -340,7 +340,7 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen> with Ticker
                                       Padding(
                                         padding: const EdgeInsets.only(left: 20.0),
                                         child: ListTile(
-                                          title: Text(subcategory.name ?? "Unknown"),
+                                          title: DescriptionText(subcategory.name ?? "Unknown"),
                                           leading: Checkbox(
                                             value: isCategorySelected(subcategory.id ?? 0),
                                             onChanged: (bool? value) {
@@ -374,7 +374,7 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen> with Ticker
                                               return Padding(
                                                 padding: const EdgeInsets.only(left: 40.0),
                                                 child: ListTile(
-                                                  title: Text(nestedSubcategory.name ?? "Unknown"),
+                                                  title: DescriptionText(nestedSubcategory.name ?? "Unknown"),
                                                   leading: Checkbox(
                                                     value: isCategorySelected(nestedSubcategory.id ?? 0),
                                                     onChanged: (bool? value) {

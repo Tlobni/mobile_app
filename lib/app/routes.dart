@@ -1,3 +1,5 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:tlobni/ui/screens/ad_details_screen.dart';
 import 'package:tlobni/ui/screens/advertisement/my_advertisment_screen.dart';
 import 'package:tlobni/ui/screens/auth/account_type/account_type_screen.dart';
@@ -11,9 +13,10 @@ import 'package:tlobni/ui/screens/blogs/blogs_screen.dart';
 import 'package:tlobni/ui/screens/chat/blocked_user_list_screen.dart';
 import 'package:tlobni/ui/screens/faqs_screen.dart';
 import 'package:tlobni/ui/screens/favorite_screen.dart';
-import 'package:tlobni/ui/screens/filter_screen.dart';
+import 'package:tlobni/ui/screens/filter_category_screen.dart';
 import 'package:tlobni/ui/screens/home/category_list.dart';
 import 'package:tlobni/ui/screens/home/change_language_screen.dart';
+import 'package:tlobni/ui/screens/home/featured_users_screen.dart';
 import 'package:tlobni/ui/screens/home/search_screen.dart';
 import 'package:tlobni/ui/screens/home/widgets/categoryFilterScreen.dart';
 import 'package:tlobni/ui/screens/home/widgets/posted_since_filter.dart';
@@ -22,6 +25,7 @@ import 'package:tlobni/ui/screens/item/add_item_screen/add_item_details.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/confirm_location_screen.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/more_details.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/select_category.dart';
+import 'package:tlobni/ui/screens/item/add_item_screen/select_post_type.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/widgets/pdf_viewer.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/widgets/success_item_screen.dart';
 import 'package:tlobni/ui/screens/item/items_list.dart';
@@ -35,7 +39,6 @@ import 'package:tlobni/ui/screens/location/states_screen.dart';
 import 'package:tlobni/ui/screens/location_permission_screen.dart';
 import 'package:tlobni/ui/screens/main_activity.dart';
 import 'package:tlobni/ui/screens/my_review_screen.dart';
-import 'package:tlobni/ui/screens/onboarding/onboarding_screen.dart';
 import 'package:tlobni/ui/screens/seller/seller_intro_verification.dart';
 import 'package:tlobni/ui/screens/seller/seller_profile.dart';
 import 'package:tlobni/ui/screens/seller/seller_verification.dart';
@@ -54,10 +57,6 @@ import 'package:tlobni/ui/screens/welcome/welcome_screen.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/maintenance_mode.dart';
 import 'package:tlobni/utils/constant.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:tlobni/ui/screens/item/add_item_screen/select_post_type.dart';
-import 'package:tlobni/ui/screens/home/featured_users_screen.dart';
 
 class Routes {
   static const splash = 'splash';
@@ -120,8 +119,7 @@ class Routes {
   static const soldOutBoughtScreen = '/soldOutBoughtScreen';
   static const sellerIntroVerificationScreen = '/sellerIntroVerificationScreen';
   static const sellerVerificationScreen = '/sellerVerificationScreen';
-  static const sellerVerificationComplteScreen =
-      '/sellerVerificationComplteScreen';
+  static const sellerVerificationComplteScreen = '/sellerVerificationComplteScreen';
 
   ///Add Item screens
   static const selectItemTypeScreen = '/selectItemType';
@@ -170,8 +168,7 @@ class Routes {
         if (currentRoute == adDetailsScreen) {
           Constant.navigatorKey.currentState?.pop();
         }
-        return AdDetailsScreen.route(
-            RouteSettings(arguments: {"slug": itemSlug}));
+        return AdDetailsScreen.route(RouteSettings(arguments: {"slug": itemSlug}));
       }
     }
     currentRoute = routeSettings.name ?? "";
@@ -180,8 +177,7 @@ class Routes {
       case splash:
         return BlurredRouter(builder: ((context) => const SplashScreen()));
       case onboarding:
-        return CupertinoPageRoute(
-            builder: ((context) => const WelcomeScreen()));
+        return CupertinoPageRoute(builder: ((context) => const WelcomeScreen()));
       case welcome:
         return WelcomeScreen.route(routeSettings);
       case accountType:

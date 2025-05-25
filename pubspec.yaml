@@ -74,6 +74,7 @@ dependencies:
   file_picker: ^8.1.6
   android_intent_plus: ^5.2.1
   cloud_firestore: ^5.4.2
+  non_uniform_border: ^1.0.0
 
 
 
@@ -115,12 +116,34 @@ flutter:
   fonts:
     - family: Manrope
       fonts:
-        - asset: assets/fonts/Manrope-Regular.ttf
-        - asset: assets/fonts/Manrope-SemiBold.ttf
+        - asset: assets/fonts/manrope/Manrope-Regular.ttf
+        - asset: assets/fonts/manrope/Manrope-SemiBold.ttf
           weight: 600
-        - asset: assets/fonts/Manrope-Bold.ttf
+        - asset: assets/fonts/manrope/Manrope-Bold.ttf
           weight: 700
-        - asset: assets/fonts/Manrope-Medium.ttf
+        - asset: assets/fonts/manrope/Manrope-Medium.ttf
           weight: 500
-        - asset: assets/fonts/Manrope-ExtraBold.ttf
+        - asset: assets/fonts/manrope/Manrope-ExtraBold.ttf
+          weight: 800
+    - family: Montserrat
+      fonts:
+        - asset: assets/fonts/montserrat/Montserrat-Regular.ttf
+        - asset: assets/fonts/montserrat/Montserrat-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/montserrat/Montserrat-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/montserrat/Montserrat-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/montserrat/Montserrat-ExtraBold.ttf
+          weight: 800
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/inter/Inter_18pt-Regular.ttf
+        - asset: assets/fonts/inter/Inter_18pt-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/inter/Inter_18pt-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/inter/Inter_18pt-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/inter/Inter_18pt-ExtraBold.ttf
           weight: 800

@@ -1,11 +1,14 @@
+import 'package:flutter/material.dart';
+import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/app/routes.dart';
-import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
+import 'package:tlobni/ui/widgets/buttons/primary_button.dart';
+import 'package:tlobni/ui/widgets/buttons/secondary_button.dart';
+import 'package:tlobni/ui/widgets/text/description_text.dart';
+import 'package:tlobni/ui/widgets/text/heading_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
-import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({Key? key}) : super(key: key);
@@ -68,67 +71,94 @@ class WelcomeScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Spacer(flex: 1),
 
             // Tlobni Logo
-            Image.asset(
-              'assets/images/tlobni-logo.png',
-              height: 220,
-              width: 300,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  'assets/images/tlobni-logo.png',
+                  height: 176,
+                  width: 240,
+                ),
+              ],
             ),
+            const SizedBox(height: 20),
 
             // Welcome Text
-            CustomText(
-              "Welcome!",
-              fontSize: context.font.extraLarge,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF0F2137),
+            HeadingText(
+              "Welcome to Tlobni",
               textAlign: TextAlign.center,
+              weight: FontWeight.bold,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 30),
 
             // Tagline
-            CustomText(
-              "Tlobni connects you to the services you need with local providers you trust!",
-              fontSize: context.font.normal,
-              color: const Color(0xFF0F2137).withOpacity(0.7),
+            DescriptionText(
+              "Elite Providers. Premium Services\nUnforgettable Experiences\nBook Now",
               textAlign: TextAlign.center,
+              color: kColorGrey,
             ),
 
             const SizedBox(height: 60),
 
-            // Sign In Button
-            UiUtils.buildButton(
-              context,
+            PrimaryButton.text(
+              'Sign in',
               onPressed: () => onTapSignIn(context),
-              buttonTitle: 'Sign In',
-              radius: 4,
-              height: 50,
-              buttonColor: const Color(0xFF0F2137),
-              textColor: const Color(0xFFE6CBA8),
+              weight: FontWeight.w600,
+              padding: EdgeInsets.all(20),
             ),
 
-            const SizedBox(height: 10),
-            UiUtils.buildButton(
-              context,
+            const SizedBox(height: 20),
+
+            SecondaryButton.text(
+              'Create an Account',
               onPressed: () => navigateToSignup(context),
-              buttonTitle: 'Create an Account',
-              radius: 4,
-              height: 50,
-              buttonColor: const Color(0xFF0F2137),
-              textColor: const Color(0xFFE6CBA8),
+              weight: FontWeight.w600,
+              padding: EdgeInsets.all(20),
             ),
 
-            const SizedBox(height: 10),
+            // // Sign In Button
+            // UiUtils.buildButton(
+            //   context,
+            //   onPressed: () => onTapSignIn(context),
+            //   buttonTitle: 'Sign In',
+            //   radius: 4,
+            //   height: 50,
+            //   buttonColor: const Color(0xFF0F2137),
+            //   textColor: const Color(0xFFE6CBA8),
+            // ),
+            //
+            // const SizedBox(height: 10),
+            // UiUtils.buildButton(
+            //   context,
+            //   onPressed: () => navigateToSignup(context),
+            //   buttonTitle: 'Create an Account',
+            //   radius: 4,
+            //   height: 50,
+            //   buttonColor: const Color(0xFF0F2137),
+            //   textColor: const Color(0xFFE6CBA8),
+            // ),
+
+            const SizedBox(height: 30),
             // Skip for later
-            TextButton(
-              onPressed: () => skipForNow(context),
-              child: CustomText(
-                "Skip for later",
-                color: const Color(0xFF0F2137).withOpacity(0.6),
-                fontSize: context.font.small,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: () => skipForNow(context),
+                  child: Text(
+                    "Skip for later",
+                    textAlign: TextAlign.center,
+                    style: context.textTheme.bodySmall?.copyWith(
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 20),
 

@@ -48,6 +48,14 @@ class UserRepository {
       if (filter.maxRating != null) {
         parameters['rating_to'] = filter.maxRating;
       }
+
+      if (filter.featuredOnly != null) {
+        parameters['featured_only'] = filter.featuredOnly;
+      }
+
+      if (filter.providerSortBy != null) {
+        parameters['sort_by'] = filter.providerSortBy?.jsonName;
+      }
     }
 
     print("DEBUG: API parameters for get-users: $parameters");

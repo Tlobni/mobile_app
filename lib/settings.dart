@@ -30,8 +30,8 @@ class AppSettings {
   static const String androidPackageName = 'com.tlobni.app';
   static const String shareAppText = "Share this App";
 
-  // static const String demoUrl = "http://192.168.0.100:8000";
-  static const String demoUrl = "https://dashboard.tlobni.com";
+  static const String demoUrl = "http://192.168.0.102:8000";
+  // static const String demoUrl = "https://dashboard.tlobni.com";
 
   ///API Setting
 

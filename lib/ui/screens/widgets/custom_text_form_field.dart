@@ -1,20 +1,10 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:tlobni/ui/theme/theme.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/validator.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-enum CustomTextFieldValidator {
-  nullCheck,
-  phoneNumber,
-  email,
-  password,
-  maxFifty,
-  otpSix,
-  minAndMixLen,
-  url,
-  slug
-}
+enum CustomTextFieldValidator { nullCheck, phoneNumber, email, password, maxFifty, otpSix, minAndMixLen, url, slug }
 
 class CustomTextFormField extends StatelessWidget {
   final String? hintText;
@@ -90,9 +80,7 @@ class CustomTextFormField extends StatelessWidget {
         keyboardAppearance: Brightness.light,
         textCapitalization: capitalization ?? TextCapitalization.none,
         readOnly: readOnly ?? false,
-        style: TextStyle(
-            fontSize: context.font.large,
-            color: context.color.textDefaultColor),
+        style: context.textTheme.bodyMedium,
         minLines: minLine ?? 1,
         maxLines: maxLine ?? 1,
         onChanged: onChange,
@@ -116,14 +104,12 @@ class CustomTextFormField extends StatelessWidget {
               return Validator.nullCheckValidator(value, context: context);
             }
 
-            if (isRequired == true &&
-                (maxLength != null && value!.length > maxLength!)) {
+            if (isRequired == true && (maxLength != null && value!.length > maxLength!)) {
               return "${"youCanAdd".translate(context)} \t $maxLength \t ${"maximumNumbersOnly".translate(context)}";
             }
 
             // Check if minLength is not null and value length is less than minLength
-            if (isRequired == true &&
-                (minLength != null && value!.length < minLength!)) {
+            if (isRequired == true && (minLength != null && value!.length < minLength!)) {
               return "$minLength \t ${"numMinRequired".translate(context)}";
             }
             return null;
@@ -142,8 +128,7 @@ class CustomTextFormField extends StatelessWidget {
             return Validator.validateSlug(value, context: context);
           }
           if (validator == CustomTextFieldValidator.phoneNumber) {
-            return Validator.validatePhoneNumber(
-                value: value, context: context, isRequired: isMobileRequired!);
+            return Validator.validatePhoneNumber(value: value, context: context, isRequired: isMobileRequired!);
           }
           if (validator == CustomTextFieldValidator.url) {
             return Validator.urlValidation(value: value, context: context);
@@ -161,14 +146,10 @@ class CustomTextFormField extends StatelessWidget {
           prefixIcon: fixedPrefix,
           suffixIcon: suffix,
           hintText: hintText,
-          hintStyle: hintTextStyle ??
-              TextStyle(
-                  color: context.color.textColorDark.withOpacity(0.7),
-                  fontSize: context.font.large),
+          hintStyle: hintTextStyle ?? context.textTheme.bodyMedium,
           filled: true,
           fillColor: Colors.transparent,
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
           focusedBorder: InputBorder.none,
           enabledBorder: InputBorder.none,
           border: InputBorder.none,

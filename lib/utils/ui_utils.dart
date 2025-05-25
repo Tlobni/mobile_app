@@ -20,6 +20,7 @@ import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
 import 'package:tlobni/ui/screens/widgets/full_screen_image_view.dart';
 import 'package:tlobni/ui/screens/widgets/gallery_view.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/text/description_text.dart';
 import 'package:tlobni/utils/app_icon.dart';
 import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/custom_text.dart';
@@ -292,7 +293,7 @@ class UiUtils {
                                 textDirection: Directionality.of(context),
                                 child: RotatedBox(
                                   quarterTurns: Directionality.of(context) == ui.TextDirection.rtl ? 2 : -4,
-                                  child: UiUtils.getSvg(AppIcons.arrowLeft, fit: BoxFit.none, color: context.color.textDefaultColor),
+                                  child: UiUtils.getSvg(AppIcons.arrowLeft, fit: BoxFit.none, color: context.color.primary),
                                 ),
                               ),
                             ),
@@ -300,13 +301,9 @@ class UiUtils {
                         ),
                       ],
                       Expanded(
-                        child: CustomText(
+                        child: DescriptionText(
                           title ?? "",
-                          overflow: TextOverflow.ellipsis,
-                          softWrap: true,
-                          color: context.color.textDefaultColor,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 18,
+                          weight: FontWeight.w600,
                         ),
                       ),
                       if (actions != null) ...actions,

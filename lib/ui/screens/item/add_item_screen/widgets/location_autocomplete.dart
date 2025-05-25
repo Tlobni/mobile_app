@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/ui/widgets/text/description_text.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
 
 class LocationAutocomplete extends StatefulWidget {
   final TextEditingController controller;
@@ -150,7 +151,7 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
     widget.onLocationSelected?.call({});
     final text = widget.controller.text.toLowerCase();
     if (text.isEmpty) {
-      _filteredLocations = [];
+      _filteredLocations = _locations.toList();
     } else {
       _filteredLocations = _locations.where((location) {
         return '${location['city']}, ${location['country']}'.toLowerCase().contains(text.toLowerCase());
@@ -202,7 +203,7 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
               child: _filteredLocations.isEmpty
                   ? Container(
                       padding: EdgeInsets.all(16),
-                      child: CustomText(
+                      child: DescriptionText(
                         "No locations found",
                         color: theme.hintColor,
                       ),
@@ -216,7 +217,7 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
                         final displayText = "${location['city']}, ${location['country']}";
 
                         return ListTile(
-                          title: CustomText(displayText, color: theme.textTheme.bodyMedium?.color),
+                          title: DescriptionText(displayText),
                           onTap: () {
                             widget.controller.text = displayText;
                             widget.onSelected(displayText);
@@ -259,16 +260,10 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
       child: TextField(
         controller: widget.controller,
         focusNode: _focusNode,
-        style: TextStyle(
-          color: theme.textTheme.bodyMedium?.color,
-          fontSize: widget.fontSize,
-        ),
+        style: context.textTheme.bodyMedium,
         decoration: InputDecoration(
           hintText: widget.hintText,
-          hintStyle: TextStyle(
-            color: theme.hintColor,
-            fontSize: widget.fontSize,
-          ),
+          hintStyle: context.textTheme.bodyMedium,
           prefixIcon: Container(
             margin: EdgeInsets.only(left: 10),
             alignment: Alignment.centerLeft,

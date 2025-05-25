@@ -1,8 +1,18 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:tlobni/data/model/user_model.dart';
 import 'package:tlobni/data/model/data_output.dart';
 import 'package:tlobni/data/model/item_filter_model.dart';
+import 'package:tlobni/data/model/user_model.dart';
 import 'package:tlobni/data/repositories/user/user_repository.dart';
+
+enum SearchProviderSortBy {
+  rating,
+  newest;
+
+  String get jsonName => switch (this) {
+        SearchProviderSortBy.rating => 'rating',
+        SearchProviderSortBy.newest => 'newest',
+      };
+}
 
 abstract class SearchProvidersState {}
 
@@ -70,8 +80,7 @@ class SearchProvidersCubit extends Cubit<SearchProvidersState> {
   }) async {
     try {
       emit(SearchProvidersFetchProgress());
-      DataOutput<UserModel> result =
-          await _userRepository.fetchProviders(query, filter, page: page);
+      DataOutput<UserModel> result = await _userRepository.fetchProviders(query, filter, page: page);
 
       emit(SearchProvidersSuccess(
         searchQuery: query,
@@ -121,8 +130,7 @@ class SearchProvidersCubit extends Cubit<SearchProvidersState> {
           filter,
           page: (state as SearchProvidersSuccess).page + 1,
         );
-        List<UserModel> updatedResults =
-            (state as SearchProvidersSuccess).searchedProviders;
+        List<UserModel> updatedResults = (state as SearchProvidersSuccess).searchedProviders;
         updatedResults.addAll(result.modelList);
 
         emit(
@@ -151,8 +159,6 @@ class SearchProvidersCubit extends Cubit<SearchProvidersState> {
   }
 
   bool hasMoreData() {
-    return (state is SearchProvidersSuccess)
-        ? (state as SearchProvidersSuccess).hasMore
-        : false;
+    return (state is SearchProvidersSuccess) ? (state as SearchProvidersSuccess).hasMore : false;
   }
 }

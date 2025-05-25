@@ -1,6 +1,9 @@
 import 'dart:convert';
 
+import 'package:tlobni/data/cubits/item/search_item_cubit.dart';
+import 'package:tlobni/data/cubits/user/search_providers_cubit.dart';
 import 'package:tlobni/data/model/category_model.dart';
+import 'package:tlobni/utils/extensions/lib/iterable.dart';
 
 class ItemFilterModel {
   final String? maxPrice;
@@ -23,7 +26,10 @@ class ItemFilterModel {
   final double? rating;
   final double? minRating;
   final double? maxRating;
-  final List<CategoryModel> categories;
+  final List<CategoryModel>? categories;
+  final SearchItemSortBy? itemSortBy;
+  final SearchProviderSortBy? providerSortBy;
+  final bool? featuredOnly;
 
   ItemFilterModel({
     this.maxPrice,
@@ -38,7 +44,7 @@ class ItemFilterModel {
     this.areaId,
     this.latitude,
     this.longitude,
-    this.customFields = const {},
+    this.customFields,
     this.userType,
     this.gender,
     this.serviceType,
@@ -46,7 +52,10 @@ class ItemFilterModel {
     this.rating,
     this.minRating,
     this.maxRating,
-    this.categories = const [],
+    this.categories,
+    this.itemSortBy,
+    this.providerSortBy,
+    this.featuredOnly,
   });
 
   ItemFilterModel copyWith({
@@ -71,6 +80,11 @@ class ItemFilterModel {
     double? minRating,
     double? maxRating,
     List<CategoryModel>? categories,
+    SearchItemSortBy? itemSortBy,
+    bool resetItemSortBy = false,
+    SearchProviderSortBy? providerSortBy,
+    bool resetProviderSortBy = false,
+    bool? featuredOnly,
   }) {
     return ItemFilterModel(
       maxPrice: maxPrice ?? this.maxPrice,
@@ -94,6 +108,9 @@ class ItemFilterModel {
       minRating: minRating ?? this.minRating,
       maxRating: maxRating ?? this.maxRating,
       categories: categories ?? this.categories,
+      featuredOnly: featuredOnly ?? this.featuredOnly,
+      itemSortBy: resetItemSortBy ? null : itemSortBy ?? this.itemSortBy,
+      providerSortBy: resetProviderSortBy ? null : providerSortBy ?? this.providerSortBy,
     );
   }
 
@@ -121,6 +138,9 @@ class ItemFilterModel {
       'min_rating': minRating,
       'max_rating': maxRating,
       'categories': categories,
+      'item_sort_by': itemSortBy?.jsonName,
+      'provider_sort_by': providerSortBy?.jsonName,
+      'featured_only': featuredOnly,
     };
   }
 
@@ -147,6 +167,9 @@ class ItemFilterModel {
       minRating: map['min_rating'] != null ? double.tryParse(map['min_rating'].toString()) : null,
       maxRating: map['max_rating'] != null ? double.tryParse(map['max_rating'].toString()) : null,
       categories: map['categories'] != null ? List<CategoryModel>.from(map['categories'].map((x) => CategoryModel.fromJson(x))) : [],
+      itemSortBy: SearchItemSortBy.values.firstWhereOrNull((e) => e.jsonName == map['item_sort_by']),
+      providerSortBy: SearchProviderSortBy.values.firstWhereOrNull((e) => e.jsonName == map['provider_sort_by']),
+      featuredOnly: map['featured_only'] ?? false,
     );
   }
 
@@ -207,7 +230,8 @@ class ItemFilterModel {
         other.specialTags.toString() == specialTags.toString() &&
         other.rating == rating &&
         other.minRating == minRating &&
-        other.maxRating == maxRating;
+        other.maxRating == maxRating &&
+        other.itemSortBy == itemSortBy;
   }
 
   @override
@@ -231,6 +255,7 @@ class ItemFilterModel {
         specialTags.hashCode ^
         rating.hashCode ^
         minRating.hashCode ^
-        maxRating.hashCode;
+        maxRating.hashCode ^
+        itemSortBy.hashCode;
   }
 }

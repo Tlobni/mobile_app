@@ -94,7 +94,7 @@ class _AppState extends State<App> {
           title: Constant.appName,
           debugShowCheckedModeBanner: false,
           onGenerateRoute: Routes.onGenerateRouted,
-          theme: appThemeData[currentTheme],
+          theme: appThemeData(currentTheme),
           builder: (context, child) {
             TextDirection? direction;
 

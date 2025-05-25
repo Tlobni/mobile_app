@@ -1,9 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:tlobni/ui/theme/theme.dart';
 import 'package:tlobni/utils/app_icon.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
 
 class NoDataFound extends StatelessWidget {
   final double? height;
@@ -11,8 +11,13 @@ class NoDataFound extends StatelessWidget {
   final String? subMessage;
   final VoidCallback? onTap;
 
-  const NoDataFound(
-      {super.key, this.onTap, this.height, this.mainMessage, this.subMessage});
+  const NoDataFound({
+    super.key,
+    this.onTap,
+    this.height,
+    this.mainMessage,
+    this.subMessage,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -30,9 +35,7 @@ class NoDataFound extends StatelessWidget {
             height: 20,
           ),
           CustomText(
-            mainMessage == null
-                ? "nodatafound".translate(context)
-                : mainMessage!,
+            mainMessage == null ? "nodatafound".translate(context) : mainMessage!,
             fontSize: context.font.extraLarge,
             color: context.color.territoryColor,
             fontWeight: FontWeight.w600,
@@ -41,9 +44,7 @@ class NoDataFound extends StatelessWidget {
             height: 14,
           ),
           CustomText(
-            subMessage == null
-                ? "sorryLookingFor".translate(context)
-                : subMessage!,
+            subMessage == null ? "sorryLookingFor".translate(context) : subMessage!,
             fontSize: context.font.larger,
             textAlign: TextAlign.center,
           ),

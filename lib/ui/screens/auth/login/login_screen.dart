@@ -3,8 +3,11 @@ import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/custom_text_form_field.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/buttons/primary_button.dart';
+import 'package:tlobni/ui/widgets/text/description_text.dart';
+import 'package:tlobni/ui/widgets/text/heading_text.dart';
+import 'package:tlobni/ui/widgets/text/small_text.dart';
 import 'package:tlobni/utils/api.dart';
-import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
@@ -211,7 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 buildLoginForm(context),
                 if (_isLoading)
                   Container(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                     child: const Center(
                       child: CircularProgressIndicator(),
                     ),
@@ -231,7 +234,7 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 18.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               /// Skip Button
               Align(
@@ -245,10 +248,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       {"from": "login", "isSkipped": true},
                     );
                   },
-                  child: CustomText(
+                  child: Text(
                     "Skip for later",
-                    color: const Color(0xFF0F2137).withOpacity(0.6),
-                    fontSize: context.font.small,
+                    style: context.textTheme.bodySmall,
                   ),
                 ),
               ),
@@ -264,19 +266,11 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 20),
 
               /// Title
-              CustomText(
-                "Sign In",
-                fontSize: context.font.extraLarge,
-                color: context.color.textDefaultColor,
-              ),
+              HeadingText("Sign In"),
               const SizedBox(height: 8),
 
               /// Email Login Fields
-              CustomText(
-                'Enter your credentials to continue',
-                fontSize: context.font.large,
-                color: context.color.textColorDark,
-              ),
+              DescriptionText('Enter your credentials to continue'),
               const SizedBox(height: 24),
 
               Form(
@@ -319,28 +313,23 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () {
                     Navigator.pushNamed(context, Routes.forgotPassword);
                   },
-                  child: CustomText(
+                  child: DescriptionText(
                     "${"forgotPassword".translate(context)}?",
                     color: context.color.textLightColor,
-                    fontSize: context.font.normal,
                   ),
                 ),
               ),
               const SizedBox(height: 10),
 
               /// Sign In Button
-              UiUtils.buildButton(
-                context,
+              PrimaryButton.text(
+                'signIn'.translate(context),
+                padding: EdgeInsets.all(20),
                 onPressed: () {
                   if (!_isLoading) {
                     onTapEmailLogin();
                   }
                 },
-                buttonTitle: 'signIn'.translate(context),
-                radius: 10,
-                disabled: _isLoading,
-                disabledColor: const Color.fromARGB(255, 104, 102, 106),
-                textColor: const Color(0xFFE6CBA8),
               ),
               const SizedBox(height: 20),
 
@@ -348,14 +337,13 @@ class _LoginScreenState extends State<LoginScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CustomText("dontHaveAcc".translate(context), color: context.color.textColorDark.brighten(50)),
+                  DescriptionText("dontHaveAcc".translate(context)),
                   const SizedBox(width: 12),
                   GestureDetector(
                     onTap: navigateToSignup,
-                    child: CustomText(
+                    child: DescriptionText(
                       "signUp".translate(context),
                       color: context.color.territoryColor,
-                      showUnderline: true,
                     ),
                   )
                 ],
@@ -376,22 +364,17 @@ class _LoginScreenState extends State<LoginScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         mainAxisSize: MainAxisSize.min,
         children: [
-          CustomText(
+          SmallText(
             "bySigningUpLoggingIn".translate(context),
-            color: context.color.textLightColor.withOpacity(0.8),
-            fontSize: context.font.small,
-            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 3),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               InkWell(
-                child: CustomText(
+                child: SmallText(
                   "termsOfService".translate(context),
-                  color: context.color.territoryColor,
-                  fontSize: context.font.small,
-                  showUnderline: true,
+                  decoration: TextDecoration.underline,
                 ),
                 onTap: () => Navigator.pushNamed(
                   context,
@@ -400,18 +383,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(width: 5.0),
-              CustomText(
+              SmallText(
                 "andTxt".translate(context),
-                color: context.color.textLightColor.withOpacity(0.8),
-                fontSize: context.font.small,
               ),
               const SizedBox(width: 5.0),
               InkWell(
-                child: CustomText(
+                child: SmallText(
                   "privacyPolicy".translate(context),
-                  color: context.color.territoryColor,
-                  fontSize: context.font.small,
-                  showUnderline: true,
+                  decoration: TextDecoration.underline,
                 ),
                 onTap: () => Navigator.pushNamed(
                   context,
@@ -424,5 +403,9 @@ class _LoginScreenState extends State<LoginScreen> {
         ],
       ),
     );
+  }
+
+  Widget newUi() {
+    return SizedBox();
   }
 }

@@ -342,6 +342,15 @@ class ItemModel {
     }
   }
 
+  bool get isWomenExclusive => specialTags?['exclusive_women'] == 'true';
+
+  bool get isCorporatePackage => specialTags?['corporate_package'] == 'true';
+
+  String? get location {
+    if (country == null || city == null) return null;
+    return '$city, $country';
+  }
+
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
     data['id'] = id;
@@ -432,6 +441,7 @@ class User {
   String? instagram;
   String? tiktok;
   String? profile;
+  double? averageRating;
   String? fcmId;
   String? firebaseId;
   int? status;
@@ -443,33 +453,41 @@ class User {
   int? isVerified;
   String? country, state, city;
   List<int>? categoriesIds;
+  int? totalReviews;
+  List<String>? categories;
+  bool? isFeatured;
 
-  User(
-      {this.id,
-      this.name,
-      this.mobile,
-      this.email,
-      this.type,
-      this.bio,
-      this.website,
-      this.facebook,
-      this.twitter,
-      this.instagram,
-      this.tiktok,
-      this.profile,
-      this.fcmId,
-      this.firebaseId,
-      this.status,
-      this.apiToken,
-      this.address,
-      this.createdAt,
-      this.updatedAt,
-      this.isVerified,
-      this.country,
-      this.state,
-      this.city,
-      this.categoriesIds,
-      this.showPersonalDetails});
+  User({
+    this.id,
+    this.name,
+    this.mobile,
+    this.email,
+    this.type,
+    this.bio,
+    this.website,
+    this.facebook,
+    this.twitter,
+    this.instagram,
+    this.tiktok,
+    this.profile,
+    this.fcmId,
+    this.firebaseId,
+    this.status,
+    this.apiToken,
+    this.address,
+    this.createdAt,
+    this.updatedAt,
+    this.isVerified,
+    this.country,
+    this.state,
+    this.totalReviews,
+    this.city,
+    this.categoriesIds,
+    this.showPersonalDetails,
+    this.categories,
+    this.averageRating,
+    this.isFeatured,
+  });
 
   User.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -489,14 +507,29 @@ class User {
     status = json['status'];
     apiToken = json['api_token'];
     address = json['address'];
+    if (json['total_reviews'] != null) {
+      totalReviews = (json['total_reviews'] as num?)?.toInt();
+    }
     createdAt = json['created_at'];
     updatedAt = json['updated_at'];
     isVerified = json['is_verified'];
+    if (json['average_rating'] != null) {
+      averageRating =
+          (json['average_rating'] is num? ? json['average_rating'] as num? : double.tryParse(json['average_rating']?.toString() ?? ''))
+              ?.toDouble();
+    }
     country = json['country'];
     city = json['city'];
     state = json['state'];
-    categoriesIds = (json['categories'] as String?)?.split(',').where((e) => e.isNotEmpty).map(int.parse).toList();
+    categoriesIds = ((json['category_ids'] ?? json['categories']) as String?)
+        ?.split(',')
+        .where((String e) => e.isNotEmpty)
+        .toList()
+        .map(int.parse)
+        .toList();
     showPersonalDetails = json['show_personal_details'];
+    categories = (json['categories_array'] as List<dynamic>?)?.map((e) => e.toString()).toList();
+    isFeatured = json['is_featured'] == 1 || json['is_featured'] == true;
   }
 
   bool get hasLocation => country != null && city != null;
@@ -518,6 +551,7 @@ class User {
     data['tiktok'] = tiktok;
     data['profile'] = profile;
     data['fcm_id'] = fcmId;
+    data['average_rating'] = averageRating;
     data['firebase_id'] = firebaseId;
     data['status'] = status;
     data['api_token'] = apiToken;
@@ -530,6 +564,8 @@ class User {
     data['state'] = state;
     data['show_personal_details'] = showPersonalDetails;
     data['categories'] = categoriesIds?.join(',');
+    data['total_reviews'] = totalReviews;
+    data['is_featured'] = isFeatured;
     return data;
   }
 }
