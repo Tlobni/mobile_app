@@ -396,12 +396,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
       error: _corporatePackagesError == null ? null : 'Failed to load corporate packages: $_corporatePackagesError',
       shimmerEffect: HomeShimmerEffect(),
       onViewAll: () => _goToItemListingSearch(context),
-      children: _corporatePackageItems
-          .map((e) => ItemContainer(
-                small: false,
-                item: e,
-              ))
-          .toList(),
+      children: _corporatePackageItems.map(_itemContainer).toList(),
     );
   }
 

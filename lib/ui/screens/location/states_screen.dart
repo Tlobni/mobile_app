@@ -1,5 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/home/fetch_home_all_items_cubit.dart';
@@ -20,10 +24,6 @@ import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shimmer/shimmer.dart';
 
 class StatesScreen extends StatefulWidget {
   final int countryId;
@@ -73,8 +73,7 @@ class StatesScreenState extends State<StatesScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<FetchStatesCubit>().fetchStates(
-        search: searchController.text, countryId: widget.countryId);
+    context.read<FetchStatesCubit>().fetchStates(search: searchController.text, countryId: widget.countryId);
     searchController = TextEditingController();
 
     searchController.addListener(searchItemListener);
@@ -84,9 +83,7 @@ class StatesScreenState extends State<StatesScreen> {
   void pageScrollListen() {
     if (controller.isEndReached()) {
       if (context.read<FetchStatesCubit>().hasMoreData()) {
-        context
-            .read<FetchStatesCubit>()
-            .fetchStatesMore(countryId: widget.countryId);
+        context.read<FetchStatesCubit>().fetchStatesMore(countryId: widget.countryId);
       }
     }
   }
@@ -107,8 +104,7 @@ class StatesScreenState extends State<StatesScreen> {
   void itemSearch() {
     // if (searchController.text.isNotEmpty) {
     if (previousSearchQuery != searchController.text) {
-      context.read<FetchStatesCubit>().fetchStates(
-          search: searchController.text, countryId: widget.countryId);
+      context.read<FetchStatesCubit>().fetchStates(search: searchController.text, countryId: widget.countryId);
       previousSearchQuery = searchController.text;
       setState(() {});
     }
@@ -119,8 +115,7 @@ class StatesScreenState extends State<StatesScreen> {
 
   PreferredSizeWidget appBarWidget() {
     return AppBar(
-      systemOverlayStyle:
-          SystemUiOverlayStyle(statusBarColor: context.color.backgroundColor),
+      systemOverlayStyle: SystemUiOverlayStyle(statusBarColor: context.color.backgroundColor),
       bottom: PreferredSize(
           preferredSize: Size.fromHeight(58),
           child: Container(
@@ -130,10 +125,7 @@ class StatesScreenState extends State<StatesScreen> {
               alignment: AlignmentDirectional.center,
               decoration: BoxDecoration(
                   border: Border.all(
-                      width: context.watch<AppThemeCubit>().state.appTheme ==
-                              AppTheme.dark
-                          ? 0
-                          : 1,
+                      width: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark ? 0 : 1,
                       color: context.color.borderColor.darken(30)),
                   borderRadius: const BorderRadius.all(Radius.circular(10)),
                   color: context.color.secondaryColor),
@@ -143,11 +135,9 @@ class StatesScreenState extends State<StatesScreen> {
                     border: InputBorder.none,
                     //OutlineInputBorder()
                     fillColor: Theme.of(context).colorScheme.secondaryColor,
-                    hintText:
-                        "${"search".translate(context)}\t${"state".translate(context)}",
+                    hintText: "${"search".translate(context)}\t${"state".translate(context)}",
                     prefixIcon: setSearchIcon(),
-                    prefixIconConstraints:
-                        const BoxConstraints(minHeight: 5, minWidth: 5),
+                    prefixIconConstraints: const BoxConstraints(minHeight: 5, minWidth: 5),
                   ),
                   enableSuggestions: true,
                   onEditingComplete: () {
@@ -186,26 +176,16 @@ class StatesScreenState extends State<StatesScreen> {
               child: Directionality(
                   textDirection: Directionality.of(context),
                   child: RotatedBox(
-                    quarterTurns:
-                        Directionality.of(context) == TextDirection.rtl
-                            ? 2
-                            : -4,
-                    child: UiUtils.getSvg(AppIcons.arrowLeft,
-                        fit: BoxFit.none,
-                        color: context.color.textDefaultColor),
+                    quarterTurns: Directionality.of(context) == TextDirection.rtl ? 2 : -4,
+                    child: UiUtils.getSvg(AppIcons.arrowLeft, fit: BoxFit.none, color: context.color.textDefaultColor),
                   ))),
         ),
       ),
       /*BackButton(
         color: context.color.textDefaultColor,
       ),*/
-      elevation: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark
-          ? 0
-          : 6,
-      shadowColor:
-          context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark
-              ? null
-              : context.color.textDefaultColor.withOpacity(0.2),
+      elevation: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark ? 0 : 6,
+      shadowColor: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark ? null : context.color.textDefaultColor.withOpacity(0.2),
       backgroundColor: context.color.backgroundColor,
     );
   }
@@ -230,10 +210,8 @@ class StatesScreenState extends State<StatesScreen> {
             padding: EdgeInsets.all(5),
             width: double.maxFinite,
             height: 56,
-            decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(5),
-                border:
-                    Border.all(color: context.color.borderColor.darken(30))),
+            decoration:
+                BoxDecoration(borderRadius: BorderRadius.circular(5), border: Border.all(color: context.color.borderColor.darken(30))),
           ),
         );
       },
@@ -266,9 +244,7 @@ class StatesScreenState extends State<StatesScreen> {
               return SingleChildScrollView(
                 child: NoInternet(
                   onRetry: () {
-                    context.read<FetchStatesCubit>().fetchStates(
-                        search: searchController.text,
-                        countryId: widget.countryId);
+                    context.read<FetchStatesCubit>().fetchStates(search: searchController.text, countryId: widget.countryId);
                   },
                 ),
               );
@@ -283,9 +259,7 @@ class StatesScreenState extends State<StatesScreen> {
             return SingleChildScrollView(
               child: NoDataFound(
                 onTap: () {
-                  context.read<FetchStatesCubit>().fetchStates(
-                      search: searchController.text,
-                      countryId: widget.countryId);
+                  context.read<FetchStatesCubit>().fetchStates(search: searchController.text, countryId: widget.countryId);
                 },
               ),
             );
@@ -301,8 +275,7 @@ class StatesScreenState extends State<StatesScreen> {
                 children: [
                   widget.from == "addItem"
                       ? Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 18, vertical: 18),
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
                           child: CustomText(
                             "${"chooseLbl".translate(context)}\t${"state".translate(context)}",
                             textAlign: TextAlign.center,
@@ -315,8 +288,7 @@ class StatesScreenState extends State<StatesScreen> {
                         )
                       : InkWell(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 15, vertical: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
                             child: Row(
                               children: [
                                 CustomText(
@@ -332,10 +304,8 @@ class StatesScreenState extends State<StatesScreen> {
                                 Container(
                                     width: 32,
                                     height: 32,
-                                    decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(8),
-                                        color: context.color.borderColor
-                                            .darken(10)),
+                                    decoration:
+                                        BoxDecoration(borderRadius: BorderRadius.circular(8), color: context.color.borderColor.darken(10)),
                                     child: Icon(
                                       Icons.chevron_right_outlined,
                                       color: context.color.textDefaultColor,
@@ -345,28 +315,20 @@ class StatesScreenState extends State<StatesScreen> {
                           ),
                           onTap: () {
                             if (widget.from == "home") {
-                              HiveUtils.setLocation(
-                                  country: widget.countryName);
+                              HiveUtils.setLocation(country: widget.countryName);
 
                               Future.delayed(
                                 Duration.zero,
                                 () {
-                                  context
-                                      .read<FetchHomeScreenCubit>()
-                                      .fetch(country: widget.countryName);
-                                  context.read<FetchHomeAllItemsCubit>().fetch(
-                                      country: widget.countryName,
-                                      radius: null);
+                                  context.read<FetchHomeScreenCubit>().fetch(country: widget.countryName);
+                                  context.read<FetchHomeAllItemsCubit>().fetch(country: widget.countryName, radius: null);
                                 },
                               );
 
-                              Navigator.popUntil(
-                                  context, (route) => route.isFirst);
+                              Navigator.popUntil(context, (route) => route.isFirst);
                             } else if (widget.from == "location") {
-                              HiveUtils.setLocation(
-                                  country: widget.countryName);
-                              HelperUtils.killPreviousPages(
-                                  context, Routes.main, {"from": "login"});
+                              HiveUtils.setLocation(country: widget.countryName);
+                              HelperUtils.killPreviousPages(context, Routes.main, {"from": "login"});
                             } else {
                               Map<String, dynamic> result = {
                                 'area_id': null,
@@ -406,27 +368,22 @@ class StatesScreenState extends State<StatesScreen> {
                         return BlocProvider(
                           create: (context) => FetchCitiesCubit(),
                           child: Builder(builder: (context) {
-                            return BlocListener<FetchCitiesCubit,
-                                FetchCitiesState>(
+                            return BlocListener<FetchCitiesCubit, FetchCitiesState>(
                               listener: (context, city) {
                                 if (city is FetchCitiesSuccess) {
                                   if (city.citiesModel.isNotEmpty) {
-                                    Navigator.pushNamed(
-                                        context, Routes.citiesScreen,
-                                        arguments: {
-                                          "stateId": states.id!,
-                                          "stateName": states.name!,
-                                          "from": widget.from,
-                                          "countryName": widget.countryName
-                                        });
+                                    Navigator.pushNamed(context, Routes.citiesScreen, arguments: {
+                                      "stateId": states.id!,
+                                      "stateName": states.name!,
+                                      "from": widget.from,
+                                      "countryName": widget.countryName
+                                    });
                                   }
                                 }
                               },
                               child: ListTile(
                                 onTap: () {
-                                  context
-                                      .read<FetchCitiesCubit>()
-                                      .fetchCities(stateId: states.id!);
+                                  context.read<FetchCitiesCubit>().fetchCities(stateId: states.id!);
                                 },
                                 title: CustomText(
                                   states.name!,
@@ -439,10 +396,8 @@ class StatesScreenState extends State<StatesScreen> {
                                 trailing: Container(
                                     width: 32,
                                     height: 32,
-                                    decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(8),
-                                        color: context.color.borderColor
-                                            .darken(10)),
+                                    decoration:
+                                        BoxDecoration(borderRadius: BorderRadius.circular(8), color: context.color.borderColor.darken(10)),
                                     child: Icon(
                                       Icons.chevron_right_outlined,
                                       color: context.color.textDefaultColor,
@@ -457,7 +412,7 @@ class StatesScreenState extends State<StatesScreen> {
                   if (state.isLoadingMore)
                     Center(
                       child: UiUtils.progress(
-                        normalProgressColor: context.color.territoryColor,
+                        color: context.color.territoryColor,
                       ),
                     )
                 ],
@@ -471,10 +426,7 @@ class StatesScreenState extends State<StatesScreen> {
   }
 
   Widget setSearchIcon() {
-    return Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: UiUtils.getSvg(AppIcons.search,
-            color: context.color.territoryColor));
+    return Padding(padding: const EdgeInsets.all(8.0), child: UiUtils.getSvg(AppIcons.search, color: context.color.territoryColor));
   }
 
   Widget setSuffixIcon() {

@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/favorite/favorite_cubit.dart';
 import 'package:tlobni/data/helper/designs.dart';
@@ -14,8 +16,6 @@ import 'package:tlobni/utils/api.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class FavoriteScreen extends StatefulWidget {
   const FavoriteScreen({super.key});
@@ -79,8 +79,7 @@ class FavoriteScreenState extends State<FavoriteScreen> {
       },
       color: context.color.territoryColor,
       child: Scaffold(
-        appBar: UiUtils.buildAppBar(context,
-            showBackButton: false, title: "favorites".translate(context)),
+        appBar: UiUtils.buildAppBar(context, showBackButton: false, title: "favorites".translate(context)),
         body: !HiveUtils.isUserAuthenticated()
             ? _buildLoginRequiredMessage()
             : BlocBuilder<FavoriteCubit, FavoriteState>(
@@ -128,14 +127,12 @@ class FavoriteScreenState extends State<FavoriteScreen> {
                         ),
                         if (state.isLoadingMore)
                           UiUtils.progress(
-                            normalProgressColor: context.color.territoryColor,
+                            color: context.color.territoryColor,
                           )
                       ],
                     );
                   } else if (state is FavoriteFetchFailure) {
-                    if (state.errorMessage is ApiException &&
-                        (state.errorMessage as ApiException).errorMessage ==
-                            "no-internet") {
+                    if (state.errorMessage is ApiException && (state.errorMessage as ApiException).errorMessage == "no-internet") {
                       return NoInternet(
                         onRetry: getFavorite,
                       );

@@ -1,5 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/home/fetch_home_all_items_cubit.dart';
@@ -20,10 +24,6 @@ import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shimmer/shimmer.dart';
 
 class AreasScreen extends StatefulWidget {
   final int cityId;
@@ -77,9 +77,7 @@ class AreasScreenState extends State<AreasScreen> {
   @override
   void initState() {
     super.initState();
-    context
-        .read<FetchAreasCubit>()
-        .fetchAreas(search: searchController.text, cityId: widget.cityId);
+    context.read<FetchAreasCubit>().fetchAreas(search: searchController.text, cityId: widget.cityId);
     searchController = TextEditingController();
 
     searchController.addListener(searchItemListener);
@@ -110,9 +108,7 @@ class AreasScreenState extends State<AreasScreen> {
   void itemSearch() {
     // if (searchController.text.isNotEmpty) {
     if (previousSearchQuery != searchController.text) {
-      context
-          .read<FetchAreasCubit>()
-          .fetchAreas(search: searchController.text, cityId: widget.cityId);
+      context.read<FetchAreasCubit>().fetchAreas(search: searchController.text, cityId: widget.cityId);
       previousSearchQuery = searchController.text;
       setState(() {});
     }
@@ -123,8 +119,7 @@ class AreasScreenState extends State<AreasScreen> {
 
   PreferredSizeWidget appBarWidget() {
     return AppBar(
-      systemOverlayStyle:
-          SystemUiOverlayStyle(statusBarColor: context.color.backgroundColor),
+      systemOverlayStyle: SystemUiOverlayStyle(statusBarColor: context.color.backgroundColor),
       bottom: PreferredSize(
           preferredSize: Size.fromHeight(58),
           child: Container(
@@ -134,10 +129,7 @@ class AreasScreenState extends State<AreasScreen> {
               alignment: AlignmentDirectional.center,
               decoration: BoxDecoration(
                   border: Border.all(
-                      width: context.watch<AppThemeCubit>().state.appTheme ==
-                              AppTheme.dark
-                          ? 0
-                          : 1,
+                      width: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark ? 0 : 1,
                       color: context.color.borderColor.darken(30)),
                   borderRadius: const BorderRadius.all(Radius.circular(10)),
                   color: context.color.secondaryColor),
@@ -147,11 +139,9 @@ class AreasScreenState extends State<AreasScreen> {
                     border: InputBorder.none,
                     //OutlineInputBorder()
                     fillColor: Theme.of(context).colorScheme.secondaryColor,
-                    hintText:
-                        "${"search".translate(context)}\t${"area".translate(context)}",
+                    hintText: "${"search".translate(context)}\t${"area".translate(context)}",
                     prefixIcon: setSearchIcon(),
-                    prefixIconConstraints:
-                        const BoxConstraints(minHeight: 5, minWidth: 5),
+                    prefixIconConstraints: const BoxConstraints(minHeight: 5, minWidth: 5),
                   ),
                   enableSuggestions: true,
                   onEditingComplete: () {
@@ -190,26 +180,16 @@ class AreasScreenState extends State<AreasScreen> {
                 child: Directionality(
                   textDirection: Directionality.of(context),
                   child: RotatedBox(
-                    quarterTurns:
-                        Directionality.of(context) == TextDirection.rtl
-                            ? 2
-                            : -4,
-                    child: UiUtils.getSvg(AppIcons.arrowLeft,
-                        fit: BoxFit.none,
-                        color: context.color.textDefaultColor),
+                    quarterTurns: Directionality.of(context) == TextDirection.rtl ? 2 : -4,
+                    child: UiUtils.getSvg(AppIcons.arrowLeft, fit: BoxFit.none, color: context.color.textDefaultColor),
                   ),
                 ))),
       ),
       /*BackButton(
         color: context.color.textDefaultColor,
       ),*/
-      elevation: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark
-          ? 0
-          : 6,
-      shadowColor:
-          context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark
-              ? null
-              : context.color.textDefaultColor.withOpacity(0.2),
+      elevation: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark ? 0 : 6,
+      shadowColor: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark ? null : context.color.textDefaultColor.withOpacity(0.2),
       backgroundColor: context.color.backgroundColor,
     );
   }
@@ -234,10 +214,8 @@ class AreasScreenState extends State<AreasScreen> {
             padding: EdgeInsets.all(5),
             width: double.maxFinite,
             height: 56,
-            decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(5),
-                border:
-                    Border.all(color: context.color.borderColor.darken(30))),
+            decoration:
+                BoxDecoration(borderRadius: BorderRadius.circular(5), border: Border.all(color: context.color.borderColor.darken(30))),
           ),
         );
       },
@@ -270,8 +248,7 @@ class AreasScreenState extends State<AreasScreen> {
               return SingleChildScrollView(
                 child: NoInternet(
                   onRetry: () {
-                    context.read<FetchAreasCubit>().fetchAreas(
-                        search: searchController.text, cityId: widget.cityId);
+                    context.read<FetchAreasCubit>().fetchAreas(search: searchController.text, cityId: widget.cityId);
                   },
                 ),
               );
@@ -286,8 +263,7 @@ class AreasScreenState extends State<AreasScreen> {
             return SingleChildScrollView(
               child: NoDataFound(
                 onTap: () {
-                  context.read<FetchAreasCubit>().fetchAreas(
-                      search: searchController.text, cityId: widget.cityId);
+                  context.read<FetchAreasCubit>().fetchAreas(search: searchController.text, cityId: widget.cityId);
                 },
               ),
             );
@@ -302,8 +278,7 @@ class AreasScreenState extends State<AreasScreen> {
                 children: [
                   widget.from == "addItem"
                       ? Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 18, vertical: 18),
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
                           child: CustomText(
                             "${"lblall".translate(context)}\t${"area".translate(context)}",
                             textAlign: TextAlign.center,
@@ -316,8 +291,7 @@ class AreasScreenState extends State<AreasScreen> {
                         )
                       : InkWell(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 15, vertical: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
                             child: Row(
                               children: [
                                 CustomText(
@@ -333,10 +307,8 @@ class AreasScreenState extends State<AreasScreen> {
                                 Container(
                                     width: 32,
                                     height: 32,
-                                    decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(8),
-                                        color: context.color.borderColor
-                                            .darken(10)),
+                                    decoration:
+                                        BoxDecoration(borderRadius: BorderRadius.circular(8), color: context.color.borderColor.darken(10)),
                                     child: Icon(
                                       Icons.chevron_right_outlined,
                                       color: context.color.textDefaultColor,
@@ -346,10 +318,7 @@ class AreasScreenState extends State<AreasScreen> {
                           ),
                           onTap: () {
                             if (widget.from == "home") {
-                              HiveUtils.setLocation(
-                                  country: widget.countryName,
-                                  state: widget.stateName,
-                                  city: widget.cityName);
+                              HiveUtils.setLocation(country: widget.countryName, state: widget.stateName, city: widget.cityName);
 
                               Future.delayed(
                                 Duration.zero,
@@ -359,23 +328,16 @@ class AreasScreenState extends State<AreasScreen> {
                                         state: widget.stateName,
                                         city: widget.cityName,
                                       );
-                                  context.read<FetchHomeAllItemsCubit>().fetch(
-                                      country: widget.countryName,
-                                      state: widget.stateName,
-                                      city: widget.cityName,
-                                      radius: null);
+                                  context
+                                      .read<FetchHomeAllItemsCubit>()
+                                      .fetch(country: widget.countryName, state: widget.stateName, city: widget.cityName, radius: null);
                                 },
                               );
 
-                              Navigator.popUntil(
-                                  context, (route) => route.isFirst);
+                              Navigator.popUntil(context, (route) => route.isFirst);
                             } else if (widget.from == "location") {
-                              HiveUtils.setLocation(
-                                  country: widget.countryName,
-                                  state: widget.stateName,
-                                  city: widget.cityName);
-                              HelperUtils.killPreviousPages(
-                                  context, Routes.main, {"from": "login"});
+                              HiveUtils.setLocation(country: widget.countryName, state: widget.stateName, city: widget.cityName);
+                              HelperUtils.killPreviousPages(context, Routes.main, {"from": "login"});
                             } else {
                               Map<String, dynamic> result = {
                                 'area_id': null,
@@ -417,12 +379,8 @@ class AreasScreenState extends State<AreasScreen> {
                           onTap: () {
                             if (widget.from == "home") {
                               if (Constant.isDemoModeOn) {
-                                UiUtils.setDefaultLocationValue(
-                                    isCurrent: false,
-                                    isHomeUpdate: true,
-                                    context: context);
-                                Navigator.popUntil(
-                                    context, (route) => route.isFirst);
+                                UiUtils.setDefaultLocationValue(isCurrent: false, isHomeUpdate: true, context: context);
+                                Navigator.popUntil(context, (route) => route.isFirst);
                               } else {
                                 HiveUtils.setLocation(
                                     city: widget.cityName,
@@ -438,22 +396,15 @@ class AreasScreenState extends State<AreasScreen> {
                                     context.read<FetchHomeScreenCubit>().fetch(
                                           areaId: area.id,
                                         );
-                                    context
-                                        .read<FetchHomeAllItemsCubit>()
-                                        .fetch(areaId: area.id, radius: null);
+                                    context.read<FetchHomeAllItemsCubit>().fetch(areaId: area.id, radius: null);
                                   },
                                 );
                               }
-                              Navigator.popUntil(
-                                  context, (route) => route.isFirst);
+                              Navigator.popUntil(context, (route) => route.isFirst);
                             } else if (widget.from == "location") {
                               if (Constant.isDemoModeOn) {
-                                UiUtils.setDefaultLocationValue(
-                                    isCurrent: false,
-                                    isHomeUpdate: false,
-                                    context: context);
-                                HelperUtils.killPreviousPages(
-                                    context, Routes.main, {"from": "login"});
+                                UiUtils.setDefaultLocationValue(isCurrent: false, isHomeUpdate: false, context: context);
+                                HelperUtils.killPreviousPages(context, Routes.main, {"from": "login"});
                               } else {
                                 HiveUtils.setLocation(
                                   area: area.name,
@@ -464,8 +415,7 @@ class AreasScreenState extends State<AreasScreen> {
                                   latitude: widget.latitude,
                                   longitude: widget.longitude,
                                 );
-                                HelperUtils.killPreviousPages(
-                                    context, Routes.main, {"from": "login"});
+                                HelperUtils.killPreviousPages(context, Routes.main, {"from": "login"});
                               }
                             } else {
                               Map<String, dynamic> result = {
@@ -500,7 +450,7 @@ class AreasScreenState extends State<AreasScreen> {
                   if (state.isLoadingMore)
                     Center(
                       child: UiUtils.progress(
-                        normalProgressColor: context.color.territoryColor,
+                        color: context.color.territoryColor,
                       ),
                     )
                 ],
@@ -514,10 +464,7 @@ class AreasScreenState extends State<AreasScreen> {
   }
 
   Widget setSearchIcon() {
-    return Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: UiUtils.getSvg(AppIcons.search,
-            color: context.color.territoryColor));
+    return Padding(padding: const EdgeInsets.all(8.0), child: UiUtils.getSvg(AppIcons.search, color: context.color.territoryColor));
   }
 
   Widget setSuffixIcon() {

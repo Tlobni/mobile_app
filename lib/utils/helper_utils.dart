@@ -7,7 +7,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:country_picker/country_picker.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart';
@@ -57,6 +56,13 @@ extension StringCasingExtension on String {
 }
 
 class HelperUtils {
+  static void launchWhatsapp(String? phone) {
+    if (phone == null) return;
+    String url = Platform.isAndroid ? "https://wa.me/$phone" : "https://api.whatsapp.com/send?phone=$phone"; // new line
+
+    launchUrl(Uri.parse(url));
+  }
+
   static String decryptString(String encryptedText) {
     try {
       final encrypter = encrypt.Encrypter(encrypt.AES(encrypt.Key.fromUtf8("0123456789123456"), mode: encrypt.AESMode.cbc));
@@ -109,52 +115,63 @@ class HelperUtils {
     return "https://${AppSettings.shareNavigationWebUrl}/product-details/$itemSlug?share=true";
   }
 
-  static void share(BuildContext context, String itemSlug) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: context.color.backgroundColor,
-      builder: (context) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.copy),
-              title: CustomText("copylink".translate(context)),
-              onTap: () async {
-                String deepLink = "";
-                if (AppSettings.deepLinkingType == DeepLinkType.native) {
-                  deepLink = nativeDeepLinkUrlOfItem(itemSlug);
-                }
+  static void share(BuildContext context, String itemSlug) async {
+    String deepLink = "";
 
-                await Clipboard.setData(ClipboardData(text: deepLink));
+    if (AppSettings.deepLinkingType == DeepLinkType.native) {
+      deepLink = nativeDeepLinkUrlOfItem(itemSlug);
+    }
 
-                Future.delayed(Duration.zero, () {
-                  Navigator.pop(context);
-                  HelperUtils.showSnackBarMessage(context, "copied".translate(context));
-                });
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.share),
-              title: CustomText("share".translate(context)),
-              onTap: () async {
-                String deepLink = "";
+    final box = context.findRenderObject() as RenderBox?;
 
-                if (AppSettings.deepLinkingType == DeepLinkType.native) {
-                  deepLink = nativeDeepLinkUrlOfItem(itemSlug);
-                }
-
-                final box = context.findRenderObject() as RenderBox?;
-
-                String text =
-                    "Exciting find! 🏡 Check out this amazing item I came across.  Let me know what you think! ⭐\n Here are the details:\n$deepLink.";
-                await Share.share(text, sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size);
-              },
-            ),
-          ],
-        );
-      },
-    );
+    String text =
+        "Exciting find! 🏡 Check out this amazing item I came across.  Let me know what you think! ⭐\n Here are the details:\n$deepLink.";
+    await Share.share(text, sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size);
+    // showModalBottomSheet(
+    //   context: context,
+    //   backgroundColor: context.color.backgroundColor,
+    //   builder: (context) {
+    //     return Column(
+    //       mainAxisSize: MainAxisSize.min,
+    //       children: [
+    //         ListTile(
+    //           leading: const Icon(Icons.copy),
+    //           title: CustomText("copylink".translate(context)),
+    //           onTap: () async {
+    //             String deepLink = "";
+    //             if (AppSettings.deepLinkingType == DeepLinkType.native) {
+    //               deepLink = nativeDeepLinkUrlOfItem(itemSlug);
+    //             }
+    //
+    //             await Clipboard.setData(ClipboardData(text: deepLink));
+    //
+    //             Future.delayed(Duration.zero, () {
+    //               Navigator.pop(context);
+    //               HelperUtils.showSnackBarMessage(context, "copied".translate(context));
+    //             });
+    //           },
+    //         ),
+    //         ListTile(
+    //           leading: const Icon(Icons.share),
+    //           title: CustomText("share".translate(context)),
+    //           onTap: () async {
+    //             String deepLink = "";
+    //
+    //             if (AppSettings.deepLinkingType == DeepLinkType.native) {
+    //               deepLink = nativeDeepLinkUrlOfItem(itemSlug);
+    //             }
+    //
+    //             final box = context.findRenderObject() as RenderBox?;
+    //
+    //             String text =
+    //                 "Exciting find! 🏡 Check out this amazing item I came across.  Let me know what you think! ⭐\n Here are the details:\n$deepLink.";
+    //             await Share.share(text, sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size);
+    //           },
+    //         ),
+    //       ],
+    //     );
+    //   },
+    // );
   }
 
   static void unfocus() {

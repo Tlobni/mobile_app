@@ -193,17 +193,25 @@ class UiUtils {
     );
   }
 
-  static Widget progress({double? width, double? height, Color? normalProgressColor, bool? showWhite}) {
+  static Widget progress({double? width, double? height, Color? color, bool? showWhite}) {
     if (Constant.useLottieProgress) {
-      return LottieBuilder.asset(
-        "assets/lottie/${showWhite ?? false ? Constant.progressLottieFileWhite : Constant.loadingSuccessLottieFile}",
-        width: width ?? 70,
-        height: height ?? 70,
-        delegates: const LottieDelegates(values: []),
-      );
+      return Builder(builder: (context) {
+        return ColorFiltered(
+          colorFilter: ColorFilter.mode(
+            color ?? context.color.primary,
+            BlendMode.srcATop,
+          ),
+          child: LottieBuilder.asset(
+            "assets/lottie/${showWhite ?? false ? Constant.progressLottieFileWhite : Constant.loadingSuccessLottieFile}",
+            width: width ?? 70,
+            height: height ?? 70,
+            delegates: const LottieDelegates(values: []),
+          ),
+        );
+      });
     } else {
       return CircularProgressIndicator(
-        color: normalProgressColor,
+        color: color,
       );
     }
   }

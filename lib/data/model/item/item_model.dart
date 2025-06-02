@@ -5,6 +5,13 @@ import 'package:tlobni/data/model/custom_field/custom_field_model.dart';
 import 'package:tlobni/data/model/seller_ratings_model.dart';
 
 class ItemModel {
+  static const List<String> locationTypes = [
+    'client_location',
+    'public_venue',
+    'my_location',
+    'virtual',
+  ];
+
   int? id;
   String? name;
   String? slug;
@@ -342,12 +349,24 @@ class ItemModel {
     }
   }
 
+  static String locationTypeString(String? locationType) => switch (locationType) {
+        'client_location' => 'Client\'s location',
+        'public_venue' => 'Public venue',
+        'my_location' => 'Provider\'s location',
+        'virtual' => 'Online (Virtual)',
+        _ => '',
+      };
+
   bool get isWomenExclusive => specialTags?['exclusive_women'] == 'true';
 
   bool get isCorporatePackage => specialTags?['corporate_package'] == 'true';
 
   String? get location {
-    if (country == null || city == null) return null;
+    if (country == null || city == null) {
+      if (country != null) return country!;
+      if (city != null) return city;
+      return null;
+    }
     return '$city, $country';
   }
 
@@ -513,6 +532,7 @@ class User {
     createdAt = json['created_at'];
     updatedAt = json['updated_at'];
     isVerified = json['is_verified'];
+
     if (json['average_rating'] != null) {
       averageRating =
           (json['average_rating'] is num? ? json['average_rating'] as num? : double.tryParse(json['average_rating']?.toString() ?? ''))
@@ -528,7 +548,7 @@ class User {
         .map(int.parse)
         .toList();
     showPersonalDetails = json['show_personal_details'];
-    categories = (json['categories_array'] as List<dynamic>?)?.map((e) => e.toString()).toList();
+    categories = (json['categories_array'] as List<dynamic>?)?.map((e) => (e is Map<String, dynamic> ? e['name'] : e).toString()).toList();
     isFeatured = json['is_featured'] == 1 || json['is_featured'] == true;
   }
 

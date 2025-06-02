@@ -11,6 +11,7 @@ abstract class AppText extends StatelessWidget {
     this.decoration,
     this.fontSize,
     this.height,
+    this.fontStyle,
   });
 
   final String text;
@@ -19,6 +20,7 @@ abstract class AppText extends StatelessWidget {
   final Color? color;
   final FontWeight? weight;
   final TextDecoration? decoration;
+  final FontStyle? fontStyle;
   final double? fontSize;
   final double? height;
 
@@ -27,12 +29,13 @@ abstract class AppText extends StatelessWidget {
     return Text(
       text,
       maxLines: maxLines,
-      overflow: TextOverflow.ellipsis,
+      overflow: maxLines == null ? null : TextOverflow.ellipsis,
       textAlign: textAlign,
       style: (getTextStyle(context) ?? TextStyle()).copyWith(
         color: color,
         fontWeight: weight,
         decoration: decoration,
+        fontStyle: fontStyle ?? FontStyle.normal,
         fontSize: fontSize,
         height: height,
       ),

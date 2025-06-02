@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/buttons/unelevated_regular_button.dart';
 import 'package:tlobni/ui/widgets/text/description_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/ui_utils.dart';
@@ -27,9 +28,12 @@ class CategoryHomeCard extends StatelessWidget {
       isFullImage = true;
     }
     return Container(
-      width: 100,
-      child: GestureDetector(
-        onTap: onTap,
+      width: 110,
+      child: UnelevatedRegularButton(
+        onPressed: onTap,
+        color: Colors.transparent,
+        padding: EdgeInsets.all(5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

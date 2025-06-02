@@ -35,6 +35,8 @@ class SellerRatingsRepository {
       return DataOutput(
         total: totalRatings,
         modelList: userRatings,
+        lastPage: reviewsData['last_page'],
+        page: page,
         extraData: ExtraData(
           data: seller,
         ),

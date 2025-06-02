@@ -8,10 +8,10 @@ class UserHasRatedUserInitial extends UserHasRatedUserState {}
 
 class UserHasRatedUserInProgress extends UserHasRatedUserState {}
 
-class UserHasRatedUserInSuccess extends UserHasRatedUserState {
+class UserHasRatedUserSuccess extends UserHasRatedUserState {
   final bool userHasRatedUser;
 
-  UserHasRatedUserInSuccess(this.userHasRatedUser);
+  UserHasRatedUserSuccess(this.userHasRatedUser);
 }
 
 class UserHasRatedUserFailure extends UserHasRatedUserState {
@@ -30,7 +30,7 @@ class UserHasRatedUserCubit extends Cubit<UserHasRatedUserState> {
     emit(UserHasRatedUserInProgress());
 
     repository.getUserHasRatedUser(userId, ratedUserId).then((value) {
-      emit(UserHasRatedUserInSuccess(value));
+      emit(UserHasRatedUserSuccess(value));
     }).catchError((e) {
       emit(UserHasRatedUserFailure(e.toString()));
     });

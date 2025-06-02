@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:tlobni/ui/screens/ad_details_screen.dart';
+import 'package:tlobni/ui/screens/ad_details_screen/ad_details_screen.dart';
 import 'package:tlobni/ui/screens/advertisement/my_advertisment_screen.dart';
 import 'package:tlobni/ui/screens/auth/account_type/account_type_screen.dart';
 import 'package:tlobni/ui/screens/auth/login/forgot_password.dart';

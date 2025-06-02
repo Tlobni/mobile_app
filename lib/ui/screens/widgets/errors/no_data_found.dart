@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/text/description_text.dart';
 import 'package:tlobni/utils/app_icon.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
@@ -34,11 +35,12 @@ class NoDataFound extends StatelessWidget {
           const SizedBox(
             height: 20,
           ),
-          CustomText(
+          DescriptionText(
             mainMessage == null ? "nodatafound".translate(context) : mainMessage!,
             fontSize: context.font.extraLarge,
             color: context.color.territoryColor,
-            fontWeight: FontWeight.w600,
+            textAlign: TextAlign.center,
+            weight: FontWeight.w600,
           ),
           const SizedBox(
             height: 14,

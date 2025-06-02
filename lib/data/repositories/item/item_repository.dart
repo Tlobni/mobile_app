@@ -7,8 +7,11 @@ import 'package:tlobni/data/model/data_output.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/data/model/item_filter_model.dart';
 import 'package:tlobni/utils/api.dart';
+import 'package:tlobni/utils/hive_utils.dart';
 
 class ItemRepository {
+  static String get _getItemApi => HiveUtils.isUserAuthenticated() ? Api.getItemApiAuthenticated : Api.getItemApi;
+
   Future<ItemModel> createItem(
     Map<String, dynamic> itemDetails,
     File mainImage,
@@ -90,7 +93,7 @@ class ItemRepository {
     };
 
     Map<String, dynamic> response = await Api.get(
-      url: Api.getItemApi,
+      url: _getItemApi,
       queryParameters: parameters,
     );
 
@@ -106,7 +109,7 @@ class ItemRepository {
       };
 
       Map<String, dynamic> response = await Api.get(
-        url: Api.getItemApi,
+        url: _getItemApi,
         queryParameters: parameters,
       );
 
@@ -231,7 +234,7 @@ class ItemRepository {
       parameters[Api.sortBy] = sortBy;
     }
 
-    Map<String, dynamic> response = await Api.get(url: Api.getItemApi, queryParameters: parameters);
+    Map<String, dynamic> response = await Api.get(url: _getItemApi, queryParameters: parameters);
 
     List<ItemModel> items = (response['data']['data'] as List).map((e) => ItemModel.fromJson(e)).toList();
 
@@ -287,7 +290,7 @@ class ItemRepository {
     }
 
     Map<String, dynamic> response =
-        await Api.get(url: Api.getItemApi, queryParameters: parameters);
+        await Api.get(url: _getItemApi, queryParameters: parameters);
 
     List<ItemModel> items = (response['data']['data'] as List)
         .map((e) => ItemModel.fromJson(e))
@@ -299,7 +302,7 @@ class ItemRepository {
   Future<DataOutput<ItemModel>> fetchPopularItems({required String sortBy, required int page}) async {
     Map<String, dynamic> parameters = {Api.sortBy: sortBy, Api.page: page};
 
-    Map<String, dynamic> response = await Api.get(url: Api.getItemApi, queryParameters: parameters);
+    Map<String, dynamic> response = await Api.get(url: _getItemApi, queryParameters: parameters);
 
     List<ItemModel> items = (response['data']['data'] as List).map((e) => ItemModel.fromJson(e)).toList();
 
@@ -401,7 +404,7 @@ class ItemRepository {
       print("DEBUG SEARCH: Final parameters: $parameters");
     }
 
-    Map<String, dynamic> response = await Api.get(url: Api.getItemApi, queryParameters: parameters);
+    Map<String, dynamic> response = await Api.get(url: _getItemApi, queryParameters: parameters);
 
     List<ItemModel> items = (response['data']['data'] as List).map((e) => ItemModel.fromJson(e)).toList();
 

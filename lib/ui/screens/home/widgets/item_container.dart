@@ -1,11 +1,11 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:non_uniform_border/non_uniform_border.dart';
 import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/ui/screens/home/widgets/home_category_in_container_bubble.dart';
+import 'package:tlobni/ui/screens/widgets/item_pricing_container.dart';
 import 'package:tlobni/ui/widgets/buttons/regular_button.dart';
 import 'package:tlobni/ui/widgets/text/description_text.dart';
 import 'package:tlobni/ui/widgets/text/small_text.dart';
@@ -20,11 +20,13 @@ class ItemContainer extends StatelessWidget {
     required this.item,
     required this.small,
     this.onPressed,
+    this.showTypeTag = false,
   });
 
   final ItemModel item;
   final VoidCallback? onPressed;
   final bool small;
+  final bool showTypeTag;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +37,6 @@ class ItemContainer extends StatelessWidget {
     final location = item.location;
     final categoryName = item.category?.name;
 
-    item.specialTags;
     final tags = [
       if (item.expirationDate != null) _daysLeftUntilExpiryString(item.expirationDate),
       // ...[
@@ -107,9 +108,16 @@ class ItemContainer extends StatelessWidget {
             if (item.isFeature ?? false)
               Positioned(
                 top: 10,
-                left: 10,
+                left: showTypeTag ? null : 10,
+                right: showTypeTag ? 10 : null,
                 child: _smallFeaturedTagContainer(),
               ),
+            if (showTypeTag)
+              Positioned(
+                top: 10,
+                left: 10,
+                child: _typeTagContainer(),
+              )
           ] else
             Positioned(
               right: 10,
@@ -125,7 +133,7 @@ class ItemContainer extends StatelessWidget {
 
   Widget _tagContainer(String tag) => Builder(builder: (context) {
         return Container(
-          padding: EdgeInsets.all(10),
+          padding: EdgeInsets.all(small ? 7 : 10),
           decoration: BoxDecoration(
             border: Border.all(color: context.color.onPrimary),
             borderRadius: BorderRadius.circular(8),
@@ -135,7 +143,7 @@ class ItemContainer extends StatelessWidget {
             tag,
             style: context.textTheme.bodySmall?.copyWith(
               color: context.color.onPrimary,
-              fontSize: 13,
+              fontSize: small ? 11 : 13,
             ),
           ),
         );
@@ -186,47 +194,13 @@ class ItemContainer extends StatelessWidget {
         fontSize: small ? 15 : null,
       );
 
-  Widget _pricing(double price, String priceType) => Builder(builder: (context) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(5),
-          child: Container(
-            decoration: ShapeDecoration(
-              shape: NonUniformBorder(
-                leftWidth: 3,
-                topWidth: 0,
-                bottomWidth: 0,
-                rightWidth: 0,
-                color: kColorSecondaryBeige,
-                borderRadius: BorderRadius.circular(5),
-              ),
-              color: Colors.grey.shade100.withValues(alpha: 0.8),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(small ? 8 : 10),
-              child: RichText(
-                text: TextSpan(children: [
-                  TextSpan(
-                    text: '\$${price}',
-                    style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500, fontSize: small ? 14 : null),
-                  ),
-                  WidgetSpan(child: SizedBox(width: 2)),
-                  TextSpan(
-                    children: [
-                      TextSpan(text: '/'),
-                      WidgetSpan(child: SizedBox(width: 2)),
-                      TextSpan(text: priceType),
-                    ],
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey.shade700,
-                      fontSize: small ? 12 : null,
-                    ),
-                  ),
-                ]),
-              ),
-            ),
-          ),
-        );
-      });
+  Widget _pricing(double price, String priceType) => ItemPricingContainer(
+        price: price,
+        priceType: priceType,
+        priceFontSize: small ? 14 : null,
+        typeFontSize: small ? 12 : null,
+        padding: small ? EdgeInsets.all(8) : null,
+      );
 
   Widget _location(String location) => Builder(builder: (context) {
         return Row(
@@ -290,5 +264,11 @@ class ItemContainer extends StatelessWidget {
             ],
           ),
         );
+      });
+
+  Widget _typeTagContainer() => _tagContainer(switch (item.type) {
+        'service' => 'Service',
+        'experience' => 'Experience',
+        _ => '',
       });
 }

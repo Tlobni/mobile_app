@@ -549,7 +549,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                       if (isLoadingMore)
                         Center(
                           child: UiUtils.progress(
-                            normalProgressColor: context.color.territoryColor,
+                            color: context.color.territoryColor,
                           ),
                         )
                     ],

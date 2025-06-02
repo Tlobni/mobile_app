@@ -2,6 +2,14 @@ import 'dart:async';
 import 'dart:math';
 
 extension ListExtension<T> on List<T> {
+  List<List<T>> groupEach(int n) {
+    List<List<T>> result = [];
+    for (int i = 0; i < length; i += n) {
+      result.add(sublist(i, min(i + n, length)));
+    }
+    return result;
+  }
+
   Future<void> forEachIndexed(FutureOr<void> Function(int index, T element) callback) async {
     for (int i = 0; i < length; i++) {
       await callback(i, this[i]);

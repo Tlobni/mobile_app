@@ -381,7 +381,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
               if (isLoading != null && isLoading!)
                 Center(
                   child: UiUtils.progress(
-                    normalProgressColor: context.color.territoryColor,
+                    color: context.color.territoryColor,
                   ),
                 ),
               if (widget.from == 'login')

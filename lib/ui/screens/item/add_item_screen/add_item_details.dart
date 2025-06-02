@@ -29,7 +29,6 @@ import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
-import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/image_picker.dart';
 import 'package:tlobni/utils/ui_utils.dart';
 import 'package:tlobni/utils/validator.dart';
@@ -144,129 +143,129 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
   void initState() {
     super.initState();
     _formKey = GlobalKey<FormState>();
-    AbstractField.fieldsData.clear();
-    AbstractField.files.clear();
-
-    // Check if post_type is set and valid
-    dynamic rawPostType = getCloudData("post_type");
-    if (rawPostType == null || !(rawPostType is PostType)) {
-      // Set a default post type if none is set
-      addCloudData("post_type", PostType.service);
-    }
-
-    if (widget.isEdit == true) {
-      item = getCloudData('edit_request') as ItemModel;
-
-      // Debug the item's location details
-      _debugItemLocationDetails();
-
-      clearCloudData("item_details");
-      clearCloudData("with_more_details");
-      context.read<FetchCustomFieldsCubit>().fetchCustomFields(
-            categoryIds: item?.allCategoryIds ?? "",
-          );
-      adTitleController.text = item?.name ?? "";
-      adDescriptionController.text = item?.description ?? "";
-      adPriceController.text = item?.price.toString() ?? "";
-      adPhoneNumberController.text = item?.contact ?? "";
-      adAdditionalDetailsController.text = item?.videoLink ?? "";
-      titleImageURL = item?.image ?? "";
-
-      // Set the price type if it exists
-      if (item?.priceType != null && item!.priceType!.isNotEmpty) {
-        _priceType = item!.priceType;
-      }
-
-      // Set the formatted address for location
-      if (item != null) {
-        formatedAddress = AddressComponent(
-            area: item!.area,
-            areaId: item!.areaId,
-            city: item!.city,
-            country: item!.country,
-            state: item!.state,
-            mixed: "${item!.city}, ${item!.country}");
-
-        // Set location controller text - prioritize showing city and country
-        // Build location text prioritizing city and country
-        String cityCountry = "";
-        if ((item!.city != null && item!.city!.isNotEmpty) && (item!.country != null && item!.country!.isNotEmpty)) {
-          cityCountry = "${item!.city}, ${item!.country}";
-        }
-
-        // If we have city,country - use that, otherwise try other combinations
-        if (cityCountry.isNotEmpty) {
-          locationController.text = cityCountry;
-        } else {
-          // Fallback to combining all location parts
-          String locationText =
-              [item!.area, item!.city, item!.state, item!.country].where((part) => part != null && part.isNotEmpty).join(', ');
-
-          if (locationText.isNotEmpty) {
-            locationController.text = locationText;
-          }
-        }
-
-        print("Location set to: ${locationController.text}");
-      }
-
-      // Load special tags if they exist
-      if (item?.specialTags != null) {
-        try {
-          print("Loading special tags: ${item!.specialTags}");
-
-          if (item!.specialTags!.containsKey('exclusive_women')) {
-            // Handle both boolean and string values
-            var value = item!.specialTags!['exclusive_women'];
-            _specialTags['exclusive_women'] = (value == true) || (value == "true") || (value.toString().toLowerCase() == "true");
-          }
-
-          if (item!.specialTags!.containsKey('corporate_package')) {
-            // Handle both boolean and string values
-            var value = item!.specialTags!['corporate_package'];
-            _specialTags['corporate_package'] = (value == true) || (value == "true") || (value.toString().toLowerCase() == "true");
-          }
-        } catch (e) {
-          print("Error loading special tags: $e");
-        }
-      }
-
-      // Load service location options
-      if (item?.locationType != null) {
-        List<String> locationTypes = item!.locationType ?? [];
-
-        _atClientLocation = locationTypes.contains('client_location');
-        _atPublicVenue = locationTypes.contains('public_venue');
-        _atMyLocation = locationTypes.contains('my_location');
-        _isVirtual = locationTypes.contains('virtual');
-      }
-
-      List<String?>? list = item?.galleryImages?.map((e) => e.image).toList();
-      mixedItemImageList.addAll([...list ?? []]);
-
-      setState(() {});
-    } else {
-      List<int> ids = widget.breadCrumbItems!.map((item) => item.id!).toList();
-
-      context.read<FetchCustomFieldsCubit>().fetchCustomFields(categoryIds: ids.join(','));
-      selectedCategoryList = ids;
-      adPhoneNumberController.text = HiveUtils.getUserDetails().mobile ?? "";
-    }
-
-    _pickTitleImage.listener((p0) {
-      titleImageURL = "";
-      WidgetsBinding.instance.addPersistentFrameCallback((timeStamp) {
-        if (mounted) setState(() {});
-      });
-    });
-
-    itemImagePicker.listener((images) {
-      try {
-        mixedItemImageList.addAll(List<dynamic>.from(images));
-      } catch (e) {}
-
-      setState(() {});
-    });
+    // AbstractField.fieldsData.clear();
+    // AbstractField.files.clear();
+    //
+    // // Check if post_type is set and valid
+    // dynamic rawPostType = getCloudData("post_type");
+    // if (rawPostType == null || !(rawPostType is PostType)) {
+    //   // Set a default post type if none is set
+    //   addCloudData("post_type", PostType.service);
+    // }
+    //
+    // if (widget.isEdit == true) {
+    //   item = getCloudData('edit_request') as ItemModel;
+    //
+    //   // Debug the item's location details
+    //   _debugItemLocationDetails();
+    //
+    //   clearCloudData("item_details");
+    //   clearCloudData("with_more_details");
+    //   context.read<FetchCustomFieldsCubit>().fetchCustomFields(
+    //         categoryIds: item?.allCategoryIds ?? "",
+    //       );
+    //   adTitleController.text = item?.name ?? "";
+    //   adDescriptionController.text = item?.description ?? "";
+    //   adPriceController.text = item?.price.toString() ?? "";
+    //   adPhoneNumberController.text = item?.contact ?? "";
+    //   adAdditionalDetailsController.text = item?.videoLink ?? "";
+    //   titleImageURL = item?.image ?? "";
+    //
+    //   // Set the price type if it exists
+    //   if (item?.priceType != null && item!.priceType!.isNotEmpty) {
+    //     _priceType = item!.priceType;
+    //   }
+    //
+    //   // Set the formatted address for location
+    //   if (item != null) {
+    //     formatedAddress = AddressComponent(
+    //         area: item!.area,
+    //         areaId: item!.areaId,
+    //         city: item!.city,
+    //         country: item!.country,
+    //         state: item!.state,
+    //         mixed: "${item!.city}, ${item!.country}");
+    //
+    //     // Set location controller text - prioritize showing city and country
+    //     // Build location text prioritizing city and country
+    //     String cityCountry = "";
+    //     if ((item!.city != null && item!.city!.isNotEmpty) && (item!.country != null && item!.country!.isNotEmpty)) {
+    //       cityCountry = "${item!.city}, ${item!.country}";
+    //     }
+    //
+    //     // If we have city,country - use that, otherwise try other combinations
+    //     if (cityCountry.isNotEmpty) {
+    //       locationController.text = cityCountry;
+    //     } else {
+    //       // Fallback to combining all location parts
+    //       String locationText =
+    //           [item!.area, item!.city, item!.state, item!.country].where((part) => part != null && part.isNotEmpty).join(', ');
+    //
+    //       if (locationText.isNotEmpty) {
+    //         locationController.text = locationText;
+    //       }
+    //     }
+    //
+    //     print("Location set to: ${locationController.text}");
+    //   }
+    //
+    //   // Load special tags if they exist
+    //   if (item?.specialTags != null) {
+    //     try {
+    //       print("Loading special tags: ${item!.specialTags}");
+    //
+    //       if (item!.specialTags!.containsKey('exclusive_women')) {
+    //         // Handle both boolean and string values
+    //         var value = item!.specialTags!['exclusive_women'];
+    //         _specialTags['exclusive_women'] = (value == true) || (value == "true") || (value.toString().toLowerCase() == "true");
+    //       }
+    //
+    //       if (item!.specialTags!.containsKey('corporate_package')) {
+    //         // Handle both boolean and string values
+    //         var value = item!.specialTags!['corporate_package'];
+    //         _specialTags['corporate_package'] = (value == true) || (value == "true") || (value.toString().toLowerCase() == "true");
+    //       }
+    //     } catch (e) {
+    //       print("Error loading special tags: $e");
+    //     }
+    //   }
+    //
+    //   // Load service location options
+    //   if (item?.locationType != null) {
+    //     List<String> locationTypes = item!.locationType ?? [];
+    //
+    //     _atClientLocation = locationTypes.contains('client_location');
+    //     _atPublicVenue = locationTypes.contains('public_venue');
+    //     _atMyLocation = locationTypes.contains('my_location');
+    //     _isVirtual = locationTypes.contains('virtual');
+    //   }
+    //
+    //   List<String?>? list = item?.galleryImages?.map((e) => e.image).toList();
+    //   mixedItemImageList.addAll([...list ?? []]);
+    //
+    //   setState(() {});
+    // } else {
+    //   List<int> ids = widget.breadCrumbItems!.map((item) => item.id!).toList();
+    //
+    //   context.read<FetchCustomFieldsCubit>().fetchCustomFields(categoryIds: ids.join(','));
+    //   selectedCategoryList = ids;
+    //   adPhoneNumberController.text = HiveUtils.getUserDetails().mobile ?? "";
+    // }
+    //
+    // _pickTitleImage.listener((p0) {
+    //   titleImageURL = "";
+    //   WidgetsBinding.instance.addPersistentFrameCallback((timeStamp) {
+    //     if (mounted) setState(() {});
+    //   });
+    // });
+    //
+    // itemImagePicker.listener((images) {
+    //   try {
+    //     mixedItemImageList.addAll(List<dynamic>.from(images));
+    //   } catch (e) {}
+    //
+    //   setState(() {});
+    // });
   }
 
   void _debugItemLocationDetails() {

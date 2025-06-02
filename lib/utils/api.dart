@@ -78,6 +78,7 @@ class Api {
   static String getCategoriesApi = "get-categories";
   static String getAllCategoriesApi = "get-all-categories";
   static String getItemApi = "get-item";
+  static String getItemApiAuthenticated = "get-item-authenticated";
   static String getMyItemApi = "my-items";
   static String getNotificationListApi = "get-notification-list";
   static String deleteUserApi = "delete-user";
@@ -262,6 +263,8 @@ class Api {
   static String featuredUsersApi = "featured-users";
 
   static String forgotPassword = 'forgot-password';
+
+  static String getProvider = 'get-provider';
 
   static Future<Map<String, dynamic>> post({
     required String url,

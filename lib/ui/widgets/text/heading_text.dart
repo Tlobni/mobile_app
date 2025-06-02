@@ -11,6 +11,7 @@ class HeadingText extends AppText {
     super.color,
     super.weight,
     super.fontSize,
+    super.fontStyle,
     super.height,
   });
 

@@ -75,6 +75,7 @@ dependencies:
   android_intent_plus: ^5.2.1
   cloud_firestore: ^5.4.2
   non_uniform_border: ^1.0.0
+  social_media_buttons: ^1.0.0
 
 
 
@@ -136,9 +137,25 @@ flutter:
           weight: 500
         - asset: assets/fonts/montserrat/Montserrat-ExtraBold.ttf
           weight: 800
+        - asset: assets/fonts/montserrat/Montserrat-Italic.ttf
+          style: italic
+        - asset: assets/fonts/montserrat/Montserrat-SemiBoldItalic.ttf
+          style: italic
+          weight: 600
+        - asset: assets/fonts/montserrat/Montserrat-BoldItalic.ttf
+          style: italic
+          weight: 700
+        - asset: assets/fonts/montserrat/Montserrat-MediumItalic.ttf
+          style: italic
+          weight: 500
+        - asset: assets/fonts/montserrat/Montserrat-ExtraBoldItalic.ttf
+          style: italic
+          weight: 800
     - family: Inter
       fonts:
         - asset: assets/fonts/inter/Inter_18pt-Regular.ttf
+        - asset: assets/fonts/inter/Inter_18pt-Italic.ttf
+          style: italic
         - asset: assets/fonts/inter/Inter_18pt-SemiBold.ttf
           weight: 600
         - asset: assets/fonts/inter/Inter_18pt-Bold.ttf
@@ -146,4 +163,16 @@ flutter:
         - asset: assets/fonts/inter/Inter_18pt-Medium.ttf
           weight: 500
         - asset: assets/fonts/inter/Inter_18pt-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/inter/Inter_18pt-SemiBoldItalic.ttf
+          style: italic
+          weight: 600
+        - asset: assets/fonts/inter/Inter_18pt-BoldItalic.ttf
+          style: italic
+          weight: 700
+        - asset: assets/fonts/inter/Inter_18pt-MediumItalic.ttf
+          style: italic
+          weight: 500
+        - asset: assets/fonts/inter/Inter_18pt-ExtraBoldItalic.ttf
+          style: italic
           weight: 800

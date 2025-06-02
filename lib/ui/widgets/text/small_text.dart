@@ -12,6 +12,7 @@ class SmallText extends AppText {
     super.weight,
     super.decoration,
     super.fontSize,
+    super.fontStyle,
     super.height,
   });
 

@@ -16,6 +16,7 @@ import 'package:tlobni/data/cubits/auth/delete_user_cubit.dart';
 import 'package:tlobni/data/cubits/chat/blocked_users_list_cubit.dart';
 import 'package:tlobni/data/cubits/chat/get_buyer_chat_users_cubit.dart';
 import 'package:tlobni/data/cubits/favorite/favorite_cubit.dart';
+import 'package:tlobni/data/cubits/fetch_provider_cubit.dart';
 import 'package:tlobni/data/cubits/report/update_report_items_list_cubit.dart';
 import 'package:tlobni/data/cubits/seller/fetch_verification_request_cubit.dart';
 import 'package:tlobni/data/cubits/system/app_theme_cubit.dart';
@@ -26,6 +27,9 @@ import 'package:tlobni/data/model/system_settings_model.dart';
 import 'package:tlobni/ui/screens/main_activity.dart';
 import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/buttons/unelevated_regular_button.dart';
+import 'package:tlobni/ui/widgets/text/heading_text.dart';
+import 'package:tlobni/ui/widgets/text/small_text.dart';
 import 'package:tlobni/utils/api.dart';
 import 'package:tlobni/utils/app_icon.dart';
 import 'package:tlobni/utils/constant.dart';
@@ -37,6 +41,16 @@ import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+enum _ProfileScreenTab {
+  account,
+  security,
+  privacy,
+  about;
+
+  @override
+  String toString() => switch (this) { account => 'Account', security => 'Security', privacy => 'Privacy', about => 'About' };
+}
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -46,6 +60,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveClientMixin<ProfileScreen> {
   ValueNotifier isDarkTheme = ValueNotifier(false);
+  _ProfileScreenTab _tab = _ProfileScreenTab.account;
   final InAppReview _inAppReview = InAppReview.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
@@ -57,6 +72,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
 
   @override
   void initState() {
+    super.initState();
     var settings = context.read<FetchSystemSettingsCubit>();
     //userData();
     if (HiveUtils.isUserAuthenticated()) {
@@ -65,8 +81,6 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
     if (!const bool.fromEnvironment("force-disable-demo-mode", defaultValue: false)) {
       Constant.isDemoModeOn = settings.getSetting(SystemSetting.demoMode) ?? false;
     }
-
-    super.initState();
   }
 
 /*  void userData() {
@@ -93,7 +107,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
     super.dispose();
   }
 
-  Widget setIconButtons({
+  Widget _iconButton({
     required String assetName,
     required void Function() onTap,
     Color? color,
@@ -115,6 +129,372 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
             colorFilter:
                 color == null ? ColorFilter.mode(context.color.territoryColor, BlendMode.srcIn) : ColorFilter.mode(color, BlendMode.srcIn),
           )),
+    );
+  }
+
+  PreferredSize buildBuildAppBar(BuildContext context) {
+    return UiUtils.buildAppBar(context, showBackButton: false, bottomHeight: 10, title: "myProfile".translate(context), actions: [
+      if (HiveUtils.isUserAuthenticated())
+        _iconButton(
+          assetName: AppIcons.logout,
+          onTap: () {
+            logOutConfirmWidget();
+          },
+          color: context.color.textDefaultColor,
+        ),
+    ]);
+  }
+
+  Widget _tabsHeading() => IntrinsicHeight(
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: EdgeInsets.all(10),
+          child: Row(
+            spacing: 10,
+            children: _ProfileScreenTab.values
+                .map((e) => UnelevatedRegularButton(
+                      color: _tab == e ? Color(0xfff1f2f4) : Colors.transparent,
+                      padding: EdgeInsets.all(15),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      onPressed: () => setState(() => _tab = e),
+                      child: SmallText(
+                        e.toString(),
+                        color: _tab == e ? null : Colors.grey,
+                      ),
+                    ))
+                .toList(),
+          ),
+        ),
+      );
+
+  Widget _divider() => const Divider(height: 1.5, thickness: 0.8);
+
+  Widget _tabContent() => RefreshIndicator(
+        onRefresh: _onRefresh,
+        child: SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.all(10),
+          child: BlocBuilder<FetchProviderCubit, FetchProviderState>(builder: (context, state) {
+            if (state is FetchProviderInProgress) return UiUtils.progress();
+            return switch (_tab) {
+              _ProfileScreenTab.account => _accountTabContent(),
+              _ProfileScreenTab.security => _securityTabContent(),
+              _ProfileScreenTab.privacy => _privacyTabContent(),
+              _ProfileScreenTab.about => _aboutTabContent(),
+            };
+          }),
+        ),
+      );
+
+  Widget _elevatedContainer(
+          {required String title, required String description, required Widget child, Color? borderColor, Color? titleColor}) =>
+      Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: borderColor == null ? null : Border.all(color: borderColor),
+          boxShadow: kElevationToShadow[1],
+        ),
+        padding: EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            HeadingText(title, fontSize: 20, color: titleColor),
+            SizedBox(height: 10),
+            SmallText(description, color: Colors.grey),
+            SizedBox(height: 10),
+          ],
+        ),
+      );
+
+  Widget _accountTabContent() => Column(
+        children: [
+          _elevatedContainer(
+            title: 'Hi',
+            description: 'blablabla',
+            child: Container(),
+          ),
+        ],
+      );
+
+  Widget _securityTabContent() => SizedBox();
+
+  Widget _privacyTabContent() => SizedBox();
+
+  Widget _aboutTabContent() => SizedBox();
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+
+    // return Scaffold(
+    //   appBar: buildBuildAppBar(context),
+    //   body: Column(
+    //     crossAxisAlignment: CrossAxisAlignment.stretch,
+    //     children: [
+    //       _tabsHeading(),
+    //       _divider(),
+    //       Expanded(child: _tabContent()),
+    //     ],
+    //   ),
+    // ); todo continue
+
+    return AnnotatedRegion(
+      value: UiUtils.getSystemUiOverlayStyle(context: context, statusBarColor: context.color.secondaryColor),
+      child: Scaffold(
+        backgroundColor: context.color.primaryColor,
+        appBar: buildBuildAppBar(context),
+        body: SingleChildScrollView(
+          controller: profileScreenController,
+          physics: const BouncingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.all(18.0),
+            child: Column(children: <Widget>[
+              profileHeader(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  // customTile(
+                  //   context,
+                  //   title: "myFeaturedAds".translate(context),
+                  //   svgImagePath: AppIcons.promoted,
+                  //   onTap: () async {
+                  //     APICallTrigger.trigger();
+                  //     UiUtils.checkUser(
+                  //         onNotGuest: () {
+                  //           Navigator.pushNamed(context, Routes.myAdvertisment,
+                  //               arguments: {});
+                  //         },
+                  //         context: context);
+                  //   },
+                  // ),
+                  // customTile(
+                  //   context,
+                  //   title: "subscription".translate(context),
+                  //   svgImagePath: AppIcons.subscription,
+                  //   onTap: () async {
+                  //     //TODO: change it once @End
+                  //
+                  //     UiUtils.checkUser(
+                  //         onNotGuest: () {
+                  //           Navigator.pushNamed(context, Routes.subscriptionPackageListRoute);
+                  //         },
+                  //         context: context);
+                  //   },
+                  // ),
+                  // customTile(
+                  //   context,
+                  //   title: "transactionHistory".translate(context),
+                  //   svgImagePath: AppIcons.transaction,
+                  //   onTap: () {
+                  //     UiUtils.checkUser(
+                  //         onNotGuest: () {
+                  //           Navigator.pushNamed(context, Routes.transactionHistory);
+                  //         },
+                  //         context: context);
+                  //   },
+                  // ),
+                  // customTile(
+                  //   context,
+                  //   title: "myReview".translate(context),
+                  //   svgImagePath: AppIcons.myReviewIcon,
+                  //   onTap: () {
+                  //     UiUtils.checkUser(
+                  //         onNotGuest: () {
+                  //           Navigator.pushNamed(context, Routes.myReviewsScreen);
+                  //         },
+                  //         context: context);
+                  //   },
+                  // ),
+                  // customTile(
+                  //   context,
+                  //   title: "language".translate(context),
+                  //   svgImagePath: AppIcons.language,
+                  //   onTap: () {
+                  //     Navigator.pushNamed(
+                  //         context, Routes.languageListScreenRoute);
+                  //   },
+                  // ),
+
+                  // ValueListenableBuilder(
+                  //     valueListenable: isDarkTheme,
+                  //     builder: (context, v, c) {
+                  //       return customTile(
+                  //         context,
+                  //         title: "darkTheme".translate(context),
+                  //         svgImagePath: AppIcons.darkTheme,
+                  //         isSwitchBox: true,
+                  //         onTapSwitch: (value) {
+                  //           context.read<AppThemeCubit>().changeTheme(value == true ? AppTheme.dark : AppTheme.light);
+                  //           setState(() {
+                  //             isDarkTheme.value = value;
+                  //           });
+                  //         },
+                  //         switchValue: v,
+                  //         onTap: () {},
+                  //       );
+                  //     }),
+                  // customTile(
+                  //   context,
+                  //   title: "notifications".translate(context),
+                  //   svgImagePath: AppIcons.notification,
+                  //   onTap: () {
+                  //     UiUtils.checkUser(
+                  //         onNotGuest: () {
+                  //           Navigator.pushNamed(
+                  //               context, Routes.notificationPage);
+                  //         },
+                  //         context: context);
+                  //   },
+                  // ),
+                  // customTile(
+                  //   context,
+                  //   title: "blogs".translate(context),
+                  //   svgImagePath: AppIcons.articles,
+                  //   onTap: () {
+                  //     UiUtils.checkUser(
+                  //         onNotGuest: () {
+                  //           Navigator.pushNamed(
+                  //             context,
+                  //             Routes.blogsScreenRoute,
+                  //           );
+                  //         },
+                  //         context: context);
+                  //   },
+                  // ),
+                  customTile(
+                    context,
+                    title: "favorites".translate(context),
+                    svgImagePath: AppIcons.favorites,
+                    onTap: () {
+                      UiUtils.checkUser(
+                          onNotGuest: () {
+                            Navigator.pushNamed(context, Routes.favoritesScreen);
+                          },
+                          context: context);
+                    },
+                  ),
+                  // customTile(
+                  //   context,
+                  //   title: "faqsLbl".translate(context),
+                  //   svgImagePath: AppIcons.faqsIcon,
+                  //   onTap: () {
+                  //     UiUtils.checkUser(
+                  //         onNotGuest: () {
+                  //           Navigator.pushNamed(
+                  //             context,
+                  //             Routes.faqsScreen,
+                  //           );
+                  //         },
+                  //         context: context);
+                  //   },
+                  // ),
+                  // customTile(
+                  //   context,
+                  //   title: "shareApp".translate(context),
+                  //   svgImagePath: AppIcons.shareApp,
+                  //   onTap: shareApp,
+                  // ),
+                  customTile(
+                    context,
+                    title: "rateUs".translate(context),
+                    svgImagePath: AppIcons.rateUs,
+                    onTap: rateUs,
+                  ),
+                  // customTile(
+                  //   context,
+                  //   title: "contactUs".translate(context),
+                  //   svgImagePath: AppIcons.contactUs,
+                  //   onTap: () {
+                  //     Navigator.pushNamed(
+                  //       context,
+                  //       Routes.contactUs,
+                  //     );
+                  //     // Navigator.pushNamed(context, Routes.ab);
+                  //   },
+                  // ),
+                  customTile(
+                    context,
+                    title: "aboutUs".translate(context),
+                    svgImagePath: AppIcons.aboutUs,
+                    onTap: () {
+                      Navigator.pushNamed(context, Routes.profileSettings,
+                          arguments: {'title': "aboutUs".translate(context), 'param': Api.aboutUs});
+                      // Navigator.pushNamed(context, Routes.ab);
+                    },
+                  ),
+                  customTile(
+                    context,
+                    title: "termsConditions".translate(context),
+                    svgImagePath: AppIcons.terms,
+                    onTap: () {
+                      Navigator.pushNamed(context, Routes.profileSettings,
+                          arguments: {'title': "termsConditions".translate(context), 'param': Api.termsAndConditions});
+                    },
+                  ),
+                  customTile(
+                    context,
+                    title: "privacyPolicy".translate(context),
+                    svgImagePath: AppIcons.privacy,
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        Routes.profileSettings,
+                        arguments: {'title': "privacyPolicy".translate(context), 'param': Api.privacyPolicy},
+                      );
+                    },
+                  ),
+                  if (Constant.isUpdateAvailable == true) ...[
+                    updateTile(
+                      context,
+                      isUpdateAvailable: Constant.isUpdateAvailable,
+                      title: "update".translate(context),
+                      newVersion: Constant.newVersionNumber,
+                      svgImagePath: AppIcons.update,
+                      onTap: () async {
+                        if (Platform.isIOS) {
+                          await launchUrl(Uri.parse(Constant.appstoreURLios));
+                        } else if (Platform.isAndroid) {
+                          await launchUrl(Uri.parse(Constant.playstoreURLAndroid));
+                        }
+                      },
+                    ),
+                  ],
+                  if (HiveUtils.isUserAuthenticated()) ...[
+                    customTile(
+                      context,
+                      title: "deleteAccount".translate(context),
+                      svgImagePath: AppIcons.delete,
+                      onTap: () {
+                        if (Constant.isDemoModeOn) {
+                          if (HiveUtils.getUserDetails().mobile != null) if (Constant.demoMobileNumber ==
+                              (HiveUtils.getUserDetails().mobile!.replaceFirst("+${HiveUtils.getCountryCode()}", ""))) {
+                            HelperUtils.showSnackBarMessage(context, "thisActionNotValidDemo".translate(context));
+                            return;
+                          }
+                        }
+                        deleteConfirmWidget();
+                      },
+                    ),
+                  ],
+                  const SizedBox(
+                    height: 20,
+                  )
+                ],
+              ),
+
+              // profileInfo(),
+              // Expanded(
+              //   child: profileMenus(),
+              // )
+            ]),
+          ),
+        ),
+      ),
     );
   }
 
@@ -609,278 +989,6 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-
-    return AnnotatedRegion(
-      value: UiUtils.getSystemUiOverlayStyle(context: context, statusBarColor: context.color.secondaryColor),
-      child: Scaffold(
-        backgroundColor: context.color.primaryColor,
-        appBar: UiUtils.buildAppBar(context, showBackButton: false, bottomHeight: 10, title: "myProfile".translate(context), actions: [
-          if (HiveUtils.isUserAuthenticated())
-            setIconButtons(
-              assetName: AppIcons.logout,
-              onTap: () {
-                logOutConfirmWidget();
-              },
-              color: context.color.textDefaultColor,
-            ),
-        ]),
-        body: SingleChildScrollView(
-          controller: profileScreenController,
-          physics: const BouncingScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.all(18.0),
-            child: Column(children: <Widget>[
-              profileHeader(),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  // customTile(
-                  //   context,
-                  //   title: "myFeaturedAds".translate(context),
-                  //   svgImagePath: AppIcons.promoted,
-                  //   onTap: () async {
-                  //     APICallTrigger.trigger();
-                  //     UiUtils.checkUser(
-                  //         onNotGuest: () {
-                  //           Navigator.pushNamed(context, Routes.myAdvertisment,
-                  //               arguments: {});
-                  //         },
-                  //         context: context);
-                  //   },
-                  // ),
-                  // customTile(
-                  //   context,
-                  //   title: "subscription".translate(context),
-                  //   svgImagePath: AppIcons.subscription,
-                  //   onTap: () async {
-                  //     //TODO: change it once @End
-                  //
-                  //     UiUtils.checkUser(
-                  //         onNotGuest: () {
-                  //           Navigator.pushNamed(context, Routes.subscriptionPackageListRoute);
-                  //         },
-                  //         context: context);
-                  //   },
-                  // ),
-                  // customTile(
-                  //   context,
-                  //   title: "transactionHistory".translate(context),
-                  //   svgImagePath: AppIcons.transaction,
-                  //   onTap: () {
-                  //     UiUtils.checkUser(
-                  //         onNotGuest: () {
-                  //           Navigator.pushNamed(context, Routes.transactionHistory);
-                  //         },
-                  //         context: context);
-                  //   },
-                  // ),
-                  // customTile(
-                  //   context,
-                  //   title: "myReview".translate(context),
-                  //   svgImagePath: AppIcons.myReviewIcon,
-                  //   onTap: () {
-                  //     UiUtils.checkUser(
-                  //         onNotGuest: () {
-                  //           Navigator.pushNamed(context, Routes.myReviewsScreen);
-                  //         },
-                  //         context: context);
-                  //   },
-                  // ),
-                  // customTile(
-                  //   context,
-                  //   title: "language".translate(context),
-                  //   svgImagePath: AppIcons.language,
-                  //   onTap: () {
-                  //     Navigator.pushNamed(
-                  //         context, Routes.languageListScreenRoute);
-                  //   },
-                  // ),
-
-                  // ValueListenableBuilder(
-                  //     valueListenable: isDarkTheme,
-                  //     builder: (context, v, c) {
-                  //       return customTile(
-                  //         context,
-                  //         title: "darkTheme".translate(context),
-                  //         svgImagePath: AppIcons.darkTheme,
-                  //         isSwitchBox: true,
-                  //         onTapSwitch: (value) {
-                  //           context.read<AppThemeCubit>().changeTheme(value == true ? AppTheme.dark : AppTheme.light);
-                  //           setState(() {
-                  //             isDarkTheme.value = value;
-                  //           });
-                  //         },
-                  //         switchValue: v,
-                  //         onTap: () {},
-                  //       );
-                  //     }),
-                  // customTile(
-                  //   context,
-                  //   title: "notifications".translate(context),
-                  //   svgImagePath: AppIcons.notification,
-                  //   onTap: () {
-                  //     UiUtils.checkUser(
-                  //         onNotGuest: () {
-                  //           Navigator.pushNamed(
-                  //               context, Routes.notificationPage);
-                  //         },
-                  //         context: context);
-                  //   },
-                  // ),
-                  // customTile(
-                  //   context,
-                  //   title: "blogs".translate(context),
-                  //   svgImagePath: AppIcons.articles,
-                  //   onTap: () {
-                  //     UiUtils.checkUser(
-                  //         onNotGuest: () {
-                  //           Navigator.pushNamed(
-                  //             context,
-                  //             Routes.blogsScreenRoute,
-                  //           );
-                  //         },
-                  //         context: context);
-                  //   },
-                  // ),
-                  customTile(
-                    context,
-                    title: "favorites".translate(context),
-                    svgImagePath: AppIcons.favorites,
-                    onTap: () {
-                      UiUtils.checkUser(
-                          onNotGuest: () {
-                            Navigator.pushNamed(context, Routes.favoritesScreen);
-                          },
-                          context: context);
-                    },
-                  ),
-                  // customTile(
-                  //   context,
-                  //   title: "faqsLbl".translate(context),
-                  //   svgImagePath: AppIcons.faqsIcon,
-                  //   onTap: () {
-                  //     UiUtils.checkUser(
-                  //         onNotGuest: () {
-                  //           Navigator.pushNamed(
-                  //             context,
-                  //             Routes.faqsScreen,
-                  //           );
-                  //         },
-                  //         context: context);
-                  //   },
-                  // ),
-                  // customTile(
-                  //   context,
-                  //   title: "shareApp".translate(context),
-                  //   svgImagePath: AppIcons.shareApp,
-                  //   onTap: shareApp,
-                  // ),
-                  customTile(
-                    context,
-                    title: "rateUs".translate(context),
-                    svgImagePath: AppIcons.rateUs,
-                    onTap: rateUs,
-                  ),
-                  // customTile(
-                  //   context,
-                  //   title: "contactUs".translate(context),
-                  //   svgImagePath: AppIcons.contactUs,
-                  //   onTap: () {
-                  //     Navigator.pushNamed(
-                  //       context,
-                  //       Routes.contactUs,
-                  //     );
-                  //     // Navigator.pushNamed(context, Routes.ab);
-                  //   },
-                  // ),
-                  customTile(
-                    context,
-                    title: "aboutUs".translate(context),
-                    svgImagePath: AppIcons.aboutUs,
-                    onTap: () {
-                      Navigator.pushNamed(context, Routes.profileSettings,
-                          arguments: {'title': "aboutUs".translate(context), 'param': Api.aboutUs});
-                      // Navigator.pushNamed(context, Routes.ab);
-                    },
-                  ),
-                  customTile(
-                    context,
-                    title: "termsConditions".translate(context),
-                    svgImagePath: AppIcons.terms,
-                    onTap: () {
-                      Navigator.pushNamed(context, Routes.profileSettings,
-                          arguments: {'title': "termsConditions".translate(context), 'param': Api.termsAndConditions});
-                    },
-                  ),
-                  customTile(
-                    context,
-                    title: "privacyPolicy".translate(context),
-                    svgImagePath: AppIcons.privacy,
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        Routes.profileSettings,
-                        arguments: {'title': "privacyPolicy".translate(context), 'param': Api.privacyPolicy},
-                      );
-                    },
-                  ),
-                  if (Constant.isUpdateAvailable == true) ...[
-                    updateTile(
-                      context,
-                      isUpdateAvailable: Constant.isUpdateAvailable,
-                      title: "update".translate(context),
-                      newVersion: Constant.newVersionNumber,
-                      svgImagePath: AppIcons.update,
-                      onTap: () async {
-                        if (Platform.isIOS) {
-                          await launchUrl(Uri.parse(Constant.appstoreURLios));
-                        } else if (Platform.isAndroid) {
-                          await launchUrl(Uri.parse(Constant.playstoreURLAndroid));
-                        }
-                      },
-                    ),
-                  ],
-                  if (HiveUtils.isUserAuthenticated()) ...[
-                    customTile(
-                      context,
-                      title: "deleteAccount".translate(context),
-                      svgImagePath: AppIcons.delete,
-                      onTap: () {
-                        if (Constant.isDemoModeOn) {
-                          if (HiveUtils.getUserDetails().mobile != null) if (Constant.demoMobileNumber ==
-                              (HiveUtils.getUserDetails().mobile!.replaceFirst("+${HiveUtils.getCountryCode()}", ""))) {
-                            HelperUtils.showSnackBarMessage(context, "thisActionNotValidDemo".translate(context));
-                            return;
-                          }
-                        }
-                        deleteConfirmWidget();
-                      },
-                    ),
-                  ],
-                  const SizedBox(
-                    height: 20,
-                  )
-                ],
-              ),
-
-              // profileInfo(),
-              // Expanded(
-              //   child: profileMenus(),
-              // )
-            ]),
-          ),
-        ),
-      ),
-    );
-  }
-
 /*  Padding dividerWithSpacing() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10.0),
@@ -1274,5 +1382,13 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
             cancelTextColor: context.color.textColorDark,
             svgImagePath: AppIcons.logoutIcon,
             content: CustomText("confirmLogOutMsg".translate(context))));
+  }
+
+  Future<void> _onRefresh() async {
+    if (HiveUtils.isUserAuthenticated()) {
+      int? id = HiveUtils.getUserIdInt();
+      if (id == null) return;
+      context.read<FetchProviderCubit>().fetchProvider(id);
+    }
   }
 }

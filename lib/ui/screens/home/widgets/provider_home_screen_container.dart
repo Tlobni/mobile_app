@@ -10,30 +10,51 @@ import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/ui_utils.dart';
 
 class ProviderHomeScreenContainer extends StatelessWidget {
-  const ProviderHomeScreenContainer({super.key, required this.user, this.onPressed});
+  const ProviderHomeScreenContainer({
+    super.key,
+    required this.user,
+    this.onPressed,
+    this.goToProviderDetailsScreenOnPressed = true,
+    this.withBorder = true,
+    this.padding,
+    this.additionalDetails,
+    this.categoriesBuilder,
+    this.nameFontSize,
+    this.nameFontWeight,
+  });
 
   final User user;
+  final double? nameFontSize;
+  final FontWeight? nameFontWeight;
   final VoidCallback? onPressed;
+  final bool goToProviderDetailsScreenOnPressed;
+  final bool withBorder;
+  final EdgeInsets? padding;
+  final Widget? additionalDetails;
+  final Widget Function(List<String> categoryNames)? categoriesBuilder;
 
   @override
   Widget build(BuildContext context) {
     return UnelevatedRegularButton(
       onPressed: onPressed ??
-          () => Navigator.pushNamed(
-                context,
-                Routes.sellerProfileScreen,
-                arguments: {
-                  "model": user,
-                  "rating": user.averageRating ?? 0.0,
-                  "total": user.totalReviews ?? 0,
-                },
-              ),
+          (goToProviderDetailsScreenOnPressed
+              ? () => Navigator.pushNamed(
+                    context,
+                    Routes.sellerProfileScreen,
+                    arguments: {
+                      "model": user,
+                      "rating": user.averageRating ?? 0.0,
+                      "total": user.totalReviews ?? 0,
+                    },
+                  )
+              : null),
       color: Colors.white,
+      disabledColor: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: context.color.secondary.withValues(alpha: 0.7), width: 2),
+        side: withBorder ? BorderSide(color: context.color.secondary.withValues(alpha: 0.7), width: 2) : BorderSide.none,
       ),
-      padding: EdgeInsets.all(14),
+      padding: padding ?? EdgeInsets.all(14),
       child: IntrinsicHeight(
         child: Row(
           children: [
@@ -80,22 +101,25 @@ class ProviderHomeScreenContainer extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Expanded(child: DescriptionText(user.name ?? '', fontSize: 15, maxLines: 1)),
+                      Expanded(child: DescriptionText(user.name ?? '', fontSize: nameFontSize ?? 15, maxLines: 1, weight: nameFontWeight)),
                       if ((user.isVerified ?? 0) == 1) ...[
                         const SizedBox(width: 5),
                         Icon(Icons.verified, size: 18, color: kColorSecondaryBeige),
                       ]
                     ],
                   ),
-                  const SizedBox(height: 5),
-                  Row(
-                    children: [
-                      HomeCategoryInContainerBubble(
-                        '${user.categories?.first}${(user.categories?.length ?? 0) > 1 ? ' +${user.categories!.length - 1}' : ''}',
-                        fontSize: 12,
-                      ),
-                    ],
-                  ),
+                  if (user.categories?.isNotEmpty ?? false) ...[
+                    const SizedBox(height: 10),
+                    categoriesBuilder?.call(user.categories ?? []) ??
+                        Row(
+                          children: [
+                            HomeCategoryInContainerBubble(
+                              '${user.categories?.first}${(user.categories?.length ?? 0) > 1 ? ' +${user.categories!.length - 1}' : ''}',
+                              fontSize: 12,
+                            ),
+                          ],
+                        ),
+                  ],
                   const SizedBox(height: 10),
                   Row(
                     children: [
@@ -110,8 +134,8 @@ class ProviderHomeScreenContainer extends StatelessWidget {
                       SmallText('(${user.totalReviews ?? 0})', fontSize: 14),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  if (user.hasLocation)
+                  if (user.hasLocation) ...[
+                    const SizedBox(height: 10),
                     Row(
                       children: [
                         Icon(
@@ -123,7 +147,11 @@ class ProviderHomeScreenContainer extends StatelessWidget {
                         Text(user.location!, style: context.textTheme.bodySmall),
                       ],
                     ),
-                  SizedBox(width: 10),
+                  ],
+                  if (additionalDetails != null) ...[
+                    SizedBox(height: 10),
+                    additionalDetails!,
+                  ],
                 ],
               ),
             ),

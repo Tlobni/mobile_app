@@ -25,7 +25,10 @@ class CategoryWidgetHome extends StatelessWidget {
     return BlocBuilder<FetchCategoryCubit, FetchCategoryState>(
       builder: (context, state) => HomeSection(
         title: 'Browse Categories',
-        onViewAll: () {},
+        onViewAll: () => Navigator.pushNamed(context, Routes.searchScreenRoute, arguments: {
+          'autoFocus': true,
+          'screenType': SearchScreenType.itemListing,
+        }),
         shimmerEffect: HomeShimmerEffect(
           height: 160,
           width: 160,
@@ -41,7 +44,7 @@ class CategoryWidgetHome extends StatelessWidget {
               final serviceCategories = state.categories.where((category) => category.type == CategoryType.serviceExperience).toList();
               return SizedBox(
                 width: context.screenWidth,
-                height: 160,
+                height: 170,
                 child: ListView.separated(
                   physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(

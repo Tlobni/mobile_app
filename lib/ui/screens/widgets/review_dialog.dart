@@ -1,12 +1,15 @@
-import 'package:tlobni/data/cubits/add_user_review_cubit.dart';
-import 'package:tlobni/data/helper/widgets.dart';
-import 'package:tlobni/ui/theme/theme.dart';
-import 'package:tlobni/utils/custom_text.dart';
-import 'package:tlobni/utils/extensions/extensions.dart';
-import 'package:tlobni/utils/helper_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:tlobni/app/app_theme.dart';
+import 'package:tlobni/data/cubits/add_user_review_cubit.dart';
+import 'package:tlobni/data/helper/widgets.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/buttons/primary_button.dart';
+import 'package:tlobni/ui/widgets/text/small_text.dart';
+import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/helper_utils.dart';
 
 enum ReviewType {
   expertProfile,
@@ -99,8 +102,8 @@ class _ReviewDialogState extends State<ReviewDialog> {
                 itemSize: 40,
                 itemPadding: const EdgeInsets.symmetric(horizontal: 4.0),
                 itemBuilder: (context, _) => Icon(
-                  Icons.star,
-                  color: Colors.amber,
+                  Icons.star_rounded,
+                  color: kColorSecondaryBeige,
                 ),
                 onRatingUpdate: (rating) {
                   setState(() {
@@ -115,6 +118,7 @@ class _ReviewDialogState extends State<ReviewDialog> {
                 controller: _reviewController,
                 maxLines: 4,
                 maxLength: 500,
+                style: context.textTheme.bodyMedium,
                 decoration: InputDecoration(
                   hintText: "Write your review here...",
                   border: OutlineInputBorder(
@@ -123,6 +127,7 @@ class _ReviewDialogState extends State<ReviewDialog> {
                       color: context.color.borderColor,
                     ),
                   ),
+                  hintStyle: context.textTheme.bodyMedium,
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide(
@@ -140,18 +145,16 @@ class _ReviewDialogState extends State<ReviewDialog> {
           onPressed: () {
             Navigator.pop(context);
           },
-          child: CustomText(
+          child: SmallText(
             "Cancel",
             color: context.color.textColorDark,
           ),
         ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: context.color.territoryColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
+        PrimaryButton.text(
+          'Submit',
+          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+          borderRadius: 5,
+          fontSize: context.textTheme.bodySmall?.fontSize,
           onPressed: () {
             if (_reviewController.text.trim().isEmpty) {
               HelperUtils.showSnackBarMessage(context, "Please write a review");
@@ -195,10 +198,6 @@ class _ReviewDialogState extends State<ReviewDialog> {
               );
             }
           },
-          child: CustomText(
-            "Submit",
-            color: context.color.buttonColor,
-          ),
         ),
       ],
     );

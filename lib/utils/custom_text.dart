@@ -1,7 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:tlobni/ui/theme/theme.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
-import 'package:flutter/material.dart';
 
 class CustomText extends StatelessWidget {
   const CustomText(
@@ -62,7 +62,7 @@ class CustomText extends StatelessWidget {
       firstUpperCaseWidget ? text.toCapitalized() : text,
       maxLines: maxLines,
       softWrap: true,
-      overflow: maxLines != null ? TextOverflow.ellipsis : null,
+      overflow: null,
       style: textStyle(context),
       textAlign: textAlign,
       textScaler: TextScaler.noScaling,

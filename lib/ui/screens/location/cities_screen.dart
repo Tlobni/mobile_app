@@ -1,5 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/home/fetch_home_all_items_cubit.dart';
@@ -22,10 +26,6 @@ import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shimmer/shimmer.dart';
 
 class CitiesScreen extends StatefulWidget {
   final int stateId;
@@ -487,7 +487,7 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
                   if (state.isLoadingMore)
                     Center(
                       child: UiUtils.progress(
-                        normalProgressColor: context.color.territoryColor,
+                        color: context.color.territoryColor,
                       ),
                     )
                 ],

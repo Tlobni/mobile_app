@@ -26,6 +26,7 @@ import 'package:tlobni/data/cubits/fetch_faqs_cubit.dart';
 import 'package:tlobni/data/cubits/fetch_item_buyer_cubit.dart';
 import 'package:tlobni/data/cubits/fetch_my_reviews_cubit.dart';
 import 'package:tlobni/data/cubits/fetch_notifications_cubit.dart';
+import 'package:tlobni/data/cubits/fetch_provider_cubit.dart';
 import 'package:tlobni/data/cubits/home/fetch_home_all_items_cubit.dart';
 import 'package:tlobni/data/cubits/home/fetch_home_screen_cubit.dart';
 import 'package:tlobni/data/cubits/home/fetch_section_items_cubit.dart';
@@ -96,6 +97,7 @@ class RegisterCubits {
     BlocProvider(create: (context) => FetchLanguageCubit()),
     BlocProvider(create: (context) => FetchMyPromotedItemsCubit()),
     BlocProvider(create: (context) => FetchAdsListingSubscriptionPackagesCubit()),
+    BlocProvider(create: (context) => FetchProviderCubit()),
     BlocProvider(create: (context) => FetchFeaturedSubscriptionPackagesCubit()),
     BlocProvider(create: (context) => GetApiKeysCubit()),
     BlocProvider(create: (context) => GetBuyerChatListCubit()),

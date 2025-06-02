@@ -1,7 +1,7 @@
-﻿import 'package:tlobni/data/repositories/seller/seller_items_repository.dart';
+﻿import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tlobni/data/model/data_output.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tlobni/data/repositories/seller/seller_items_repository.dart';
 
 abstract class FetchSellerItemsState {}
 
@@ -15,13 +15,16 @@ class FetchSellerItemsSuccess extends FetchSellerItemsState {
   final bool loadingMoreError;
   final int page;
   final int total;
+  final int lastPage;
 
-  FetchSellerItemsSuccess(
-      {required this.items,
-      required this.isLoadingMore,
-      required this.loadingMoreError,
-      required this.page,
-      required this.total});
+  FetchSellerItemsSuccess({
+    required this.items,
+    required this.isLoadingMore,
+    required this.loadingMoreError,
+    required this.page,
+    required this.total,
+    required this.lastPage,
+  });
 
   FetchSellerItemsSuccess copyWith({
     List<ItemModel>? items,
@@ -29,6 +32,7 @@ class FetchSellerItemsSuccess extends FetchSellerItemsState {
     bool? loadingMoreError,
     int? page,
     int? total,
+    int? lastPage,
   }) {
     return FetchSellerItemsSuccess(
       items: items ?? this.items,
@@ -36,6 +40,7 @@ class FetchSellerItemsSuccess extends FetchSellerItemsState {
       loadingMoreError: loadingMoreError ?? this.loadingMoreError,
       page: page ?? this.page,
       total: total ?? this.total,
+      lastPage: lastPage ?? this.lastPage,
     );
   }
 }
@@ -51,19 +56,19 @@ class FetchSellerItemsCubit extends Cubit<FetchSellerItemsState> {
 
   final SellerItemsRepository _sellerItemsRepository = SellerItemsRepository();
 
-  void fetch({required int sellerId}) async {
+  void fetch({required int sellerId, int page = 1}) async {
     try {
       emit(FetchSellerItemsInProgress());
-      DataOutput<ItemModel> result = await _sellerItemsRepository
-          .fetchSellerItemsAllItems(page: 1, sellerId: sellerId);
+      DataOutput<ItemModel> result = await _sellerItemsRepository.fetchSellerItemsAllItems(page: page, sellerId: sellerId);
 
       emit(
         FetchSellerItemsSuccess(
-          page: 1,
+          page: page,
           isLoadingMore: false,
           loadingMoreError: false,
           items: result.modelList,
           total: result.total,
+          lastPage: result.lastPage ?? page,
         ),
       );
     } catch (e) {
@@ -74,37 +79,35 @@ class FetchSellerItemsCubit extends Cubit<FetchSellerItemsState> {
   Future<void> fetchMore({required int sellerId}) async {
     try {
       if (state is FetchSellerItemsSuccess) {
-        print(
-            "state as FetchSellerItemsSuccess).isLoadingMore****${(state as FetchSellerItemsSuccess).isLoadingMore}");
+        print("state as FetchSellerItemsSuccess).isLoadingMore****${(state as FetchSellerItemsSuccess).isLoadingMore}");
         if ((state as FetchSellerItemsSuccess).isLoadingMore) {
           return;
         }
         emit((state as FetchSellerItemsSuccess).copyWith(isLoadingMore: true));
         DataOutput<ItemModel> result =
-            await _sellerItemsRepository.fetchSellerItemsAllItems(
-                page: (state as FetchSellerItemsSuccess).page + 1,
-                sellerId: sellerId);
+            await _sellerItemsRepository.fetchSellerItemsAllItems(page: (state as FetchSellerItemsSuccess).page + 1, sellerId: sellerId);
 
-        FetchSellerItemsSuccess itemModelState =
-            (state as FetchSellerItemsSuccess);
+        FetchSellerItemsSuccess itemModelState = (state as FetchSellerItemsSuccess);
         itemModelState.items.addAll(result.modelList);
-        emit(FetchSellerItemsSuccess(
+        emit(
+          FetchSellerItemsSuccess(
             isLoadingMore: false,
             loadingMoreError: false,
             items: itemModelState.items,
             page: (state as FetchSellerItemsSuccess).page + 1,
-            total: result.total));
+            total: result.total,
+            lastPage: result.lastPage ?? 0,
+          ),
+        );
       }
     } catch (e) {
-      emit((state as FetchSellerItemsSuccess)
-          .copyWith(isLoadingMore: false, loadingMoreError: true));
+      emit((state as FetchSellerItemsSuccess).copyWith(isLoadingMore: false, loadingMoreError: true));
     }
   }
 
   bool hasMoreData() {
     if (state is FetchSellerItemsSuccess) {
-      return (state as FetchSellerItemsSuccess).items.length <
-          (state as FetchSellerItemsSuccess).total;
+      return (state as FetchSellerItemsSuccess).items.length < (state as FetchSellerItemsSuccess).total;
     }
     return false;
   }

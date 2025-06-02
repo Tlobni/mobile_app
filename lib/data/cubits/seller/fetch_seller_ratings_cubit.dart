@@ -16,6 +16,7 @@ class FetchSellerRatingsSuccess extends FetchSellerRatingsState {
   final bool loadingMoreError;
   final int page;
   final int total;
+  final int lastPage;
 
   FetchSellerRatingsSuccess({
     required this.ratings,
@@ -23,6 +24,7 @@ class FetchSellerRatingsSuccess extends FetchSellerRatingsState {
     required this.isLoadingMore,
     required this.loadingMoreError,
     required this.page,
+    required this.lastPage,
     required this.total,
   });
 
@@ -33,6 +35,7 @@ class FetchSellerRatingsSuccess extends FetchSellerRatingsState {
     bool? loadingMoreError,
     bool? currentUserHasRatedSeller,
     int? page,
+    int? lastPage,
     int? total,
   }) {
     return FetchSellerRatingsSuccess(
@@ -41,6 +44,7 @@ class FetchSellerRatingsSuccess extends FetchSellerRatingsState {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       loadingMoreError: loadingMoreError ?? this.loadingMoreError,
       page: page ?? this.page,
+      lastPage: lastPage ?? this.lastPage,
       total: total ?? this.total,
     );
   }
@@ -57,24 +61,25 @@ class FetchSellerRatingsCubit extends Cubit<FetchSellerRatingsState> {
 
   final SellerRatingsRepository _sellerRatingsRepository = SellerRatingsRepository();
 
-  void fetch({required int sellerId}) async {
+  void fetch({required int sellerId, int page = 1}) async {
     try {
       print("FetchSellerRatingsCubit: Fetching ratings for seller ID: $sellerId");
       emit(FetchSellerRatingsInProgress());
 
-      DataOutput<UserRatings> result = await _sellerRatingsRepository.fetchSellerRatingsAllRatings(page: 1, sellerId: sellerId);
+      DataOutput<UserRatings> result = await _sellerRatingsRepository.fetchSellerRatingsAllRatings(page: page, sellerId: sellerId);
 
       print("FetchSellerRatingsCubit: Success - Found ${result.modelList.length} ratings with total: ${result.total}");
       print("FetchSellerRatingsCubit: Seller data present: ${result.extraData?.data != null}");
 
       emit(
         FetchSellerRatingsSuccess(
-          page: 1,
+          page: page,
           seller: result.extraData?.data,
           isLoadingMore: false,
           loadingMoreError: false,
           ratings: result.modelList,
           total: result.total,
+          lastPage: result.lastPage ?? 1,
         ),
       );
     } catch (e) {
@@ -102,7 +107,8 @@ class FetchSellerRatingsCubit extends Cubit<FetchSellerRatingsState> {
             // Handle nullable seller
             ratings: sellerRatingsModelState.ratings,
             page: (state as FetchSellerRatingsSuccess).page + 1,
-            total: result.total));
+            total: result.total,
+            lastPage: result.lastPage ?? 1));
       }
     } catch (e) {
       emit((state as FetchSellerRatingsSuccess).copyWith(isLoadingMore: false, loadingMoreError: true));

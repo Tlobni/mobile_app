@@ -13,6 +13,7 @@ class DescriptionText extends AppText {
     super.decoration,
     super.fontSize,
     super.height,
+    super.fontStyle,
   });
 
   @override
