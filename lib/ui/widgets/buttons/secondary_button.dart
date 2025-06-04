@@ -17,13 +17,13 @@ class SecondaryButton extends StatelessWidget {
   SecondaryButton.text(
     String text, {
     TextStyle? textStyle,
-    FontWeight? weight,
+    FontWeight? weight = FontWeight.w700,
     required this.onPressed,
     this.padding,
   }) : child = Builder(
           builder: (context) => Text(
             text,
-            style: (textStyle ?? context.textTheme.bodyLarge)?.copyWith(
+            style: (textStyle ?? context.textTheme.bodyMedium)?.copyWith(
               color: context.color.onSecondary,
               fontWeight: weight,
             ),

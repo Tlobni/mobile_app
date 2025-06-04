@@ -6,7 +6,7 @@ class HomeSection extends StatelessWidget {
   const HomeSection({
     super.key,
     required this.title,
-    required this.onViewAll,
+    this.onViewAll,
     required this.error,
     required this.isLoading,
     required this.shimmerEffect,
@@ -15,7 +15,7 @@ class HomeSection extends StatelessWidget {
   });
 
   final String title;
-  final VoidCallback onViewAll;
+  final VoidCallback? onViewAll;
   final bool isLoading;
   final Widget shimmerEffect;
   final Widget child;

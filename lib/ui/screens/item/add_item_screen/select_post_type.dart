@@ -46,6 +46,7 @@ class _SelectPostTypeScreenState extends CloudState<SelectPostTypeScreen> {
       arguments: <String, dynamic>{
         "breadCrumbItems": widget.breadCrumbItems,
         "isEdit": false,
+        'postType': selectedPostType,
       },
     );
   }
@@ -57,7 +58,7 @@ class _SelectPostTypeScreenState extends CloudState<SelectPostTypeScreen> {
       body: Padding(
         padding: EdgeInsets.all(20.0),
         child: Column(
-          spacing: 15,
+          spacing: 30,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ('Post a Service', 'Offer ongoing services to clients with flexible availability', PostType.service),
@@ -75,9 +76,9 @@ class _SelectPostTypeScreenState extends CloudState<SelectPostTypeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  HeadingText(title, textAlign: TextAlign.center, fontSize: 25),
-                  SizedBox(height: 10),
-                  DescriptionText(description, color: Colors.grey.shade600, textAlign: TextAlign.center),
+                  HeadingText(title, textAlign: TextAlign.center),
+                  SizedBox(height: 20),
+                  DescriptionText(description, color: Colors.grey.shade600, textAlign: TextAlign.center, fontSize: 16),
                   SizedBox(height: 30),
                   PrimaryButton.text(
                     title,

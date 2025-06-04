@@ -10,6 +10,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/auth/authentication_cubit.dart';
 import 'package:tlobni/data/cubits/auth/delete_user_cubit.dart';
@@ -373,7 +374,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                     onTap: () {
                       UiUtils.checkUser(
                           onNotGuest: () {
-                            Navigator.pushNamed(context, Routes.favoritesScreen);
+                            Navigator.pushNamed(context, Routes.favoritesScreen, arguments: {'showBack': true});
                           },
                           context: context);
                     },
@@ -662,7 +663,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                                   ),
                                   child: Icon(
                                     Icons.person_outline,
-                                    color: context.color.secondaryColor,
+                                    color: kColorSecondaryBeige,
                                     size: 18,
                                   ),
                                 ),
@@ -939,7 +940,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                                                 ),
                                                 child: CustomText(
                                                   "getVerificationBadge".translate(context),
-                                                  color: context.color.secondaryColor,
+                                                  color: kColorSecondaryBeige,
                                                   fontSize: context.font.small,
                                                   fontWeight: FontWeight.w500,
                                                 ))),
@@ -1078,13 +1079,15 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
   }
 
 //eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL3Rlc3Ricm9rZXJodWIud3J0ZWFtLmluL2FwaS91c2VyX3NpZ251cCIsImlhdCI6MTY5Njg1MDQyNCwibmJmIjoxNjk2ODUwNDI0LCJqdGkiOiJxVTNpY1FsRFN3MVJ1T3M5Iiwic3ViIjoiMzg4IiwicHJ2IjoiMWQwYTAyMGFjZjVjNGI2YzQ5Nzk4OWRmMWFiZjBmYmQ0ZThjOGQ2MyIsImN1c3RvbWVyX2lkIjozODh9.Y8sQhZtz6xGROEMvrTwA6gSSfPK-YwuhwDDc7Yahfg4
-  Widget customTile(BuildContext context,
-      {required String title,
-      required String svgImagePath,
-      bool? isSwitchBox,
-      Function(dynamic value)? onTapSwitch,
-      dynamic switchValue,
-      required VoidCallback onTap}) {
+  Widget customTile(
+    BuildContext context, {
+    required String title,
+    required String svgImagePath,
+    bool? isSwitchBox,
+    Function(dynamic value)? onTapSwitch,
+    dynamic switchValue,
+    required VoidCallback onTap,
+  }) {
     return Container(
       height: 60,
       margin: const EdgeInsets.only(top: 0.5, bottom: 3),
@@ -1108,21 +1111,21 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: context.color.territoryColor.withOpacity(0.1),
+                    color: context.color.primary,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: FittedBox(
-                      fit: BoxFit.none, child: UiUtils.getSvg(svgImagePath, height: 24, width: 24, color: context.color.territoryColor)),
+                      fit: BoxFit.none, child: UiUtils.getSvg(svgImagePath, height: 24, width: 24, color: context.color.secondary)),
                 ),
                 SizedBox(
                   width: 25,
                 ),
                 Expanded(
                   flex: 3,
-                  child: CustomText(
+                  child: HeadingText(
                     title,
-                    fontWeight: FontWeight.w700,
-                    color: context.color.textColorDark,
+                    weight: FontWeight.w500,
+                    fontSize: context.textTheme.bodyMedium?.fontSize,
                   ),
                 ),
                 const Spacer(),

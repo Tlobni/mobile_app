@@ -21,6 +21,7 @@ import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/custom_text_form_field.dart';
 import 'package:tlobni/ui/screens/widgets/image_cropper.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/text/description_text.dart';
 import 'package:tlobni/utils/app_icon.dart';
 import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/custom_text.dart';
@@ -689,7 +690,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: items
                     .map((gender) => ListTile(
-                          title: Text(gender),
+                          title: DescriptionText(gender),
                           onTap: () {
                             onChanged(gender);
                             Navigator.pop(context);
@@ -874,7 +875,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                         const Expanded(
                           child: Text(
                             "Select Categories",
-                            textAlign: TextAlign.center,
+                            textAlign: TextAlign.left,
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -898,6 +899,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                     padding: const EdgeInsets.all(16),
                     child: TextField(
                       controller: searchController,
+                      style: context.textTheme.bodyMedium,
                       decoration: InputDecoration(
                         hintText: "Search categories or subcategories",
                         prefixIcon: const Icon(Icons.search),
@@ -939,7 +941,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                                         child: ListTile(
                                           title: Text(
                                             category.name ?? "Unknown",
-                                            style: const TextStyle(fontWeight: FontWeight.w500),
+                                            style: context.textTheme.bodyMedium,
                                           ),
                                           leading: Checkbox(
                                             value: _isCategorySelected(category.id ?? 0),
@@ -1015,7 +1017,10 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                                                   Padding(
                                                     padding: const EdgeInsets.only(left: 20.0),
                                                     child: ListTile(
-                                                      title: Text(subcategory.name ?? "Unknown"),
+                                                      title: Text(
+                                                        subcategory.name ?? "Unknown",
+                                                        style: context.textTheme.bodyMedium,
+                                                      ),
                                                       leading: Checkbox(
                                                         value: _isCategorySelected(subcategory.id ?? 0),
                                                         onChanged: (bool? value) {

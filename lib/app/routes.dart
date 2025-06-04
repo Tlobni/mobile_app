@@ -29,7 +29,7 @@ import 'package:tlobni/ui/screens/item/add_item_screen/select_post_type.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/widgets/pdf_viewer.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/widgets/success_item_screen.dart';
 import 'package:tlobni/ui/screens/item/items_list.dart';
-import 'package:tlobni/ui/screens/item/my_items_screen.dart';
+import 'package:tlobni/ui/screens/item/my_items/my_items_screen.dart';
 import 'package:tlobni/ui/screens/item/view_all_screen.dart';
 import 'package:tlobni/ui/screens/location/areas_screen.dart';
 import 'package:tlobni/ui/screens/location/cities_screen.dart';

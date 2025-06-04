@@ -1,5 +1,9 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart' as intl;
+import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/subscription/assign_free_package_cubit.dart';
 import 'package:tlobni/data/cubits/subscription/get_payment_intent_cubit.dart';
@@ -8,9 +12,8 @@ import 'package:tlobni/data/helper/widgets.dart';
 import 'package:tlobni/data/model/subscription_pacakage_model.dart';
 import 'package:tlobni/settings.dart';
 import 'package:tlobni/ui/screens/subscription/payment_gatways.dart';
-import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
-import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/miscellanious/logo.dart';
 import 'package:tlobni/utils/app_icon.dart';
 import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/custom_text.dart';
@@ -21,9 +24,6 @@ import 'package:tlobni/utils/payment/gateaways/inapp_purchase_manager.dart';
 import 'package:tlobni/utils/payment/gateaways/payment_webview.dart';
 import 'package:tlobni/utils/payment/gateaways/stripe_service.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart' as intl;
 
 class ItemListingSubscriptionPlansItem extends StatefulWidget {
   final int itemIndex, index;
@@ -39,12 +39,10 @@ class ItemListingSubscriptionPlansItem extends StatefulWidget {
   });
 
   @override
-  _ItemListingSubscriptionPlansItemState createState() =>
-      _ItemListingSubscriptionPlansItemState();
+  _ItemListingSubscriptionPlansItemState createState() => _ItemListingSubscriptionPlansItemState();
 }
 
-class _ItemListingSubscriptionPlansItemState
-    extends State<ItemListingSubscriptionPlansItem> {
+class _ItemListingSubscriptionPlansItemState extends State<ItemListingSubscriptionPlansItem> {
   String? _selectedGateway;
 
   @override
@@ -82,51 +80,39 @@ class _ItemListingSubscriptionPlansItemState
 
                 if (_selectedGateway == "stripe") {
                   PaymentGateways.stripe(context,
-                      price: widget.model.finalPrice!.toDouble(),
-                      packageId: widget.model.id!,
-                      paymentIntent: state.paymentIntent);
+                      price: widget.model.finalPrice!.toDouble(), packageId: widget.model.id!, paymentIntent: state.paymentIntent);
                 } else if (_selectedGateway == "paystack") {
                   Navigator.of(context).push(MaterialPageRoute(
                     builder: (context) => PaymentWebView(
-                      authorizationUrl:
-                          state.paymentIntent["payment_gateway_response"]
-                              ["data"]["authorization_url"],
-                      reference: state.paymentIntent["payment_gateway_response"]
-                          ["data"]["reference"],
+                      authorizationUrl: state.paymentIntent["payment_gateway_response"]["data"]["authorization_url"],
+                      reference: state.paymentIntent["payment_gateway_response"]["data"]["reference"],
                       onSuccess: (reference) {
-                        HelperUtils.showSnackBarMessage(context,
-                            "paymentSuccessfullyCompleted".translate(context));
+                        HelperUtils.showSnackBarMessage(context, "paymentSuccessfullyCompleted".translate(context));
                         // Handle successful payment
                       },
                       onFailed: (reference) {
-                        HelperUtils.showSnackBarMessage(
-                            context, "purchaseFailed".translate(context));
+                        HelperUtils.showSnackBarMessage(context, "purchaseFailed".translate(context));
                         // Handle failed payment
                       },
                       onCancel: () {
-                        HelperUtils.showSnackBarMessage(context,
-                            "subscriptionsCancelled".translate(context));
+                        HelperUtils.showSnackBarMessage(context, "subscriptionsCancelled".translate(context));
                       },
                     ),
                   ));
                 } else if (_selectedGateway == "phonepe") {
                   Navigator.of(context).push(MaterialPageRoute(
                     builder: (context) => PaymentWebView(
-                      authorizationUrl:
-                          state.paymentIntent["payment_gateway_response"],
+                      authorizationUrl: state.paymentIntent["payment_gateway_response"],
                       onSuccess: (reference) {
-                        HelperUtils.showSnackBarMessage(context,
-                            "paymentSuccessfullyCompleted".translate(context));
+                        HelperUtils.showSnackBarMessage(context, "paymentSuccessfullyCompleted".translate(context));
                         // Handle successful payment
                       },
                       onFailed: (reference) {
-                        HelperUtils.showSnackBarMessage(
-                            context, "purchaseFailed".translate(context));
+                        HelperUtils.showSnackBarMessage(context, "purchaseFailed".translate(context));
                         // Handle failed payment
                       },
                       onCancel: () {
-                        HelperUtils.showSnackBarMessage(context,
-                            "subscriptionsCancelled".translate(context));
+                        HelperUtils.showSnackBarMessage(context, "subscriptionsCancelled".translate(context));
                       },
                     ),
                   ));
@@ -146,215 +132,160 @@ class _ItemListingSubscriptionPlansItemState
 
               if (state is GetPaymentIntentFailure) {
                 Widgets.hideLoder(context);
-                HelperUtils.showSnackBarMessage(
-                    context, state.error.toString());
+                HelperUtils.showSnackBarMessage(context, state.error.toString());
               }
             },
             child: BlocListener<AssignFreePackageCubit, AssignFreePackageState>(
               listener: (context, state) {
                 if (state is AssignFreePackageInSuccess) {
                   Widgets.hideLoder(context);
-                  HelperUtils.showSnackBarMessage(
-                      context, state.responseMessage);
+                  HelperUtils.showSnackBarMessage(context, state.responseMessage);
                   Navigator.pop(context);
                 }
                 if (state is AssignFreePackageFailure) {
                   Widgets.hideLoder(context);
-                  HelperUtils.showSnackBarMessage(
-                      context, state.error.toString());
+                  HelperUtils.showSnackBarMessage(context, state.error.toString());
                 }
                 if (state is AssignFreePackageInProgress) {
                   Widgets.showLoader(context);
                 }
               },
-              child: Padding(
-                padding: EdgeInsets.only(
-                    top: (widget.index == widget.itemIndex) ? 40 : 70,
-                    bottom: (widget.index == widget.itemIndex) ? 100 : 120),
-                child: Stack(
-                  alignment: Alignment.topCenter,
-                  children: [
-                    if (widget.model.isActive!)
-                      ClipPath(
-                        clipper: CapShapeClipper(),
-                        child: Container(
-                          alignment: Alignment.center,
-                          color: context.color.territoryColor,
-                          width: MediaQuery.of(context).size.width / 1.6,
-                          height: 33,
-                          padding: EdgeInsets.only(top: 3),
-                          child: CustomText('activePlanLbl'.translate(context),
-                              color: context.color.secondaryColor,
-                              textAlign: TextAlign.center,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 15),
-                        ),
-                      ),
-                    Card(
-                      color: context.color.secondaryColor,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15.0),
-                          side: BorderSide(
-                              color: widget.model.isActive!
-                                  ? context.color.territoryColor
-                                  : context.color.secondaryColor,
-                              width: 1.5)),
-                      elevation: 0,
-                      margin: EdgeInsets.fromLTRB(14, 33, 14, 0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start, //temp
-                        children: [
-                          SizedBox(height: 50),
-                          ClipPath(
-                            clipper: HexagonClipper(),
-                            child: Container(
-                              width: 100,
-                              height: 110,
-                              padding: EdgeInsets.all(30),
-
-                              color: context.color.primaryColor,
-                              //TODO: replace url below with model data response
-                              child: UiUtils.imageType(widget.model.icon!,
-                                  fit: BoxFit.contain),
-                            ),
-                          ),
-                          SizedBox(height: 18),
-                          widget.model.isActive! && widget.model.finalPrice! > 0
-                              ? activeAdsData()
-                              : adsData(),
-                          const Spacer(),
-                          CustomText(
-                            widget.model.finalPrice! > 0
-                                ? widget.model.finalPrice!.currencyFormat
-                                : "free".translate(context),
-                            fontSize: context.font.xxLarge,
-                            fontWeight: FontWeight.bold,
-                            color: context.color.textDefaultColor,
-                          ),
-                          if (widget.model.discount! > 0)
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 8.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  CustomText(
-                                    "${widget.model.discount}%\t${"OFF".translate(context)}",
-                                    color: context.color.forthColor,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  SizedBox(width: 5),
-                                  Text(
-                                    " ${Constant.currencySymbol}${widget.model.price.toString()}",
-                                    style: const TextStyle(
-                                        decoration: TextDecoration.lineThrough),
-                                  )
-                                ],
-                              ),
-                            ),
-                          UiUtils.buildButton(context, onPressed: () {
-                            UiUtils.checkUser(
-                                onNotGuest: () {
-                                  if (!widget.model.isActive!) {
-                                    // Navigate to homepage using killPreviousPages instead of popUntil
-                                    HelperUtils.killPreviousPages(context,
-                                        Routes.main, {"from": "subscription"});
-
-                                    // Process the package purchase in the background
-                                    if (widget.model.finalPrice! > 0) {
-                                      if (Platform.isIOS) {
-                                        widget.inAppPurchaseManager.buy(
-                                            widget.model.iosProductId!,
-                                            widget.model.id!.toString());
-                                      } else {
-                                        // Trigger the in-app purchase for Android
-                                        context
-                                            .read<InAppPurchaseCubit>()
-                                            .inAppPurchase(
-                                                packageId: int.parse(widget
-                                                    .model.id!
-                                                    .toString()),
-                                                method: "apple",
-                                                purchaseToken: "test_product");
-
-                                        // Show the dialog
-                                        showModalBottomSheet(
-                                          context: context,
-                                          backgroundColor: Colors.transparent,
-                                          isDismissible: true,
-                                          builder: (BuildContext context) {
-                                            return Container(
-                                              decoration: BoxDecoration(
-                                                color: Colors.white,
-                                                borderRadius: BorderRadius.only(
-                                                  topLeft: Radius.circular(20),
-                                                  topRight: Radius.circular(20),
-                                                ),
-                                              ),
-                                              padding: EdgeInsets.only(
-                                                  left: 20,
-                                                  right: 20,
-                                                  bottom: 20),
-                                              child: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    Icons.check_circle,
-                                                    color: context
-                                                        .color.buttonColor,
-                                                    size: 60,
-                                                  ),
-                                                  CustomText(
-                                                    "Purchase Submitted",
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 18,
-                                                  ),
-                                                  SizedBox(height: 10),
-                                                  CustomText(
-                                                    "Your purchase is being processed and waiting for review. An admin will contact you soon.",
-                                                    textAlign: TextAlign.center,
-                                                    color: context
-                                                        .color.textColorDark
-                                                        .withOpacity(0.7),
-                                                  ),
-                                                  SizedBox(height: 10),
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                        );
-                                      }
-                                    } else {
-                                      context
-                                          .read<AssignFreePackageCubit>()
-                                          .assignFreePackage(
-                                              packageId: widget.model.id!);
-                                    }
-                                  }
-                                },
-                                context: context);
-                          },
-                              radius: 10,
-                              height: 46,
-                              fontSize: context.font.large,
-                              buttonColor: widget.model.isActive!
-                                  ? context.color.textLightColor.brighten(300)
-                                  : context.color.territoryColor,
-                              textColor: widget.model.isActive!
-                                  ? context.color.textDefaultColor
-                                      .withOpacity(0.3)
-                                  : context.color.secondaryColor,
-                              buttonTitle: widget.model.isActive ?? false
-                                  ? "purchased".translate(context)
-                                  : "purchaseThisPackage".translate(context),
-
-                              //TODO: change title to Your Current Plan according to condition
-                              outerPadding: const EdgeInsets.all(20))
-                        ],
+              child: Stack(
+                alignment: Alignment.topCenter,
+                children: [
+                  if (widget.model.isActive!)
+                    ClipPath(
+                      clipper: CapShapeClipper(),
+                      child: Container(
+                        alignment: Alignment.center,
+                        color: context.color.territoryColor,
+                        width: MediaQuery.of(context).size.width / 1.6,
+                        height: 33,
+                        padding: EdgeInsets.only(top: 3),
+                        child: CustomText('activePlanLbl'.translate(context),
+                            color: context.color.secondaryColor, textAlign: TextAlign.center, fontWeight: FontWeight.w500, fontSize: 15),
                       ),
                     ),
-                  ],
-                ),
+                  Card(
+                    color: context.color.secondaryColor,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15.0),
+                        side: BorderSide(
+                            color: widget.model.isActive! ? context.color.territoryColor : context.color.secondaryColor, width: 1.5)),
+                    elevation: 0,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start, //temp
+                      children: [
+                        // SizedBox(height: 50),
+                        Logo(),
+                        SizedBox(height: 18),
+                        widget.model.isActive! && widget.model.finalPrice! > 0 ? activeAdsData() : adsData(),
+                        const Spacer(),
+                        CustomText(
+                          widget.model.finalPrice! > 0 ? widget.model.finalPrice!.currencyFormat : "free".translate(context),
+                          fontSize: context.font.xxLarge,
+                          fontWeight: FontWeight.bold,
+                          color: context.color.textDefaultColor,
+                        ),
+                        if (widget.model.discount! > 0)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CustomText(
+                                  "${widget.model.discount}%\t${"OFF".translate(context)}",
+                                  color: context.color.forthColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                SizedBox(width: 5),
+                                Text(
+                                  " ${Constant.currencySymbol}${widget.model.price.toString()}",
+                                  style: const TextStyle(decoration: TextDecoration.lineThrough),
+                                )
+                              ],
+                            ),
+                          ),
+                        UiUtils.buildButton(context, onPressed: () {
+                          UiUtils.checkUser(
+                              onNotGuest: () {
+                                if (!widget.model.isActive!) {
+                                  // Navigate to homepage using killPreviousPages instead of popUntil
+                                  HelperUtils.killPreviousPages(context, Routes.main, {"from": "subscription"});
+
+                                  // Process the package purchase in the background
+                                  if (widget.model.finalPrice! > 0) {
+                                    if (Platform.isIOS) {
+                                      widget.inAppPurchaseManager.buy(widget.model.iosProductId!, widget.model.id!.toString());
+                                    } else {
+                                      // Trigger the in-app purchase for Android
+                                      context.read<InAppPurchaseCubit>().inAppPurchase(
+                                          packageId: int.parse(widget.model.id!.toString()),
+                                          method: "apple",
+                                          purchaseToken: "test_product");
+
+                                      // Show the dialog
+                                      showModalBottomSheet(
+                                        context: context,
+                                        backgroundColor: Colors.transparent,
+                                        isDismissible: true,
+                                        builder: (BuildContext context) {
+                                          return Container(
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius: BorderRadius.only(
+                                                topLeft: Radius.circular(20),
+                                                topRight: Radius.circular(20),
+                                              ),
+                                            ),
+                                            padding: EdgeInsets.only(left: 20, right: 20, bottom: 20),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.check_circle,
+                                                  color: context.color.buttonColor,
+                                                  size: 60,
+                                                ),
+                                                CustomText(
+                                                  "Purchase Submitted",
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 18,
+                                                ),
+                                                SizedBox(height: 10),
+                                                CustomText(
+                                                  "Your purchase is being processed and waiting for review. An admin will contact you soon.",
+                                                  textAlign: TextAlign.center,
+                                                  color: context.color.textColorDark.withOpacity(0.7),
+                                                ),
+                                                SizedBox(height: 10),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    }
+                                  } else {
+                                    context.read<AssignFreePackageCubit>().assignFreePackage(packageId: widget.model.id!);
+                                  }
+                                }
+                              },
+                              context: context);
+                        },
+                            radius: 10,
+                            height: 46,
+                            fontSize: context.font.large,
+                            buttonColor: widget.model.isActive! ? context.color.textLightColor.brighten(300) : context.color.territoryColor,
+                            textColor: kColorSecondaryBeige,
+                            buttonTitle:
+                                widget.model.isActive ?? false ? "purchased".translate(context) : "purchaseThisPackage".translate(context),
+
+                            //TODO: change title to Your Current Plan according to condition
+                            outerPadding: const EdgeInsets.all(20))
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           );
@@ -384,10 +315,8 @@ class _ItemListingSubscriptionPlansItemState
           if (widget.model.type == "advertisement")
             checkmarkPoint(context,
                 "${widget.model.limit == "unlimited" ? "unlimitedLbl".translate(context) : widget.model.limit.toString()}\t${"featuredAdsListing".translate(context)}"),
-          checkmarkPoint(context,
-              "${widget.model.duration.toString()}\t${"days".translate(context)}"),
-          if (widget.model.description != null &&
-              widget.model.description != "") ...[
+          checkmarkPoint(context, "${widget.model.duration.toString()}\t${"days".translate(context)}"),
+          if (widget.model.description != null && widget.model.description != "") ...[
             SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -429,8 +358,7 @@ class _ItemListingSubscriptionPlansItemState
                 "${widget.model.userPurchasedPackages![0].remainingItemLimit}/${widget.model.limit == "unlimited" ? "unlimitedLbl".translate(context) : widget.model.limit.toString()}\t${"featuredAdsListing".translate(context)}"),
           checkmarkPoint(context,
               "${widget.model.userPurchasedPackages![0].remainingDays}/${widget.model.duration.toString()}\t${"days".translate(context)}"),
-          if (widget.model.description != null &&
-              widget.model.description != "")
+          if (widget.model.description != null && widget.model.description != "")
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Align(
@@ -451,16 +379,11 @@ class _ItemListingSubscriptionPlansItemState
         widget.model.finalPrice! > 0 &&
         widget.model.userPurchasedPackages != null &&
         widget.model.userPurchasedPackages![0].endDate != null) {
-      DateTime dateTime =
-          DateTime.parse(widget.model.userPurchasedPackages![0].endDate!);
+      DateTime dateTime = DateTime.parse(widget.model.userPurchasedPackages![0].endDate!);
       String formattedDate = intl.DateFormat.yMMMMd().format(dateTime);
       return Padding(
-        padding: EdgeInsetsDirectional.only(
-            bottom: 15.0,
-            start: 15,
-            end: 15), // EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-        child: CustomText(
-            "${"yourSubscriptionWillExpireOn".translate(context)} $formattedDate"),
+        padding: EdgeInsetsDirectional.only(bottom: 15.0, start: 15, end: 15), // EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+        child: CustomText("${"yourSubscriptionWillExpireOn".translate(context)} $formattedDate"),
       );
     } else {
       return SizedBox.shrink();
@@ -521,8 +444,7 @@ class _ItemListingSubscriptionPlansItemState
   }
 
   Future<void> paymentGatewayBottomSheet() async {
-    List<PaymentGateway> enabledGateways =
-        AppSettings.getEnabledPaymentGateways();
+    List<PaymentGateway> enabledGateways = AppSettings.getEnabledPaymentGateways();
 
     if (enabledGateways.isEmpty) {
       return;
@@ -561,8 +483,7 @@ class _ItemListingSubscriptionPlansItemState
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(3),
-                          color:
-                              context.color.textDefaultColor.withOpacity(0.1),
+                          color: context.color.textDefaultColor.withOpacity(0.1),
                         ),
                         height: 6,
                         width: 60,
@@ -587,14 +508,12 @@ class _ItemListingSubscriptionPlansItemState
                     itemBuilder: (context, index) {
                       return PaymentMethodTile(
                         gateway: enabledGateways[index],
-                        isSelected: _localSelectedGateway ==
-                            enabledGateways[index].type,
+                        isSelected: _localSelectedGateway == enabledGateways[index].type,
                         onSelect: (String? value) {
                           setState(() {
                             _localSelectedGateway = value;
                           });
-                          Navigator.pop(
-                              context, value); // Return the selected value
+                          Navigator.pop(context, value); // Return the selected value
                         },
                       );
                     },
@@ -629,13 +548,11 @@ class PaymentMethodTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: UiUtils.getSvg(gatewayIcon(gateway.type),
-          width: 23, height: 23, fit: BoxFit.contain),
+      leading: UiUtils.getSvg(gatewayIcon(gateway.type), width: 23, height: 23, fit: BoxFit.contain),
       title: CustomText(gateway.name),
       trailing: isSelected
           ? Icon(Icons.check_circle, color: context.color.territoryColor)
-          : Icon(Icons.radio_button_unchecked,
-              color: context.color.textDefaultColor.withOpacity(0.3)),
+          : Icon(Icons.radio_button_unchecked, color: context.color.textDefaultColor.withOpacity(0.3)),
       onTap: () => onSelect(gateway.type),
     );
   }

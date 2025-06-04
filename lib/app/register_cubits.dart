@@ -92,6 +92,7 @@ class RegisterCubits {
     BlocProvider(create: (context) => FetchNotificationsCubit()),
     BlocProvider(create: (context) => LanguageCubit()),
     BlocProvider(create: (context) => FetchBlogsCubit()),
+    BlocProvider(create: (context) => FetchMyItemsCubit()),
     BlocProvider(create: (context) => FetchSystemSettingsCubit()),
     BlocProvider(create: (context) => UserDetailsCubit()),
     BlocProvider(create: (context) => FetchLanguageCubit()),

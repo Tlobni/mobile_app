@@ -3,6 +3,7 @@ import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/theme/theme.dart';
 import 'package:tlobni/ui/widgets/buttons/primary_button.dart';
+import 'package:tlobni/ui/widgets/miscellanious/logo.dart';
 import 'package:tlobni/ui/widgets/text/description_text.dart';
 import 'package:tlobni/ui/widgets/text/heading_text.dart';
 import 'package:tlobni/ui/widgets/text/small_text.dart';
@@ -94,14 +95,8 @@ class _AccountTypeScreenState extends State<AccountTypeScreen> {
               const SizedBox(height: 10),
 
               // Tlobni Logo
-              Center(
-                child: Image.asset(
-                  'assets/images/tlobni-logo.png',
-                  height: 80,
-                  width: 100,
-                ),
-              ),
-              const SizedBox(height: 20),
+              Logo(),
+              const SizedBox(height: 60),
 
               // Header
               Center(

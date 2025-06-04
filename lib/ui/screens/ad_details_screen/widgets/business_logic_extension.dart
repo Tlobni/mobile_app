@@ -156,6 +156,35 @@ extension on AdDetailsScreenState {
     );
   }
 
+  void _onEditPressed() {
+    Navigator.pushReplacementNamed(context, Routes.addItemDetails, arguments: {
+      'isEdit': true,
+      'item': model,
+      'postType': model.type == 'experience' ? PostType.experience : PostType.service,
+    });
+  }
+
+  void _onDeletePressed() async {
+    if (model.id == null) return;
+    var delete = await UiUtils.showBlurredDialoge(
+      context,
+      dialoge: BlurredDialogBox(
+        title: "deleteBtnLbl".translate(context),
+        content: CustomText(
+          "deleteitemwarning".translate(context),
+        ),
+      ),
+    );
+    if (delete == true) {
+      Future.delayed(
+        Duration.zero,
+        () {
+          context.read<DeleteItemCubit>().deleteItem(model.id!);
+        },
+      );
+    }
+  }
+
   void _rootListener(BuildContext context, FetchItemFromSlugState? state) {
     if (state is FetchItemFromSlugInitial) {
       _onRefresh();
@@ -194,7 +223,7 @@ extension on AdDetailsScreenState {
 
     setItemClick();
     //ImageView
-    combineImages();
+    if (images.isEmpty) combineImages();
     context.read<FetchRelatedItemsCubit>().fetchRelatedItems(
         categoryId: categoryId!,
         city: HiveUtils.getCityName(),

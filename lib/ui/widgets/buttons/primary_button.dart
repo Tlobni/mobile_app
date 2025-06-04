@@ -23,7 +23,7 @@ class PrimaryButton extends StatelessWidget {
   PrimaryButton.text(
     String text, {
     TextStyle? textStyle,
-    FontWeight? weight,
+    FontWeight? weight = FontWeight.w600,
     Color? textColor,
     double? fontSize,
     required this.onPressed,
@@ -34,7 +34,7 @@ class PrimaryButton extends StatelessWidget {
   }) : child = Builder(
           builder: (context) => Text(
             text,
-            style: (textStyle ?? context.textTheme.bodyLarge)?.copyWith(
+            style: (textStyle ?? context.textTheme.bodyMedium)?.copyWith(
               color: textColor ?? context.color.onPrimary,
               fontWeight: weight,
               fontSize: fontSize,

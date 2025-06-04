@@ -68,6 +68,7 @@ class CustomTextFormField extends StatelessWidget {
       decoration: BoxDecoration(
         color: fillColor ?? context.color.secondaryColor,
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor ?? Colors.grey.withValues(alpha: 0.35)),
       ),
       child: TextFormField(
         controller: controller,
@@ -146,7 +147,7 @@ class CustomTextFormField extends StatelessWidget {
           prefixIcon: fixedPrefix,
           suffixIcon: suffix,
           hintText: hintText,
-          hintStyle: hintTextStyle ?? context.textTheme.bodyMedium,
+          hintStyle: hintTextStyle ?? context.textTheme.bodyMedium?.copyWith(color: Colors.grey),
           filled: true,
           fillColor: Colors.transparent,
           contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),

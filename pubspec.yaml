@@ -76,6 +76,7 @@ dependencies:
   cloud_firestore: ^5.4.2
   non_uniform_border: ^1.0.0
   social_media_buttons: ^1.0.0
+  flutter_typeahead: ^5.2.0
 
 
 

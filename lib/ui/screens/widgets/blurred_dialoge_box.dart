@@ -337,7 +337,7 @@ class BlurredDialogBuilderBox extends StatelessWidget implements BlurDialog {
                             constraints: constraints,
                             buttonColor: acceptButtonColor ?? context.color.territoryColor,
                             buttonName: acceptButtonName ?? "ok".translate(context),
-                            textColor: acceptTextColor ?? context.color.textColorDark,
+                            textColor: acceptTextColor ?? kColorSecondaryBeige,
                             onTap: () async {
                               await onAccept?.call();
 
@@ -359,7 +359,7 @@ class BlurredDialogBuilderBox extends StatelessWidget implements BlurDialog {
                       constraints: constraints,
                       buttonColor: acceptButtonColor ?? context.color.territoryColor,
                       buttonName: acceptButtonName ?? "ok".translate(context),
-                      textColor: acceptTextColor ?? const Color.fromARGB(255, 255, 255, 255),
+                      textColor: acceptTextColor ?? kColorSecondaryBeige,
                       onTap: () async {
                         await onAccept?.call();
                         if (isAcceptContainesPush == false || isAcceptContainesPush == null) {

@@ -1,7 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:tlobni/ui/theme/theme.dart';
 
 const kColorNavyBlue = Color(0xFF0D233F);
 const kColorSecondaryBeige = Color(0xFFE7CCA8);
@@ -17,34 +16,39 @@ ThemeData appThemeData(AppTheme theme) => switch (theme) {
           //textTheme
           useMaterial3: false,
           fontFamily: "Manrope",
-          textSelectionTheme: const TextSelectionThemeData(
-            selectionColor: territoryColor_,
-            cursorColor: territoryColor_,
-            selectionHandleColor: territoryColor_,
-          ),
+          textSelectionTheme: _textSelectionTheme(AppTheme.light),
           buttonTheme: _buttonTheme(AppTheme.light),
           iconTheme: _iconTheme(AppTheme.light),
           switchTheme: _switchTheme(AppTheme.light),
           colorScheme: _colorScheme(AppTheme.light),
           textTheme: _textTheme(AppTheme.light),
+          timePickerTheme: _timePickerTheme(AppTheme.light),
         ),
       AppTheme.dark => ThemeData(
           brightness: Brightness.dark,
           useMaterial3: false,
           fontFamily: "Manrope",
           textButtonTheme: _textButtonTheme(AppTheme.dark),
-          textSelectionTheme: const TextSelectionThemeData(
-            selectionHandleColor: territoryColorDark,
-            selectionColor: territoryColorDark,
-            cursorColor: territoryColorDark,
-          ),
+          textSelectionTheme: _textSelectionTheme(AppTheme.dark),
           buttonTheme: _buttonTheme(AppTheme.dark),
           colorScheme: _colorScheme(AppTheme.dark),
           iconTheme: _iconTheme(AppTheme.dark),
           switchTheme: _switchTheme(AppTheme.dark),
           textTheme: _textTheme(AppTheme.dark),
+          timePickerTheme: _timePickerTheme(AppTheme.dark),
         )
     };
+
+TimePickerThemeData _timePickerTheme(AppTheme dark) => TimePickerThemeData();
+
+TextSelectionThemeData _textSelectionTheme(AppTheme theme) {
+  final color = _colorScheme(theme).primary;
+  return TextSelectionThemeData(
+    selectionColor: color.withValues(alpha: 0.35),
+    cursorColor: color,
+    selectionHandleColor: color,
+  );
+}
 
 WidgetStateProperty<Color> _onSelectedAndOffColor(Color onSelectedColor, Color offColor) => WidgetStateProperty.resolveWith((states) {
       if (states.contains(MaterialState.selected)) {
@@ -92,8 +96,8 @@ TextTheme _textTheme(AppTheme theme) {
   );
   return TextTheme(
     bodySmall: general.copyWith(fontSize: 14, fontFamily: 'Montserrat'),
-    bodyMedium: general.copyWith(fontSize: 18, fontFamily: 'Montserrat'),
+    bodyMedium: general.copyWith(fontSize: 17, fontFamily: 'Montserrat'),
     bodyLarge: general.copyWith(fontSize: 20, fontFamily: 'Inter'),
-    titleMedium: general.copyWith(fontSize: 30, fontFamily: 'Inter'),
+    titleMedium: general.copyWith(fontSize: 25, fontFamily: 'Inter'),
   );
 }

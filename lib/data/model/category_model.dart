@@ -40,6 +40,7 @@ class CategoryModel {
 
   //final String translatedName;
   final int? subcategoriesCount;
+  final int? parentId;
 
   CategoryModel({
     this.id,
@@ -49,6 +50,7 @@ class CategoryModel {
     this.children,
     this.subcategoriesCount,
     this.type, // Added type parameter
+    this.parentId,
     //required this.translatedName,
   });
 
@@ -62,6 +64,7 @@ class CategoryModel {
           //name: json['name'],
           name: json['translated_name'],
           url: json['image'],
+          parentId: json['parent_category_id'],
           subcategoriesCount: json['subcategories_count'] ?? 0,
           children: children,
           type: CategoryType.fromString(json['type']), // Parse type from JSON
@@ -79,6 +82,7 @@ class CategoryModel {
       'image': url,
       'subcategories_count': subcategoriesCount,
       "description": description,
+      'parent_category_id': parentId,
       'type': type?.value, // Convert type to string value
       'subcategories': children!.map((child) => child.toJson()).toList(),
     };

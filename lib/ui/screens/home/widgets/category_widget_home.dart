@@ -25,10 +25,10 @@ class CategoryWidgetHome extends StatelessWidget {
     return BlocBuilder<FetchCategoryCubit, FetchCategoryState>(
       builder: (context, state) => HomeSection(
         title: 'Browse Categories',
-        onViewAll: () => Navigator.pushNamed(context, Routes.searchScreenRoute, arguments: {
-          'autoFocus': true,
-          'screenType': SearchScreenType.itemListing,
-        }),
+        // onViewAll: () => Navigator.pushNamed(context, Routes.searchScreenRoute, arguments: {
+        //   'autoFocus': true,
+        //   'screenType': SearchScreenType.itemListing,
+        // }),
         shimmerEffect: HomeShimmerEffect(
           height: 160,
           width: 160,

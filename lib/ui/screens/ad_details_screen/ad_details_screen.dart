@@ -1,7 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:async';
 import 'dart:developer';
-import 'dart:io';
 
 import 'package:flick_video_player/flick_video_player.dart';
 import 'package:flutter/material.dart';
@@ -53,6 +52,7 @@ import 'package:tlobni/ui/screens/google_map_screen.dart';
 import 'package:tlobni/ui/screens/home/widgets/grid_list_adapter.dart';
 import 'package:tlobni/ui/screens/home/widgets/home_sections_adapter.dart';
 import 'package:tlobni/ui/screens/home/widgets/provider_home_screen_container.dart';
+import 'package:tlobni/ui/screens/item/add_item_screen/models/post_type.dart';
 import 'package:tlobni/ui/screens/subscription/widget/featured_ads_subscription_plan_item.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
@@ -85,7 +85,6 @@ import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
 import 'package:tlobni/utils/validator.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
@@ -796,15 +795,21 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
           Padding(
             padding: const EdgeInsets.all(10.0),
             child: Row(
-              children: [
-                if (model.user?.showPersonalDetails == 1 && model.user?.mobile != null) ('Whatsapp', _onWhatsappPressed),
-                ('Chat', _onChatPressed),
-              ]
+              children: (isAddedByMe
+                      ? [
+                          ('Edit', _onEditPressed),
+                          ('Delete', _onDeletePressed),
+                        ]
+                      : [
+                          if (model.user?.showPersonalDetails == 1 && model.user?.mobile != null) ('WhatsApp', _onWhatsappPressed),
+                          ('Chat', _onChatPressed),
+                        ])
                   .map((e) {
                     final (text, onPressed) = e;
                     return PrimaryButton.text(
                       text,
                       onPressed: onPressed,
+                      fontSize: 16,
                       padding: EdgeInsets.all(20),
                     );
                   })
@@ -864,72 +869,90 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _appBar(),
-      body: BlocConsumer<FetchItemFromSlugCubit, FetchItemFromSlugState>(
-        listener: _rootListener,
-        builder: (context, state) {
-          if (state is FetchItemFromSlugLoading) return _progressIndicator();
-          if (state is FetchItemFromSlugFailure && widget.slug != null) return _somethingWentWrong();
-          return BlocConsumer<MakeAnOfferItemCubit, MakeAnOfferItemState>(
-              listener: _makeOfferListener,
-              builder: (context, makeAnOfferItemState) {
-                return Column(
-                  children: [
-                    Expanded(
-                      child: RefreshIndicator(
-                        onRefresh: _onRefresh,
-                        child: ListView(
-                          children: [
-                            SizedBox(
-                              height: 300,
-                              child: _images(),
-                            ),
-                            Padding(
-                              padding: EdgeInsets.all(20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  _title(),
-                                  SizedBox(height: 20),
-                                  _pricing(),
-                                  SizedBox(height: 20),
-                                  _reviewsTopSummary(),
-                                  SizedBox(height: 20),
-                                  _tags(),
-                                  SizedBox(height: 20),
-                                  _address(),
-                                  SizedBox(height: 10),
-                                  if (model.locationType?.isNotEmpty ?? false) _locationType(),
-                                  if (!isAddedByMe && !(model.isAlreadyReported ?? false)) ...[
-                                    const SizedBox(height: 20),
-                                    reportItem(),
-                                  ],
-                                  if (model.expirationDate != null) ...[
-                                    const SizedBox(height: 20),
-                                    _divider(),
-                                    const SizedBox(height: 20),
-                                    _limitedTimeExperience(),
-                                  ],
-                                ],
+      body: BlocConsumer<DeleteItemCubit, DeleteItemState>(
+        listener: (context, deleteState) {
+          if (deleteState is DeleteItemInProgress) {
+            Widgets.showLoader(context);
+          } else {
+            Widgets.hideLoder(context);
+          }
+          if (deleteState is DeleteItemSuccess) {
+            HelperUtils.showSnackBarMessage(context, "deleteItemSuccessMsg".translate(context));
+            context.read<FetchMyItemsCubit>().deleteItem(model);
+
+            // Return to previous screen with refresh signal
+            Navigator.pop(context, "refresh");
+          } else if (deleteState is DeleteItemFailure) {
+            HelperUtils.showSnackBarMessage(context, deleteState.errorMessage);
+          }
+        },
+        builder: (context, deleteState) => BlocConsumer<FetchItemFromSlugCubit, FetchItemFromSlugState>(
+          listener: _rootListener,
+          builder: (context, state) {
+            if (state is FetchItemFromSlugLoading) return _progressIndicator();
+            if (state is FetchItemFromSlugFailure && widget.slug != null) return _somethingWentWrong();
+            return BlocConsumer<MakeAnOfferItemCubit, MakeAnOfferItemState>(
+                listener: _makeOfferListener,
+                builder: (context, makeAnOfferItemState) {
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: RefreshIndicator(
+                          onRefresh: _onRefresh,
+                          child: ListView(
+                            children: [
+                              SizedBox(
+                                height: 300,
+                                child: _images(),
                               ),
-                            ),
-                            SizedBox(height: 10),
-                            _divider(),
-                            _tabsHeader(),
-                            _divider(),
-                            SizedBox(height: 20),
-                            Padding(
-                              padding: const EdgeInsets.all(20.0),
-                              child: _tabContent(),
-                            ),
-                          ],
+                              Padding(
+                                padding: EdgeInsets.all(20),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    _title(),
+                                    SizedBox(height: 20),
+                                    _pricing(),
+                                    SizedBox(height: 20),
+                                    _reviewsTopSummary(),
+                                    SizedBox(height: 20),
+                                    _tags(),
+                                    SizedBox(height: 20),
+                                    _address(),
+                                    SizedBox(height: 10),
+                                    if (model.locationType?.isNotEmpty ?? false) _locationType(),
+                                    if (!isAddedByMe && !(model.isAlreadyReported ?? false)) ...[
+                                      const SizedBox(height: 20),
+                                      reportItem(),
+                                    ],
+                                    if (model.expirationDate != null) ...[
+                                      const SizedBox(height: 20),
+                                      _divider(),
+                                      const SizedBox(height: 20),
+                                      _limitedTimeExperience(),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: 10),
+                              _divider(),
+                              _tabsHeader(),
+                              _divider(),
+                              SizedBox(height: 20),
+                              Padding(
+                                padding: const EdgeInsets.all(20.0),
+                                child: _tabContent(),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    _bottomButtons(),
-                  ],
-                );
-              });
-        },
+                      _bottomButtons(),
+                    ],
+                  );
+                });
+          },
+        ),
       ),
     );
     return AnnotatedRegion(
@@ -2403,7 +2426,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                 if (model.user?.showPersonalDetails == 1 && model.user?.mobile != null)
                   Expanded(
                     child: _buildButton(
-                      'Whatsapp'.translate(context),
+                      'WhatsApp',
                       _onWhatsappPressed,
                       null,
                       null,
@@ -3905,12 +3928,20 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                 HelperUtils.showSnackBarMessage(context, deleteState.errorMessage);
               }
             },
-            child: _buildButton("lblremove".translate(context), () {
-              Future.delayed(
-                Duration.zero,
-                () {
-                  context.read<DeleteItemCubit>().deleteItem(model.id!);
-                },
+            child: _buildButton("lblremove".translate(context), () async {
+              await UiUtils.showBlurredDialoge(
+                context,
+                dialoge: BlurredDialogBox(
+                  title: 'Delete Listing',
+                  content: DescriptionText(
+                    'Are you sure you want to delete this item?',
+                  ),
+                  isAcceptContainerPush: true,
+                  onAccept: () async {
+                    context.read<DeleteItemCubit>().deleteItem(model.id!);
+                    Navigator.pop(context);
+                  },
+                ),
               );
             }, null, null),
           );
@@ -3920,7 +3951,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
   Widget _editButton(ColorScheme contextColor) => _buildButton("editBtnLbl".translate(context), () {
         addCloudData("edit_request", model);
         addCloudData("edit_from", model.status);
-        Navigator.pushNamed(context, Routes.addItemDetails, arguments: {"isEdit": true}).then((value) {
+        Navigator.pushNamed(context, Routes.addItemDetails, arguments: {"isEdit": true, 'item': model}).then((value) {
           // When we return from edit screen, refresh the detail view with the latest data
           if (value == "refresh" || value == true) {
             // Force cache reset and refresh the current screen with updated data

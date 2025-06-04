@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tlobni/ui/widgets/buttons/unelevated_regular_button.dart';
 import 'package:tlobni/ui/widgets/text/heading_text.dart';
 import 'package:tlobni/ui/widgets/text/small_text.dart';
 
@@ -11,7 +12,7 @@ class HomeTitleViewAll extends StatelessWidget {
   });
 
   final String title;
-  final VoidCallback onViewAll;
+  final VoidCallback? onViewAll;
   final Widget child;
 
   @override
@@ -25,18 +26,21 @@ class HomeTitleViewAll extends StatelessWidget {
               Expanded(
                 child: HeadingText(
                   title,
-                  fontSize: 22,
+                  fontSize: 20,
                   weight: FontWeight.w700,
                 ),
               ),
-              TextButton(
-                onPressed: onViewAll,
-                child: SmallText('View All'),
-              ),
+              if (onViewAll != null)
+                UnelevatedRegularButton(
+                  color: Colors.transparent,
+                  padding: EdgeInsets.all(10),
+                  onPressed: onViewAll,
+                  child: SmallText('View All'),
+                ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 24),
         child,
       ],
     );

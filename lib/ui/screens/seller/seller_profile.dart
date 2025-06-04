@@ -1,7 +1,6 @@
 import 'dart:ui' as ui;
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
@@ -343,42 +342,48 @@ class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTic
             ),
           ),
         if (user.showPersonalDetails == 1)
-          _aboutSection(
-            'Contact Information',
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: 20,
-              children: [
-                (Icons.language, user.website, true),
-                (Icons.email_outlined, user.email, false),
-                (Icons.phone_outlined, user.mobile, false),
-                (Icons.location_pin, user.location, false),
-              ].where((e) => e.$2 != null).map((e) {
-                final (icon, text, canLaunch) = e;
-                return GestureDetector(
-                  onTap: () {
-                    if (canLaunch) {
-                      launchUrlString(text);
-                    }
-                  },
-                  child: Row(
-                    children: [
-                      Icon(icon, color: Colors.grey.shade600),
-                      SizedBox(width: 10),
-                      Expanded(child: DescriptionText(text!, color: Colors.grey.shade600)),
-                      if (canLaunch) Icon(Icons.open_in_new, color: context.color.primary),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
+          Builder(builder: (context) {
+            final list = [
+              (Icons.language, user.website, true),
+              (Icons.email_outlined, user.email, false),
+              (Icons.phone_outlined, user.mobile, false),
+              (Icons.location_pin, user.location, false),
+            ].where((e) => e.$2 != null);
+            if (list.isEmpty) return SizedBox();
+            return _aboutSection(
+              'Contact Information',
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: 20,
+                children: list.map((e) {
+                  final (icon, text, canLaunch) = e;
+                  return GestureDetector(
+                    onTap: () {
+                      if (canLaunch) {
+                        launchUrlString(text);
+                      }
+                    },
+                    child: Row(
+                      children: [
+                        Icon(icon, color: Colors.grey.shade600),
+                        SizedBox(width: 10),
+                        Expanded(child: DescriptionText(text!, color: Colors.grey.shade600)),
+                        if (canLaunch) Icon(Icons.open_in_new, color: context.color.primary),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            );
+          }),
         Builder(builder: (context) {
           final socialMedia = <(Color, IconData, String)>[];
           if (user.instagram != null) socialMedia.add((Color(0xffc13584), SocialMediaIcons.instagram, user.instagram!));
           if (user.facebook != null) socialMedia.add((Color(0xff3b5998), SocialMediaIcons.facebook, user.facebook!));
           if (user.twitter != null) socialMedia.add((Color(0xff24a3f1), SocialMediaIcons.twitter, user.twitter!));
           if (user.tiktok != null) socialMedia.add((Color(0xff080808), Icons.tiktok, user.tiktok!));
+
+          if (socialMedia.isEmpty) return SizedBox();
 
           return _aboutSection(
               'Social Media',
@@ -503,7 +508,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTic
   bool get isOwnProfile => widget.model.id.toString() == HiveUtils.getUserId();
 
   Widget _bottomBar(FetchProviderSuccess state) => PrimaryButton.text(
-        'Whatsapp',
+        'WhatsApp',
         onPressed: () => HelperUtils.launchWhatsapp(state.user.mobile),
         padding: EdgeInsets.all(20),
       );

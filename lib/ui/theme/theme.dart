@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/ui_utils.dart';
 
@@ -31,7 +32,7 @@ Color darkSenderChatColor = const Color.fromARGB(255, 233, 233, 233).darken(100)
 ///Messages Color
 const Color errorMessageColor = Color.fromARGB(255, 166, 4, 4); // Color(0xffeb5479)
 const Color successMessageColor = Color(0xFF08213e);
-const Color warningMessageColor = Color(0xFFC2AF6F);
+const Color warningMessageColor = kColorSecondaryBeige;
 
 //status button color
 const Color pendingButtonColor = Color(0xff0C5D9C);
@@ -40,7 +41,7 @@ const Color deactivateButtonColor = Color(0xffFE0000);
 const Color activateButtonColor = Color(0xFF02AD11);
 
 //Button text color
-const Color buttonTextColor = Color(0xFFCCBD86);
+const Color buttonTextColor = kColorSecondaryBeige;
 
 ///Advance
 //Theme settings
@@ -51,7 +52,7 @@ extension ColorPrefs on ColorScheme {
 
   Color get secondaryDetailsColor => _getColor(brightness, lightColor: secondaryColor_, darkColor: primaryColorDark);
 
-  Color get territoryColor => _getColor(brightness, lightColor: territoryColor_, darkColor: territoryColorDark);
+  Color get territoryColor => kColorNavyBlue;
 
   Color get deactivateColor => _getColor(brightness, lightColor: deactivateColorLight, darkColor: backgroundColorDark);
 
@@ -61,7 +62,7 @@ extension ColorPrefs on ColorScheme {
 
   Color get buttonColor => buttonTextColor;
 
-  Color get textColorDark => _getColor(brightness, lightColor: textDarkColor, darkColor: textColorDarkTheme);
+  Color get textColorDark => kColorNavyBlue;
 
   Color get textDefaultColor => _getColor(brightness, lightColor: textDarkColor, darkColor: textColorDarkTheme);
 

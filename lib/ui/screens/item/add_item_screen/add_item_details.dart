@@ -7,27 +7,39 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:tlobni/app/routes.dart';
+import 'package:tlobni/data/cubits/category/fetch_all_categories_cubit.dart';
 import 'package:tlobni/data/cubits/custom_field/fetch_custom_fields_cubit.dart';
 import 'package:tlobni/data/cubits/item/fetch_my_item_cubit.dart';
 import 'package:tlobni/data/cubits/item/manage_item_cubit.dart';
+import 'package:tlobni/data/helper/widgets.dart';
 import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/models/post_type.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/widgets/image_adapter.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
-import 'package:tlobni/ui/screens/item/my_item_tab_screen.dart';
+import 'package:tlobni/ui/screens/item/my_items/my_item_tab_screen.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
 import 'package:tlobni/ui/screens/widgets/custom_text_form_field.dart';
 import 'package:tlobni/ui/screens/widgets/dynamic_field.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/buttons/primary_button.dart';
+import 'package:tlobni/ui/widgets/buttons/regular_button.dart';
+import 'package:tlobni/ui/widgets/buttons/unelevated_regular_button.dart';
+import 'package:tlobni/ui/widgets/miscellanious/dropdown.dart';
+import 'package:tlobni/ui/widgets/text/description_text.dart';
+import 'package:tlobni/ui/widgets/text/heading_text.dart';
+import 'package:tlobni/ui/widgets/text/small_text.dart';
 import 'package:tlobni/utils/cloud_state/cloud_state.dart';
 import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/extensions/lib/iterable_iterable.dart';
+import 'package:tlobni/utils/extensions/lib/widget_iterable.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/image_picker.dart';
 import 'package:tlobni/utils/ui_utils.dart';
@@ -36,11 +48,15 @@ import 'package:tlobni/utils/validator.dart';
 class AddItemDetails extends StatefulWidget {
   final List<CategoryModel>? breadCrumbItems;
   final bool? isEdit;
+  final PostType postType;
+  final ItemModel? item;
 
   const AddItemDetails({
     super.key,
     this.breadCrumbItems,
     required this.isEdit,
+    required this.postType,
+    this.item,
   });
 
   static Route route(RouteSettings settings) {
@@ -55,6 +71,8 @@ class AddItemDetails extends StatefulWidget {
           child: AddItemDetails(
             breadCrumbItems: arguments?['breadCrumbItems'],
             isEdit: arguments?['isEdit'],
+            postType: arguments?['postType'],
+            item: arguments?['item'],
           ),
         );
       },
@@ -101,10 +119,12 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
   bool _atPublicVenue = false;
   bool _atMyLocation = false;
   bool _isVirtual = false;
-  DateTime? _expirationDate;
-  TimeOfDay? _expirationTime;
+  Set<String> _locationTypes = {};
+  DateTime? _expirationDate = DateTime.now();
+  TimeOfDay? _expirationTime = TimeOfDay.now();
   AddressComponent? formatedAddress;
   bool _isSubmitting = false; // Add loading state for submit button
+  CategoryModel? _selectedCategory;
 
   // Add missing controllers
   final TextEditingController cityTextController = TextEditingController();
@@ -115,11 +135,11 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
   final TextEditingController locationController = TextEditingController();
 
   //Text Controllers
-  final TextEditingController adTitleController = TextEditingController();
-  final TextEditingController adDescriptionController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController adPriceController = TextEditingController();
   final TextEditingController adPhoneNumberController = TextEditingController();
-  final TextEditingController adAdditionalDetailsController = TextEditingController();
+  final TextEditingController _videoLinkController = TextEditingController();
 
   void _onBreadCrumbItemTap(int index) {
     int popTimes = (widget.breadCrumbItems!.length - 1) - index;
@@ -137,12 +157,18 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
   }
 
   late List selectedCategoryList;
-  ItemModel? item;
+  late ItemModel? item = widget.item;
+
+  Future<void> _onRefresh() async {
+    context.read<FetchAllCategoriesCubit>().fetchCategories();
+  }
 
   @override
   void initState() {
     super.initState();
     _formKey = GlobalKey<FormState>();
+    _initFields(widget.item);
+    _onRefresh();
     // AbstractField.fieldsData.clear();
     // AbstractField.files.clear();
     //
@@ -252,21 +278,23 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     //   adPhoneNumberController.text = HiveUtils.getUserDetails().mobile ?? "";
     // }
     //
-    // _pickTitleImage.listener((p0) {
-    //   titleImageURL = "";
-    //   WidgetsBinding.instance.addPersistentFrameCallback((timeStamp) {
-    //     if (mounted) setState(() {});
-    //   });
-    // });
-    //
-    // itemImagePicker.listener((images) {
-    //   try {
-    //     mixedItemImageList.addAll(List<dynamic>.from(images));
-    //   } catch (e) {}
-    //
-    //   setState(() {});
-    // });
+    _pickTitleImage.listener((p0) {
+      titleImageURL = "";
+      WidgetsBinding.instance.addPersistentFrameCallback((timeStamp) {
+        if (mounted) setState(() {});
+      });
+    });
+
+    itemImagePicker.listener((images) {
+      try {
+        mixedItemImageList.addAll(List<dynamic>.from(images));
+      } catch (e) {}
+
+      setState(() {});
+    });
   }
+
+  bool get isEdit => widget.isEdit == true;
 
   void _debugItemLocationDetails() {
     if (widget.isEdit == true && item != null) {
@@ -280,6 +308,958 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       print("All Location Data: ${item!.toJson()}");
       print("=================================");
     }
+  }
+
+  Widget _section({required String title, required List<Widget> children}) => Container(
+        padding: EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: Colors.white,
+          border: Border.all(color: Color(0xffededed)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            HeadingText(title, fontSize: 22),
+            SizedBox(height: 10),
+            Divider(height: 2.5, color: context.color.secondary, thickness: 2),
+            SizedBox(height: 20),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: 20,
+              children: children,
+            ),
+          ],
+        ),
+      );
+
+  Widget _field({required String label, required Widget child, bool? required = true}) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DescriptionText(
+            '${label}${required == null ? '' : required ? ' *' : ' (Optional)'}',
+            weight: FontWeight.w500,
+          ),
+          SizedBox(height: 10),
+          child,
+        ],
+      );
+
+  InputDecoration _textFieldDecorationTheme({required Color borderColor, required String? hint}) {
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: BorderSide(color: borderColor),
+    );
+    return InputDecoration(
+      border: border,
+      disabledBorder: border,
+      focusedBorder: border,
+      enabledBorder: border,
+      contentPadding: EdgeInsets.all(10),
+      hintText: hint,
+      hintStyle: context.textTheme.bodyMedium?.copyWith(color: Colors.grey),
+    );
+  }
+
+  Builder _customTextField({
+    required Color borderColor,
+    required String hint,
+    required TextEditingController controller,
+    TextInputType? textInputType,
+    InputDecoration Function(InputDecoration decoration)? decorationBuilder,
+    int maxLines = 1,
+    bool readOnly = false,
+    FocusNode? focusNode,
+  }) {
+    decorationBuilder ??= (e) => e;
+    return Builder(builder: (context) {
+      return TextFormField(
+        focusNode: focusNode,
+        controller: controller,
+        style: context.textTheme.bodyMedium,
+        readOnly: readOnly,
+        keyboardType: textInputType,
+        maxLines: maxLines,
+        decoration: decorationBuilder?.call(_textFieldDecorationTheme(
+          borderColor: borderColor,
+          hint: hint,
+        )),
+      );
+    });
+  }
+
+  Widget _menu<T>({
+    List<(T, String)>? items,
+    List<DropdownMenuEntry<T>>? entries,
+    bool allowSearch = false,
+    String? hint,
+    required T? selectedValue,
+    required bool? Function(T? value) onSelected,
+  }) {
+    assert(items != null || entries != null);
+    return MyDropdownMenu<T>(
+      expandFormField: false,
+      selectedValue: selectedValue,
+      onSelected: onSelected,
+      trailingIcon: SizedBox(),
+      textStyle: context.textTheme.bodyMedium,
+      takeSelectedValue: true,
+      requestFocusOnTap: allowSearch,
+      enableSearch: allowSearch,
+      hintText: hint,
+      enableFilter: allowSearch,
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: _greyBorderColor),
+        ),
+        contentPadding: EdgeInsets.all(13),
+      ),
+      menuStyle: MenuStyle(
+        maximumSize: WidgetStatePropertyAll(Size(double.infinity, 500)),
+        minimumSize: WidgetStatePropertyAll(Size(double.infinity, 500)),
+        side: WidgetStatePropertyAll(BorderSide(color: _greyBorderColor)),
+        shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+      ),
+      dropdownMenuEntries: items
+              ?.map((e) => DropdownMenuEntry(
+                    value: e.$1,
+                    label: e.$2,
+                    style: ButtonStyle(
+                      padding: WidgetStatePropertyAll(
+                        EdgeInsets.all(10),
+                      ),
+                    ),
+                  ))
+              .toList() ??
+          entries ??
+          [],
+    );
+  }
+
+  Widget _serviceTitle() {
+    return _field(
+      label: '${widget.postType.toString()} Title',
+      child: _customTextField(
+        borderColor: context.color.secondary,
+        hint: 'Enter ${widget.postType.toString().toLowerCase()} title',
+        controller: _titleController,
+      ),
+    );
+  }
+
+  Widget _description() => _field(
+        label: 'Description',
+        child: _customTextField(
+          borderColor: context.color.secondary,
+          hint: 'Describe your ${widget.postType.toString()}...',
+          controller: _descriptionController,
+          maxLines: 4,
+          textInputType: TextInputType.multiline,
+        ),
+      );
+
+  Widget _selectCategory() => _field(
+        label: 'Category',
+        child: BlocBuilder<FetchAllCategoriesCubit, FetchAllCategoriesState>(builder: (context, state) {
+          if (state is FetchAllCategoriesInProgress) return UiUtils.progress();
+          if (state is FetchAllCategoriesFailure) return DescriptionText(state.errorMessage);
+          if (state is! FetchAllCategoriesSuccess) return SizedBox();
+          return _menu(
+            hint: 'Select Category',
+            allowSearch: true,
+            entries: state.categories
+                .where((e) => e.type == CategoryType.serviceExperience && e.parentId == null)
+                .map((e) => [e, ...?e.children])
+                .reduceToSingleIterable()
+                .map((e) {
+              final isParent = e.parentId == null;
+              final enabled = !isParent || (e.children?.isEmpty ?? false);
+              return DropdownMenuEntry(
+                value: e,
+                label: '${e.name ?? ''}',
+                style: ButtonStyle(
+                  padding: WidgetStatePropertyAll(EdgeInsets.all(10)),
+                  backgroundColor: WidgetStatePropertyAll(!enabled ? context.color.secondary : Colors.transparent),
+                ),
+                enabled: enabled,
+              );
+            }).toList(),
+            selectedValue: _selectedCategory,
+            onSelected: (value) {
+              FocusScope.of(context).unfocus();
+              setState(() => _selectedCategory = value);
+              return true;
+            },
+          );
+        }),
+      );
+
+  Color get _greyBorderColor => Color(0xffe6e6e6);
+
+  Widget _price() => _field(
+        label: 'Price',
+        child: _customTextField(
+          borderColor: _greyBorderColor,
+          hint: '0.00',
+          controller: adPriceController,
+          textInputType: TextInputType.numberWithOptions(signed: false, decimal: true),
+          decorationBuilder: (e) => e.copyWith(
+            // prefixText: '\$',
+            // prefixStyle: context.textTheme.bodyMedium,
+            prefix: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8.0),
+              child: DescriptionText('\$'),
+            ),
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+          ),
+        ),
+      );
+
+  Widget _priceTypeDropdown() => _field(
+        label: 'Price Type',
+        child: _menu(
+          hint: 'Select type',
+          items: [
+            ("session", "Session"),
+            ("consultation", "Consultation"),
+            ("hour", "Hour"),
+            ("class", "Class"),
+            ("fixed_fee", "Fixed Fee"),
+          ],
+          selectedValue: _priceType,
+          onSelected: (value) {
+            setState(() => _priceType = value);
+            return true;
+          },
+        ),
+      );
+
+  Widget _pricing() => IntrinsicHeight(
+        child: Row(
+          children: [
+            _price(),
+            _priceTypeDropdown(),
+          ].mapExpandedSpaceBetween(10),
+        ),
+      );
+
+  Widget _location() => _field(
+        label: 'Location',
+        child: LocationAutocomplete(
+          controller: locationController,
+          onSelected: (value) {},
+          hintText: 'Select Location',
+          onLocationSelected: _updateLocationData,
+          radius: BorderRadius.circular(10),
+          borderColor: _greyBorderColor,
+        ),
+      );
+
+  Widget _basicInformation() => _section(
+        title: 'Basic Information',
+        // child: Column(
+        //   spacing: 20,
+        //   crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _serviceTitle(),
+          _description(),
+          _selectCategory(),
+          _pricing(),
+          _location(),
+        ],
+        // )
+      );
+
+  Widget _endDateButton(String text, VoidCallback onPressed) => UnelevatedRegularButton(
+        color: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: _greyBorderColor),
+        ),
+        onPressed: onPressed,
+        padding: EdgeInsets.all(15),
+        child: DescriptionText(text),
+      );
+
+  Widget _endDateField() => _endDateButton(_formatExpirationDate(), _pickExpirationDate);
+
+  String _formatExpirationDate() {
+    if (_expirationDate == null) return 'Select expiration Date';
+    return DateFormat('MMM d, y').format(_expirationDate!);
+  }
+
+  Widget _endTimeField() => _endDateButton(_formatExpirationTime(), _pickExpirationTime);
+
+  String _formatExpirationTime() {
+    if (_expirationTime == null) return 'Select expiration Time';
+    return _expirationTime!.format(context);
+  }
+
+  Widget _endDateAndTime() => _field(
+        label: 'End Date & Time',
+        child: Row(
+          children: [
+            _endDateField(),
+            _endTimeField(),
+          ].mapExpandedSpaceBetween(10),
+        ),
+      );
+
+  void _onServiceLocationTypePressed(String type) {
+    setState(() => _locationTypes.contains(type) ? _locationTypes.remove(type) : _locationTypes.add(type));
+  }
+
+  Widget _serviceLocation() => _field(
+        label: 'Locations',
+        child: Column(
+          children: ItemModel.locationTypes.map((e) {
+            return UnelevatedRegularButton(
+              color: Colors.transparent,
+              onPressed: () => _onServiceLocationTypePressed(e),
+              child: Row(
+                children: [
+                  Checkbox(
+                    value: _locationTypes.contains(e),
+                    onChanged: (val) => _onServiceLocationTypePressed(e),
+                  ),
+                  SizedBox(width: 5),
+                  Expanded(child: DescriptionText(ItemModel.locationTypeString(e))),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      );
+
+  Widget _specialTagField(String specialTag) {
+    return Row(
+      children: [
+        Switch(
+          value: _specialTags[specialTag] == true,
+          onChanged: (value) {
+            setState(() => _specialTags[specialTag] = value);
+          },
+        ),
+        SizedBox(width: 5),
+        Expanded(child: DescriptionText(_specialTags[specialTag] == true ? 'Yes' : 'No')),
+      ],
+    );
+  }
+
+  Widget _exclusiveForWomen() => _field(
+        label: 'Exclusive for Women',
+        required: null,
+        child: _specialTagField('exclusive_women'),
+      );
+
+  Widget _corporatePackage() => _field(
+        label: 'Corporate Package',
+        required: null,
+        child: _specialTagField('corporate_package'),
+      );
+
+  Widget _itemDetails() => _section(
+        title: '${widget.postType.toString()} Details',
+        children: [
+          if (widget.postType == PostType.experience) _endDateAndTime() else _serviceLocation(),
+          _exclusiveForWomen(),
+          _corporatePackage(),
+        ],
+      );
+
+  void _pickExpirationTime() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _expirationTime ?? TimeOfDay.now(),
+    );
+    if (picked != null && picked != _expirationTime) {
+      setState(() {
+        _expirationTime = picked;
+      });
+    }
+  }
+
+  void _pickExpirationDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _expirationDate ?? DateTime.now().add(Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(Duration(days: 365)),
+    );
+    if (picked != null && picked != _expirationDate) {
+      setState(() {
+        _expirationDate = picked;
+      });
+    }
+  }
+
+  Widget _mainImage() => _field(
+        label: 'mainPicture'.translate(context),
+        child: Column(
+          children: [titleImageListener(), SmallText('This will be the main image shown in listings (Max 3MB)')],
+        ),
+      );
+
+  Widget _additionalImages() => _field(
+        label: 'Additional Images',
+        required: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: 10,
+          children: [
+            itemImagesListener(),
+            SmallText('These images will appear in the slider in the ${widget.postType.toString().toLowerCase()} details page, ' +
+                'max5Images'.translate(context)),
+          ],
+        ),
+      );
+
+  Widget _videoLink() => _field(
+        label: 'Video Link',
+        required: false,
+        child: _customTextField(
+          borderColor: context.color.secondary,
+          hint: 'https://www.youtube.com/watch?v=...',
+          controller: _videoLinkController,
+        ),
+      );
+
+  Widget _mediaSection() => _section(
+        title: 'Media',
+        children: [
+          _mainImage(),
+          _additionalImages(),
+          _videoLink(),
+        ],
+      );
+
+  Widget _submitButton() => PrimaryButton.text(
+        '${isEdit ? 'Update' : 'Create'} ${widget.postType}',
+        padding: EdgeInsets.all(20),
+        onPressed: _onSubmitPressed,
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<ManageItemCubit, ManageItemState>(
+      listener: _rootListener,
+      builder: (context, state) {
+        return Scaffold(
+          appBar: UiUtils.buildAppBar(
+            context,
+            showBackButton: true,
+            title: '${isEdit ? 'Edit' : 'Create'} ${widget.postType == PostType.experience ? 'an Experience' : 'a Service'}',
+          ),
+          body: RefreshIndicator(
+            onRefresh: _onRefresh,
+            child: SingleChildScrollView(
+              physics: AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.all(20).add(EdgeInsets.only(bottom: 70)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: 20,
+                children: [
+                  _basicInformation(),
+                  _itemDetails(),
+                  _mediaSection(),
+                  SizedBox(),
+                  _submitButton(),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        return AnnotatedRegion(
+          value: UiUtils.getSystemUiOverlayStyle(context: context, statusBarColor: context.color.secondaryColor),
+          child: PopScope(
+            canPop: true,
+            onPopInvokedWithResult: (didPop, result) {
+              return;
+            },
+            child: SafeArea(
+              child: Scaffold(
+                appBar: UiUtils.buildAppBar(context, showBackButton: true, title: "AdDetails".translate(context)),
+                bottomNavigationBar: Container(
+                  color: Colors.transparent,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                    child: UiUtils.buildButton(context,
+                        onPressed: _onSubmitPressed,
+                        height: 48,
+                        fontSize: context.font.large,
+                        autoWidth: false,
+                        radius: 8,
+                        disabledColor: const Color.fromARGB(255, 104, 102, 106),
+                        disabled: false,
+                        isInProgress: _isSubmitting,
+                        width: double.maxFinite,
+                        buttonTitle: widget.isEdit == true ? "Update Post".translate(context) : "postNow".translate(context),
+                        textColor: const Color(0xFFE6CBA8)),
+                  ),
+                ),
+                body: Form(
+                  key: _formKey,
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Padding(
+                      padding: const EdgeInsets.all(18.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CustomText(
+                            "youAreAlmostThere".translate(context),
+                            fontSize: context.font.large,
+                            fontWeight: FontWeight.w600,
+                            color: context.color.textColorDark,
+                          ),
+                          SizedBox(
+                            height: 16,
+                          ),
+                          if (widget.breadCrumbItems != null)
+                            SizedBox(
+                              height: 20,
+                              width: context.screenWidth,
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: ListView.builder(
+                                    shrinkWrap: true,
+                                    scrollDirection: Axis.horizontal,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    itemBuilder: (context, index) {
+                                      bool isNotLast = (widget.breadCrumbItems!.length - 1) != index;
+
+                                      return Row(
+                                        children: [
+                                          InkWell(
+                                              onTap: () {
+                                                _onBreadCrumbItemTap(index);
+                                              },
+                                              child: CustomText(
+                                                widget.breadCrumbItems![index].name!,
+                                                color: isNotLast ? context.color.textColorDark : context.color.territoryColor,
+                                                firstUpperCaseWidget: true,
+                                              )),
+                                          if (index < widget.breadCrumbItems!.length - 1)
+                                            CustomText(" > ", color: context.color.territoryColor),
+                                        ],
+                                      );
+                                    },
+                                    itemCount: widget.breadCrumbItems!.length),
+                              ),
+                            ),
+                          SizedBox(
+                            height: 18,
+                          ),
+                          CustomText("adTitle".translate(context) + " *"),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          CustomTextFormField(
+                            controller: _titleController,
+                            validator: CustomTextFieldValidator.nullCheck,
+                            action: TextInputAction.next,
+                            capitalization: TextCapitalization.sentences,
+                            hintText: "adTitleHere".translate(context),
+                            hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
+                          ),
+                          SizedBox(
+                            height: 15,
+                          ),
+                          CustomText("descriptionLbl".translate(context) + " *"),
+                          SizedBox(
+                            height: 15,
+                          ),
+                          CustomTextFormField(
+                            controller: _descriptionController,
+                            action: TextInputAction.newline,
+                            validator: CustomTextFieldValidator.nullCheck,
+                            capitalization: TextCapitalization.sentences,
+                            hintText: "writeSomething".translate(context),
+                            maxLine: 100,
+                            minLine: 6,
+                            hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
+                          ),
+                          SizedBox(
+                            height: 15,
+                          ),
+
+                          // Special Tags Section - Changed to use switches
+                          _buildSpecialTagsSection(context),
+
+                          // Price Type Section (for both Service and Experience)
+                          _buildPriceTypeSection(context),
+
+                          // Service Location Options
+                          _buildServiceLocationOptions(context),
+
+                          // Experience Location
+                          _buildExperienceLocationSection(context),
+
+                          // Auto-Expiration Date & Time (for Experience only)
+                          _buildExpirationDateTimeSection(context),
+
+                          Row(
+                            children: [
+                              CustomText("mainPicture".translate(context) + " *"),
+                              const SizedBox(
+                                width: 3,
+                              ),
+                              CustomText(
+                                "maxSize".translate(context),
+                                fontStyle: FontStyle.italic,
+                                fontSize: context.font.small,
+                              )
+                            ],
+                          ),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          Wrap(
+                            children: [
+                              if (_pickTitleImage.pickedFile != null) ...[] else ...[],
+                              titleImageListener(),
+                            ],
+                          ),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          Row(
+                            children: [
+                              CustomText("otherPictures".translate(context) + " (optional)"),
+                              const SizedBox(
+                                width: 3,
+                              ),
+                              CustomText(
+                                "max5Images".translate(context),
+                                fontStyle: FontStyle.italic,
+                                fontSize: context.font.small,
+                              )
+                            ],
+                          ),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          itemImagesListener(),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          CustomText("price".translate(context) + " *"),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          CustomTextFormField(
+                            controller: adPriceController,
+                            action: TextInputAction.next,
+                            prefix: CustomText("${Constant.currencySymbol} "),
+                            formaters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*')),
+                            ],
+                            keyboard: TextInputType.number,
+                            validator: CustomTextFieldValidator.nullCheck,
+                            hintText: "00",
+                            hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
+                          ),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          CustomText("phoneNumber".translate(context) + " (optional)"),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          CustomTextFormField(
+                            controller: adPhoneNumberController,
+                            action: TextInputAction.next,
+                            formaters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*')),
+                            ],
+                            keyboard: TextInputType.phone,
+                            validator: CustomTextFieldValidator.phoneNumber,
+                            hintText: "9876543210",
+                            hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
+                          ),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          CustomText("videoLink".translate(context) + " (optional)"),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          CustomTextFormField(
+                            controller: _videoLinkController,
+                            validator: null, // Use null validator (no validation at form level)
+                            hintText: "http://example.com/video.mp4",
+                            hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
+                          ),
+                          SizedBox(
+                            height: 15,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _onSubmitPressed() async {
+    // Return early if already submitting to prevent multiple submissions
+    if (_isSubmitting) return;
+
+    // Set loading state
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    // Get post type
+    PostType postType = widget.postType;
+
+    // Validate required fields for both types
+    if (!_validateRequiredFields(postType)) {
+      // Reset loading state if validation fails
+      setState(() {
+        _isSubmitting = false;
+      });
+      return;
+    }
+
+    // Set up location check
+    bool isEdit = widget.isEdit == true;
+    bool hasLocationData = false;
+
+    // Check if the item already has location data in edit mode
+    if (isEdit && item != null) {
+      hasLocationData = (item!.city != null && item!.city!.isNotEmpty) ||
+          (item!.area != null && item!.area!.isNotEmpty) ||
+          (item!.country != null && item!.country!.isNotEmpty);
+    }
+
+    // For experience type OR if location is valid for service type
+    if (postType == PostType.experience ||
+        hasLocationData ||
+        (formatedAddress != null &&
+            !((formatedAddress!.city == "" || formatedAddress!.city == null) &&
+                (formatedAddress!.area == "" || formatedAddress!.area == null)) &&
+            !(formatedAddress!.country == "" || formatedAddress!.country == null))) {
+      try {
+        // Create a fresh cloudData map to ensure we're collecting current values
+        // This avoids using potentially stale data from getCloudData("with_more_details")
+        Map<String, dynamic> cloudData = {};
+
+        // Merge any existing custom fields data which might have been set in more_details screen
+        Map<String, dynamic> existingData = getCloudData("with_more_details") ?? {};
+        if (existingData.containsKey('custom_fields')) {
+          cloudData['custom_fields'] = existingData['custom_fields'];
+        } else if (AbstractField.fieldsData.isNotEmpty) {
+          // If we have data in AbstractField.fieldsData but it wasn't in more_details,
+          // encode it directly
+          cloudData['custom_fields'] = json.encode(AbstractField.fieldsData);
+          print("Using AbstractField.fieldsData directly: ${AbstractField.fieldsData}");
+        }
+
+        // Preserve any file references or binary data from the previous screen
+        existingData.forEach((key, value) {
+          if (key.startsWith('custom_file_') || value is File) {
+            cloudData[key] = value;
+          }
+        });
+
+        // Add form data to cloudData
+        cloudData['name'] = _titleController.text;
+        cloudData['description'] = _descriptionController.text;
+        cloudData['price'] = adPriceController.text;
+        cloudData['contact'] = adPhoneNumberController.text;
+
+        // Handle the video link - validate URL format or set to empty
+        String videoLink = _videoLinkController.text.trim();
+        if (videoLink.isEmpty) {
+          cloudData['video_link'] = '';
+        } else if (videoLink.startsWith('http://') || videoLink.startsWith('https://')) {
+          cloudData['video_link'] = videoLink;
+        } else {
+          // Show error for invalid URL and return
+          setState(() {
+            _isSubmitting = false;
+          });
+          HelperUtils.showSnackBarMessage(context, "Please enter a valid URL starting with http:// or https://");
+          return;
+        }
+
+        // Add category_id - critical for API request
+        cloudData['category_id'] = _selectedCategory?.id.toString();
+        // if (widget.isEdit == true) {
+        //   // For edit, use the item's existing category IDs
+        //   if (item != null && item!.allCategoryIds != null) {
+        //     cloudData['category_id'] = item!.allCategoryIds;
+        //   }
+        // } else {
+        //   // For new item, get the last (most specific) category ID from the breadcrumb
+        //   if (widget.breadCrumbItems != null && widget.breadCrumbItems!.isNotEmpty) {
+        //     // Get the most specific category (last one in breadcrumb)
+        //
+        //     // If the API requires the full category path, we can also add it
+        //     if (selectedCategoryList.isNotEmpty) {
+        //       cloudData['category_hierarchy'] = selectedCategoryList.join(',');
+        //     }
+        //   }
+        // }
+
+        // Add special tags and price type
+        // Format special tags as strings to match database format
+        Map<String, String> formattedSpecialTags = {};
+        _specialTags.forEach((key, value) {
+          formattedSpecialTags[key] = value.toString();
+        });
+
+        print("Saving special tags: $formattedSpecialTags");
+        cloudData['special_tags'] = formattedSpecialTags;
+        cloudData['price_type'] = _priceType;
+
+        // Add post type
+        cloudData['post_type'] = postType.name;
+
+        // Add service location options if applicable
+        if (postType == PostType.service) {
+          List<String> locationTypes = _locationTypes.toList();
+          // Create a list to gather location types
+          print("Saving location types: $locationTypes");
+
+          // Store location types in the format expected by the API
+          // The API might expect different formats for new vs edit
+          if (locationTypes.isNotEmpty) {
+            if (widget.isEdit == true) {
+              // For edit, send as array/list (original format from loaded item)
+              cloudData['location_type'] = locationTypes.join(',');
+            } else {
+              // For new posts, try both formats to ensure compatibility
+              cloudData['location_type'] = locationTypes.join(',');
+            }
+          }
+
+          // Add individual flags for backward compatibility
+          cloudData['at_client_location'] = _atClientLocation;
+          cloudData['at_public_venue'] = _atPublicVenue;
+          cloudData['at_my_location'] = _atMyLocation;
+          cloudData['is_virtual'] = _isVirtual;
+        }
+
+        // Add expiration date/time if applicable
+        if (postType == PostType.experience) {
+          if (_expirationDate != null) {
+            cloudData['expiration_date'] = _expirationDate!.toIso8601String();
+          }
+          if (_expirationTime != null) {
+            cloudData['expiration_time'] = '${_expirationTime!.hour}:${_expirationTime!.minute}';
+          }
+        }
+
+        // Add location data if available
+        if (formatedAddress != null) {
+          cloudData['address'] = formatedAddress?.mixed;
+          cloudData['country'] = formatedAddress!.country;
+          cloudData['city'] = (formatedAddress!.city == "" || formatedAddress!.city == null)
+              ? (formatedAddress!.area == "" || formatedAddress!.area == null ? null : formatedAddress!.area)
+              : formatedAddress!.city;
+          cloudData['state'] = formatedAddress!.state;
+          if (formatedAddress!.areaId != null) cloudData['area_id'] = formatedAddress!.areaId;
+        }
+
+        // Get main image with compression
+        File? mainImage;
+        if (_pickTitleImage.pickedFile != null) {
+          try {
+            // Check if pickedFile is a List<File> or a single File
+            if (_pickTitleImage.pickedFile is List<File> && (_pickTitleImage.pickedFile as List<File>).isNotEmpty) {
+              File originalFile = (_pickTitleImage.pickedFile as List<File>).first;
+              mainImage = await compressImage(originalFile);
+            } else if (_pickTitleImage.pickedFile is File) {
+              File originalFile = _pickTitleImage.pickedFile as File;
+              mainImage = await compressImage(originalFile);
+            }
+
+            if (mainImage == null) {
+              throw Exception("Failed to process main image");
+            }
+          } catch (e) {
+            print("Error processing main image: $e");
+            setState(() {
+              _isSubmitting = false;
+            });
+            HelperUtils.showSnackBarMessage(context, "Failed to process main image. Try a different image.");
+            return;
+          }
+        }
+
+        // Get other images with compression
+        List<File> otherImages = [];
+        try {
+          for (var item in mixedItemImageList) {
+            if (item is File) {
+              File? compressed = await compressImage(item);
+              if (compressed != null) {
+                otherImages.add(compressed);
+              }
+            }
+          }
+        } catch (e) {
+          print("Error processing additional images: $e");
+          setState(() {
+            _isSubmitting = false;
+          });
+          HelperUtils.showSnackBarMessage(context, "Failed to process some additional images.");
+          return;
+        }
+
+        // Add deleted image IDs if editing
+        if (isEdit && deleteItemImageList.isNotEmpty) {
+          cloudData['deleted_images'] = deleteItemImageList;
+        }
+
+        // Add error handling for the cubit call
+        try {
+          if (isEdit) {
+            // Add item ID for editing
+            cloudData['id'] = item?.id;
+
+            context.read<ManageItemCubit>().manage(ManageItemType.edit, cloudData, mainImage, otherImages);
+          } else {
+            context.read<ManageItemCubit>().manage(ManageItemType.add, cloudData, mainImage, otherImages);
+          }
+        } catch (e) {
+          print("Error during API call: $e");
+          setState(() {
+            _isSubmitting = false;
+          });
+          HelperUtils.showSnackBarMessage(context, "Failed to upload. Please try again.");
+          return;
+        }
+      } catch (e, st) {
+        print("Error submitting form: $e");
+        // Reset loading state on error
+        setState(() {
+          _isSubmitting = false;
+        });
+        HelperUtils.showSnackBarMessage(context, "An error occurred. Please try again.");
+      }
+    } else {
+      // Reset loading state when validation fails
+      setState(() {
+        _isSubmitting = false;
+      });
+      HelperUtils.showSnackBarMessage(context, "cityRequired".translate(context));
+      Future.delayed(Duration(seconds: 2), () {
+        dialogueBottomSheet(
+            controller: cityTextController, title: "enterCity".translate(context), hintText: "city".translate(context), from: 1);
+      });
+    }
+
+    return;
   }
 
   // Safely update location data without immediate setState
@@ -317,566 +1297,71 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     print("FormatedAddress: $formatedAddress");
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return BlocListener<ManageItemCubit, ManageItemState>(
-      listener: (context, state) {
-        if (state is ManageItemSuccess) {
-          // Get the updated item
-          ItemModel updatedItem = state.model;
+  void _rootListener(BuildContext context, ManageItemState state) {
+    if (state is ManageItemInProgress) {
+      Widgets.showLoader(context);
+    } else {
+      Widgets.hideLoder(context);
+    }
+    if (state is ManageItemSuccess) {
+      // Get the updated item
+      ItemModel updatedItem = state.model;
 
-          if (widget.isEdit == true) {
-            // If we're editing, update other BLoCs with this item
-            try {
-              // If we have myAdsCubitReference (from MyItemTabScreen)
-              String? statusKey = getCloudData('edit_from') as String?;
-              if (statusKey != null && myAdsCubitReference.containsKey(statusKey)) {
-                // Update the specific tab's cubit
-                FetchMyItemsCubit tabCubit = myAdsCubitReference[statusKey]!;
-                tabCubit.edit(updatedItem);
-                print("Successfully updated MyItemTab with status: $statusKey");
-              }
-
-              // Also try to update the cubit in the current context
-              context.read<ManageItemCubit>().updateItemInOtherBlocs(updatedItem, context);
-            } catch (e) {
-              print("Error updating other BLoCs: $e");
-            }
+      if (widget.isEdit == true) {
+        // If we're editing, update other BLoCs with this item
+        try {
+          // If we have myAdsCubitReference (from MyItemTabScreen)
+          String? statusKey = getCloudData('edit_from') as String?;
+          if (statusKey != null && myAdsCubitReference.containsKey(statusKey)) {
+            // Update the specific tab's cubit
+            FetchMyItemsCubit tabCubit = myAdsCubitReference[statusKey]!;
+            tabCubit.edit(updatedItem);
+            print("Successfully updated MyItemTab with status: $statusKey");
           }
 
-          // Show success message
-          HelperUtils.showSnackBarMessage(context, widget.isEdit == true ? "Item updated successfully" : "Data submitted");
-
-          // Navigate based on edit or new item
-          if (widget.isEdit == true) {
-            // For edit mode, return to previous screen with refresh value
-            setState(() {
-              _isSubmitting = false;
-            });
-
-            // Pop and return refresh value to trigger update in ad_details_screen
-            Navigator.of(context).pop("refresh");
-          } else {
-            // For new item, navigate to the details page of the newly created service
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.of(context).popUntil((route) => route.isFirst);
-
-              // Navigate to the details page of the newly created service
-              Navigator.pushNamed(context, Routes.adDetailsScreen, arguments: {
-                'model': updatedItem,
-              });
-            });
-          }
-        } else if (state is ManageItemFail) {
-          // Show error message with more detail
-          String errorMessage = "Failed to process request: ${state.error}";
-          print("Error updating/adding item: ${state.error}");
-
-          // Reset the submitting state
-          setState(() {
-            _isSubmitting = false;
-          });
-
-          // Show error message to user
-          HelperUtils.showSnackBarMessage(context, errorMessage);
+          // Also try to update the cubit in the current context
+          context.read<ManageItemCubit>().updateItemInOtherBlocs(updatedItem, context);
+        } catch (e) {
+          print("Error updating other BLoCs: $e");
         }
-      },
-      child: AnnotatedRegion(
-        value: UiUtils.getSystemUiOverlayStyle(context: context, statusBarColor: context.color.secondaryColor),
-        child: PopScope(
-          canPop: true,
-          onPopInvokedWithResult: (didPop, result) {
-            return;
-          },
-          child: SafeArea(
-            child: Scaffold(
-              appBar: UiUtils.buildAppBar(context, showBackButton: true, title: "AdDetails".translate(context)),
-              bottomNavigationBar: Container(
-                color: Colors.transparent,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                  child: UiUtils.buildButton(context, onPressed: () async {
-                    // Return early if already submitting to prevent multiple submissions
-                    if (_isSubmitting) return;
+      }
 
-                    // Set loading state
-                    setState(() {
-                      _isSubmitting = true;
-                    });
+      // Show success message
+      HelperUtils.showSnackBarMessage(context, widget.isEdit == true ? "Item updated successfully" : "Data submitted");
 
-                    // Get post type
-                    dynamic rawPostType = getCloudData("post_type");
-                    PostType? postType = rawPostType is PostType ? rawPostType : null;
+      // Navigate based on edit or new item
+      if (widget.isEdit == true) {
+        // For edit mode, return to previous screen with refresh value
+        setState(() {
+          _isSubmitting = false;
+        });
 
-                    // Validate required fields for both types
-                    if (!_validateRequiredFields(postType)) {
-                      // Reset loading state if validation fails
-                      setState(() {
-                        _isSubmitting = false;
-                      });
-                      return;
-                    }
+        // Pop and return refresh value to trigger update in ad_details_screen
+        Navigator.of(context).pop("refresh");
+      } else {
+        // For new item, navigate to the details page of the newly created service
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
 
-                    // Set up location check
-                    bool isEdit = widget.isEdit == true;
-                    bool hasLocationData = false;
+          // Navigate to the details page of the newly created service
+          Navigator.pushNamed(context, Routes.adDetailsScreen, arguments: {
+            'model': updatedItem,
+          });
+        });
+      }
+    } else if (state is ManageItemFail) {
+      // Show error message with more detail
+      String errorMessage = "Failed to process request: ${state.error}";
+      print("Error updating/adding item: ${state.error}");
 
-                    // Check if the item already has location data in edit mode
-                    if (isEdit && item != null) {
-                      hasLocationData = (item!.city != null && item!.city!.isNotEmpty) ||
-                          (item!.area != null && item!.area!.isNotEmpty) ||
-                          (item!.country != null && item!.country!.isNotEmpty);
-                    }
+      // Reset the submitting state
+      setState(() {
+        _isSubmitting = false;
+      });
 
-                    // For experience type OR if location is valid for service type
-                    if (postType == PostType.experience ||
-                        hasLocationData ||
-                        (formatedAddress != null &&
-                            !((formatedAddress!.city == "" || formatedAddress!.city == null) &&
-                                (formatedAddress!.area == "" || formatedAddress!.area == null)) &&
-                            !(formatedAddress!.country == "" || formatedAddress!.country == null))) {
-                      try {
-                        // Create a fresh cloudData map to ensure we're collecting current values
-                        // This avoids using potentially stale data from getCloudData("with_more_details")
-                        Map<String, dynamic> cloudData = {};
-
-                        // Merge any existing custom fields data which might have been set in more_details screen
-                        Map<String, dynamic> existingData = getCloudData("with_more_details") ?? {};
-                        if (existingData.containsKey('custom_fields')) {
-                          cloudData['custom_fields'] = existingData['custom_fields'];
-                        } else if (AbstractField.fieldsData.isNotEmpty) {
-                          // If we have data in AbstractField.fieldsData but it wasn't in more_details,
-                          // encode it directly
-                          cloudData['custom_fields'] = json.encode(AbstractField.fieldsData);
-                          print("Using AbstractField.fieldsData directly: ${AbstractField.fieldsData}");
-                        }
-
-                        // Preserve any file references or binary data from the previous screen
-                        existingData.forEach((key, value) {
-                          if (key.startsWith('custom_file_') || value is File) {
-                            cloudData[key] = value;
-                          }
-                        });
-
-                        // Add form data to cloudData
-                        cloudData['name'] = adTitleController.text;
-                        cloudData['description'] = adDescriptionController.text;
-                        cloudData['price'] = adPriceController.text;
-                        cloudData['contact'] = adPhoneNumberController.text;
-
-                        // Handle the video link - validate URL format or set to empty
-                        String videoLink = adAdditionalDetailsController.text.trim();
-                        if (videoLink.isEmpty) {
-                          cloudData['video_link'] = '';
-                        } else if (videoLink.startsWith('http://') || videoLink.startsWith('https://')) {
-                          cloudData['video_link'] = videoLink;
-                        } else {
-                          // Show error for invalid URL and return
-                          setState(() {
-                            _isSubmitting = false;
-                          });
-                          HelperUtils.showSnackBarMessage(context, "Please enter a valid URL starting with http:// or https://");
-                          return;
-                        }
-
-                        // Add category_id - critical for API request
-                        if (widget.isEdit == true) {
-                          // For edit, use the item's existing category IDs
-                          if (item != null && item!.allCategoryIds != null) {
-                            cloudData['category_id'] = item!.allCategoryIds;
-                          }
-                        } else {
-                          // For new item, get the last (most specific) category ID from the breadcrumb
-                          if (widget.breadCrumbItems != null && widget.breadCrumbItems!.isNotEmpty) {
-                            // Get the most specific category (last one in breadcrumb)
-                            int categoryId = widget.breadCrumbItems!.last.id!;
-                            cloudData['category_id'] = categoryId.toString();
-
-                            // If the API requires the full category path, we can also add it
-                            if (selectedCategoryList.isNotEmpty) {
-                              cloudData['category_hierarchy'] = selectedCategoryList.join(',');
-                            }
-                          }
-                        }
-
-                        // Add special tags and price type
-                        // Format special tags as strings to match database format
-                        Map<String, String> formattedSpecialTags = {};
-                        _specialTags.forEach((key, value) {
-                          formattedSpecialTags[key] = value.toString();
-                        });
-
-                        print("Saving special tags: $formattedSpecialTags");
-                        cloudData['special_tags'] = formattedSpecialTags;
-                        cloudData['price_type'] = _priceType;
-
-                        // Add post type
-                        cloudData['post_type'] = postType?.toString() ?? PostType.service.toString();
-
-                        // Add service location options if applicable
-                        if (postType == PostType.service) {
-                          // Create a list to gather location types
-                          List<String> locationTypes = [];
-
-                          if (_atClientLocation) locationTypes.add('client_location');
-                          if (_atPublicVenue) locationTypes.add('public_venue');
-                          if (_atMyLocation) locationTypes.add('my_location');
-                          if (_isVirtual) locationTypes.add('virtual');
-
-                          print("Saving location types: $locationTypes");
-
-                          // Store location types in the format expected by the API
-                          // The API might expect different formats for new vs edit
-                          if (locationTypes.isNotEmpty) {
-                            if (widget.isEdit == true) {
-                              // For edit, send as array/list (original format from loaded item)
-                              cloudData['location_type'] = locationTypes.join(',');
-                            } else {
-                              // For new posts, try both formats to ensure compatibility
-                              cloudData['location_type'] = locationTypes.join(',');
-                            }
-                          }
-
-                          // Add individual flags for backward compatibility
-                          cloudData['at_client_location'] = _atClientLocation;
-                          cloudData['at_public_venue'] = _atPublicVenue;
-                          cloudData['at_my_location'] = _atMyLocation;
-                          cloudData['is_virtual'] = _isVirtual;
-                        }
-
-                        // Add expiration date/time if applicable
-                        if (postType == PostType.experience) {
-                          if (_expirationDate != null) {
-                            cloudData['expiration_date'] = _expirationDate!.toIso8601String();
-                          }
-                          if (_expirationTime != null) {
-                            cloudData['expiration_time'] = '${_expirationTime!.hour}:${_expirationTime!.minute}';
-                          }
-                        }
-
-                        // Add location data if available
-                        if (formatedAddress != null) {
-                          cloudData['address'] = formatedAddress?.mixed;
-                          cloudData['country'] = formatedAddress!.country;
-                          cloudData['city'] = (formatedAddress!.city == "" || formatedAddress!.city == null)
-                              ? (formatedAddress!.area == "" || formatedAddress!.area == null ? null : formatedAddress!.area)
-                              : formatedAddress!.city;
-                          cloudData['state'] = formatedAddress!.state;
-                          if (formatedAddress!.areaId != null) cloudData['area_id'] = formatedAddress!.areaId;
-                        }
-
-                        // Get main image with compression
-                        File? mainImage;
-                        if (_pickTitleImage.pickedFile != null) {
-                          try {
-                            // Check if pickedFile is a List<File> or a single File
-                            if (_pickTitleImage.pickedFile is List<File> && (_pickTitleImage.pickedFile as List<File>).isNotEmpty) {
-                              File originalFile = (_pickTitleImage.pickedFile as List<File>).first;
-                              mainImage = await compressImage(originalFile);
-                            } else if (_pickTitleImage.pickedFile is File) {
-                              File originalFile = _pickTitleImage.pickedFile as File;
-                              mainImage = await compressImage(originalFile);
-                            }
-
-                            if (mainImage == null) {
-                              throw Exception("Failed to process main image");
-                            }
-                          } catch (e) {
-                            print("Error processing main image: $e");
-                            setState(() {
-                              _isSubmitting = false;
-                            });
-                            HelperUtils.showSnackBarMessage(context, "Failed to process main image. Try a different image.");
-                            return;
-                          }
-                        }
-
-                        // Get other images with compression
-                        List<File> otherImages = [];
-                        try {
-                          for (var item in mixedItemImageList) {
-                            if (item is File) {
-                              File? compressed = await compressImage(item);
-                              if (compressed != null) {
-                                otherImages.add(compressed);
-                              }
-                            }
-                          }
-                        } catch (e) {
-                          print("Error processing additional images: $e");
-                          setState(() {
-                            _isSubmitting = false;
-                          });
-                          HelperUtils.showSnackBarMessage(context, "Failed to process some additional images.");
-                          return;
-                        }
-
-                        // Add deleted image IDs if editing
-                        if (widget.isEdit == true && deleteItemImageList.isNotEmpty) {
-                          cloudData['deleted_images'] = deleteItemImageList;
-                        }
-
-                        // Add error handling for the cubit call
-                        try {
-                          if (widget.isEdit == true) {
-                            // Add item ID for editing
-                            cloudData['id'] = item?.id;
-
-                            context.read<ManageItemCubit>().manage(ManageItemType.edit, cloudData, mainImage, otherImages);
-                          } else {
-                            context.read<ManageItemCubit>().manage(ManageItemType.add, cloudData, mainImage, otherImages);
-                          }
-                        } catch (e) {
-                          print("Error during API call: $e");
-                          setState(() {
-                            _isSubmitting = false;
-                          });
-                          HelperUtils.showSnackBarMessage(context, "Failed to upload. Please try again.");
-                          return;
-                        }
-                      } catch (e, st) {
-                        print("Error submitting form: $e");
-                        // Reset loading state on error
-                        setState(() {
-                          _isSubmitting = false;
-                        });
-                        HelperUtils.showSnackBarMessage(context, "An error occurred. Please try again.");
-                      }
-                    } else {
-                      // Reset loading state when validation fails
-                      setState(() {
-                        _isSubmitting = false;
-                      });
-                      HelperUtils.showSnackBarMessage(context, "cityRequired".translate(context));
-                      Future.delayed(Duration(seconds: 2), () {
-                        dialogueBottomSheet(
-                            controller: cityTextController,
-                            title: "enterCity".translate(context),
-                            hintText: "city".translate(context),
-                            from: 1);
-                      });
-                    }
-
-                    return;
-                  },
-                      height: 48,
-                      fontSize: context.font.large,
-                      autoWidth: false,
-                      radius: 8,
-                      disabledColor: const Color.fromARGB(255, 104, 102, 106),
-                      disabled: false,
-                      isInProgress: _isSubmitting,
-                      width: double.maxFinite,
-                      buttonTitle: widget.isEdit == true ? "Update Post".translate(context) : "postNow".translate(context),
-                      textColor: const Color(0xFFE6CBA8)),
-                ),
-              ),
-              body: Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Padding(
-                    padding: const EdgeInsets.all(18.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CustomText(
-                          "youAreAlmostThere".translate(context),
-                          fontSize: context.font.large,
-                          fontWeight: FontWeight.w600,
-                          color: context.color.textColorDark,
-                        ),
-                        SizedBox(
-                          height: 16,
-                        ),
-                        if (widget.breadCrumbItems != null)
-                          SizedBox(
-                            height: 20,
-                            width: context.screenWidth,
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: ListView.builder(
-                                  shrinkWrap: true,
-                                  scrollDirection: Axis.horizontal,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemBuilder: (context, index) {
-                                    bool isNotLast = (widget.breadCrumbItems!.length - 1) != index;
-
-                                    return Row(
-                                      children: [
-                                        InkWell(
-                                            onTap: () {
-                                              _onBreadCrumbItemTap(index);
-                                            },
-                                            child: CustomText(
-                                              widget.breadCrumbItems![index].name!,
-                                              color: isNotLast ? context.color.textColorDark : context.color.territoryColor,
-                                              firstUpperCaseWidget: true,
-                                            )),
-                                        if (index < widget.breadCrumbItems!.length - 1)
-                                          CustomText(" > ", color: context.color.territoryColor),
-                                      ],
-                                    );
-                                  },
-                                  itemCount: widget.breadCrumbItems!.length),
-                            ),
-                          ),
-                        SizedBox(
-                          height: 18,
-                        ),
-                        CustomText("adTitle".translate(context) + " *"),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        CustomTextFormField(
-                          controller: adTitleController,
-                          validator: CustomTextFieldValidator.nullCheck,
-                          action: TextInputAction.next,
-                          capitalization: TextCapitalization.sentences,
-                          hintText: "adTitleHere".translate(context),
-                          hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
-                        ),
-                        SizedBox(
-                          height: 15,
-                        ),
-                        CustomText("descriptionLbl".translate(context) + " *"),
-                        SizedBox(
-                          height: 15,
-                        ),
-                        CustomTextFormField(
-                          controller: adDescriptionController,
-                          action: TextInputAction.newline,
-                          validator: CustomTextFieldValidator.nullCheck,
-                          capitalization: TextCapitalization.sentences,
-                          hintText: "writeSomething".translate(context),
-                          maxLine: 100,
-                          minLine: 6,
-                          hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
-                        ),
-                        SizedBox(
-                          height: 15,
-                        ),
-
-                        // Special Tags Section - Changed to use switches
-                        _buildSpecialTagsSection(context),
-
-                        // Price Type Section (for both Service and Experience)
-                        _buildPriceTypeSection(context),
-
-                        // Service Location Options
-                        _buildServiceLocationOptions(context),
-
-                        // Experience Location
-                        _buildExperienceLocationSection(context),
-
-                        // Auto-Expiration Date & Time (for Experience only)
-                        _buildExpirationDateTimeSection(context),
-
-                        Row(
-                          children: [
-                            CustomText("mainPicture".translate(context) + " *"),
-                            const SizedBox(
-                              width: 3,
-                            ),
-                            CustomText(
-                              "maxSize".translate(context),
-                              fontStyle: FontStyle.italic,
-                              fontSize: context.font.small,
-                            )
-                          ],
-                        ),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        Wrap(
-                          children: [
-                            if (_pickTitleImage.pickedFile != null) ...[] else ...[],
-                            titleImageListener(),
-                          ],
-                        ),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        Row(
-                          children: [
-                            CustomText("otherPictures".translate(context) + " (optional)"),
-                            const SizedBox(
-                              width: 3,
-                            ),
-                            CustomText(
-                              "max5Images".translate(context),
-                              fontStyle: FontStyle.italic,
-                              fontSize: context.font.small,
-                            )
-                          ],
-                        ),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        itemImagesListener(),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        CustomText("price".translate(context) + " *"),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        CustomTextFormField(
-                          controller: adPriceController,
-                          action: TextInputAction.next,
-                          prefix: CustomText("${Constant.currencySymbol} "),
-                          formaters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*')),
-                          ],
-                          keyboard: TextInputType.number,
-                          validator: CustomTextFieldValidator.nullCheck,
-                          hintText: "00",
-                          hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
-                        ),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        CustomText("phoneNumber".translate(context) + " (optional)"),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        CustomTextFormField(
-                          controller: adPhoneNumberController,
-                          action: TextInputAction.next,
-                          formaters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*')),
-                          ],
-                          keyboard: TextInputType.phone,
-                          validator: CustomTextFieldValidator.phoneNumber,
-                          hintText: "9876543210",
-                          hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
-                        ),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        CustomText("videoLink".translate(context) + " (optional)"),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        CustomTextFormField(
-                          controller: adAdditionalDetailsController,
-                          validator: null, // Use null validator (no validation at form level)
-                          hintText: "http://example.com/video.mp4",
-                          hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
-                        ),
-                        SizedBox(
-                          height: 15,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+      // Show error message to user
+      HelperUtils.showSnackBarMessage(context, errorMessage);
+    }
   }
 
   Future<void> showImageSourceDialog(BuildContext context, Function(ImageSource) onSelected) async {
@@ -884,26 +1369,26 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: CustomText('selectImageSource'.translate(context)),
+          title: HeadingText('selectImageSource'.translate(context), fontSize: 25),
           content: SingleChildScrollView(
             child: ListBody(
-              children: <Widget>[
-                GestureDetector(
-                  child: CustomText('camera'.translate(context)),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    onSelected(ImageSource.camera);
-                  },
-                ),
-                Padding(padding: EdgeInsets.all(8.0)),
-                GestureDetector(
-                  child: CustomText('gallery'.translate(context)),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    onSelected(ImageSource.gallery);
-                  },
-                ),
-              ],
+              children: [('camera', ImageSource.camera), ('gallery', ImageSource.gallery)]
+                  .map((e) {
+                    return RegularButton(
+                      color: Colors.white,
+                      padding: EdgeInsets.all(20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        onSelected(e.$2);
+                      },
+                      child: DescriptionText(e.$1.translate(context)),
+                    );
+                  })
+                  .spaceBetween(10)
+                  .toList(),
             ),
           ),
         );
@@ -1047,6 +1532,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
           ),
         );
       }
+      double size = 180;
 
       if (file != null) {
         currentWidget = GestureDetector(
@@ -1054,8 +1540,8 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
             UiUtils.showFullScreenImage(context, provider: FileImage(file));
           },
           child: Container(
-            width: 100,
-            height: 100,
+            width: double.infinity,
+            height: size,
             margin: const EdgeInsets.all(5),
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
@@ -1070,6 +1556,8 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       }
 
       return Wrap(
+        spacing: 10,
+        runSpacing: 10,
         children: [
           if (file == null && titleImageURL.isEmpty)
             DottedBorder(
@@ -1094,10 +1582,10 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
                   alignment: AlignmentDirectional.center,
-                  height: 48,
-                  child: CustomText(
+                  height: size,
+                  child: DescriptionText(
                     "addMainPicture".translate(context),
-                    color: context.color.textDefaultColor,
+                    // color: context.color.textDefaultColor,
                     fontSize: context.font.large,
                   ),
                 ),
@@ -1113,7 +1601,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
               })
             ],
           ),
-          if (file != null || titleImageURL.isNotEmpty)
+          if (file == null && titleImageURL.isNotEmpty)
             uploadPhotoCard(context, onTap: () {
               showImageSourceDialog(context, (source) {
                 _pickTitleImage.resumeSubscription();
@@ -1134,60 +1622,59 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
   Widget itemImagesListener() {
     return itemImagePicker.listenChangesInUI((context, files) {
-      Widget current = Container();
+      List<Widget> current = [];
 
-      current = Wrap(
-        children: List.generate(mixedItemImageList.length, (index) {
-          final image = mixedItemImageList[index];
-          return Stack(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  HelperUtils.unfocus();
-                  if (image is String) {
-                    UiUtils.showFullScreenImage(context, provider: NetworkImage(image));
-                  } else {
-                    UiUtils.showFullScreenImage(context, provider: FileImage(image));
-                  }
-                },
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  margin: const EdgeInsets.all(5),
-                  clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: ImageAdapter(image: image),
-                ),
-              ),
-              closeButton(context, () {
+      current = List.generate(mixedItemImageList.length, (index) {
+        final image = mixedItemImageList[index];
+        return Stack(
+          children: [
+            GestureDetector(
+              onTap: () {
+                HelperUtils.unfocus();
                 if (image is String) {
-                  final matchingIndex = item!.galleryImages!.indexWhere(
-                    (galleryImage) => galleryImage.image == image,
-                  );
-
-                  if (matchingIndex != -1) {
-                    print("Matching index: $matchingIndex");
-                    print("Gallery Image ID: ${item!.galleryImages![matchingIndex].id}");
-
-                    deleteItemImageList.add(item!.galleryImages![matchingIndex].id!);
-
-                    setState(() {});
-                  } else {
-                    print("No matching image found.");
-                  }
+                  UiUtils.showFullScreenImage(context, provider: NetworkImage(image));
+                } else {
+                  UiUtils.showFullScreenImage(context, provider: FileImage(image));
                 }
+              },
+              child: Container(
+                width: 100,
+                height: 100,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: ImageAdapter(image: image),
+              ),
+            ),
+            closeButton(context, () {
+              if (image is String) {
+                final matchingIndex = item!.galleryImages!.indexWhere(
+                  (galleryImage) => galleryImage.image == image,
+                );
 
-                mixedItemImageList.removeAt(index);
-                setState(() {});
-              }),
-            ],
-          );
-        }),
-      );
+                if (matchingIndex != -1) {
+                  print("Matching index: $matchingIndex");
+                  print("Gallery Image ID: ${item!.galleryImages![matchingIndex].id}");
+
+                  deleteItemImageList.add(item!.galleryImages![matchingIndex].id!);
+
+                  setState(() {});
+                } else {
+                  print("No matching image found.");
+                }
+              }
+
+              mixedItemImageList.removeAt(index);
+              setState(() {});
+            }),
+          ],
+        );
+      });
 
       return Wrap(
+        spacing: 10,
+        runSpacing: 10,
         runAlignment: WrapAlignment.start,
         children: [
           if ((files == null || files.isEmpty) && mixedItemImageList.isEmpty)
@@ -1211,12 +1698,11 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                   decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
                   alignment: AlignmentDirectional.center,
                   height: 48,
-                  child:
-                      CustomText("addOtherPicture".translate(context), color: context.color.textDefaultColor, fontSize: context.font.large),
+                  child: DescriptionText("addOtherPicture".translate(context), fontSize: context.font.large),
                 ),
               ),
             ),
-          current,
+          ...current,
           if (mixedItemImageList.length < 5)
             if (files != null && files.isNotEmpty || mixedItemImageList.isNotEmpty)
               uploadPhotoCard(context, onTap: () {
@@ -1265,16 +1751,15 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       child: Container(
         width: 100,
         height: 100,
-        margin: const EdgeInsets.all(5),
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
         child: DottedBorder(
-            color: context.color.textColorDark.withOpacity(0.3),
+            color: context.color.primary.withOpacity(0.3),
             borderType: BorderType.RRect,
             radius: const Radius.circular(10),
             child: Container(
               alignment: AlignmentDirectional.center,
-              child: CustomText("uploadPhoto".translate(context)),
+              child: DescriptionText("uploadPhoto".translate(context)),
             )),
       ),
     );
@@ -1640,19 +2125,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
           children: [
             Expanded(
               child: GestureDetector(
-                onTap: () async {
-                  final DateTime? picked = await showDatePicker(
-                    context: context,
-                    initialDate: _expirationDate ?? DateTime.now().add(Duration(days: 1)),
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(Duration(days: 365)),
-                  );
-                  if (picked != null && picked != _expirationDate) {
-                    setState(() {
-                      _expirationDate = picked;
-                    });
-                  }
-                },
+                onTap: _pickExpirationDate,
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 15),
                   decoration: BoxDecoration(
@@ -1681,17 +2154,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
             SizedBox(width: 12),
             Expanded(
               child: GestureDetector(
-                onTap: () async {
-                  final TimeOfDay? picked = await showTimePicker(
-                    context: context,
-                    initialTime: _expirationTime ?? TimeOfDay.now(),
-                  );
-                  if (picked != null && picked != _expirationTime) {
-                    setState(() {
-                      _expirationTime = picked;
-                    });
-                  }
-                },
+                onTap: _pickExpirationTime,
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 15),
                   decoration: BoxDecoration(
@@ -1823,23 +2286,27 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     );
   }
 
-  bool _validateRequiredFields(PostType? postType) {
+  bool _validateRequiredFields(PostType postType) {
     // Validate common required fields for both service and experience
     List<String> missingFields = [];
 
     // Check title
-    if (adTitleController.text.isEmpty) {
+    if (_titleController.text.isEmpty) {
       missingFields.add("Ad Title");
     }
 
     // Check description (required for both types)
-    if (adDescriptionController.text.isEmpty) {
+    if (_descriptionController.text.isEmpty) {
       missingFields.add("Description");
     }
 
     // Check price
     if (adPriceController.text.isEmpty) {
       missingFields.add("Price");
+    }
+
+    if (_selectedCategory == null) {
+      missingFields.add("Category");
     }
 
     // Check price type
@@ -1885,6 +2352,10 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       }
     }
 
+    if (postType == PostType.service && _locationTypes.isEmpty) {
+      missingFields.add("Location Type");
+    }
+
     // If we have missing fields, show an error and return false
     if (missingFields.isNotEmpty) {
       String fieldList = missingFields.join(", ");
@@ -1893,6 +2364,33 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     }
 
     return true;
+  }
+
+  void _initFields(ItemModel? item) {
+    if (item == null) return;
+    _titleController.text = item.name ?? '';
+    _descriptionController.text = item.description ?? '';
+    adPriceController.text = item.price?.toStringAsFixed(2) ?? '';
+    _selectedCategory = item.category;
+    _priceType = item.priceType;
+    _expirationDate = item.expirationDate;
+    if (item.expirationTime != null) {
+      final split = item.expirationTime!.split(':');
+      _expirationTime = TimeOfDay(hour: int.parse(split[0]), minute: int.parse(split[1]));
+    }
+    if (item.location != null) {
+      locationController.text = item.location!;
+      _updateLocationData({
+        if (item.country != null) 'country': item.country!,
+        if (item.city != null) 'city': item.city!,
+        if (item.state != null) 'state': item.state!,
+      });
+    }
+    _locationTypes = (item.locationType ?? []).toSet();
+    _specialTags = item.specialTags?.map((key, value) => MapEntry(key, value == 'true' || value == true)) ?? {};
+    titleImageURL = item.image ?? '';
+    mixedItemImageList = item.galleryImages?.map((e) => e.image).toList() ?? [];
+    _videoLinkController.text = item.videoLink ?? '';
   }
 }
 

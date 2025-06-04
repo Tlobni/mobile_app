@@ -20,6 +20,7 @@ import 'package:tlobni/data/cubits/system/fetch_system_settings_cubit.dart';
 import 'package:tlobni/data/cubits/system/get_api_keys_cubit.dart';
 import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
+import 'package:tlobni/data/model/item_filter_model.dart';
 import 'package:tlobni/data/model/notification_data.dart';
 import 'package:tlobni/data/model/system_settings_model.dart';
 import 'package:tlobni/ui/screens/home/search_screen.dart';
@@ -30,6 +31,7 @@ import 'package:tlobni/ui/screens/home/widgets/home_shimmer_effect.dart';
 import 'package:tlobni/ui/screens/home/widgets/home_shimmers.dart';
 import 'package:tlobni/ui/screens/home/widgets/item_container.dart';
 import 'package:tlobni/ui/screens/home/widgets/provider_home_screen_container.dart';
+import 'package:tlobni/ui/screens/item/add_item_screen/models/post_type.dart';
 import 'package:tlobni/ui/theme/theme.dart';
 import 'package:tlobni/ui/widgets/text/small_text.dart';
 //import 'package:uni_links/uni_links.dart';
@@ -50,19 +52,19 @@ Future<void> notificationPermissionChecker() async {
   }
 }
 
-void _goToItemListingSearch(BuildContext context) {
-  _goToSearchPage(context, SearchScreenType.itemListing);
+void _goToItemListingSearch(BuildContext context, {ItemFilterModel? filter}) {
+  _goToSearchPage(context, SearchScreenType.itemListing, filter: filter);
 }
 
 void _goToProviderSearch(BuildContext context) {
   _goToSearchPage(context, SearchScreenType.provider);
 }
 
-void _goToSearchPage(BuildContext context, SearchScreenType type) {
+void _goToSearchPage(BuildContext context, SearchScreenType type, {ItemFilterModel? filter}) {
   Navigator.pushNamed(
     context,
     Routes.searchScreenRoute,
-    arguments: {'autoFocus': true, 'screenType': type},
+    arguments: {'autoFocus': true, 'screenType': type, 'itemFilter': filter},
   );
 }
 
@@ -143,7 +145,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
           bottom: PreferredSize(preferredSize: Size(double.infinity, 1), child: Divider(height: 1, thickness: 1)),
           leading: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               SizedBox(height: 40, child: Image.asset('assets/images/tlobni-logo.png')),
             ],
@@ -389,17 +391,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
     );
   }
 
-  Widget _buildCorporatePackages() {
-    return HomeList(
-      title: 'Corporate Packages',
-      isLoading: _isLoadingCorporatePackages,
-      error: _corporatePackagesError == null ? null : 'Failed to load corporate packages: $_corporatePackagesError',
-      shimmerEffect: HomeShimmerEffect(),
-      onViewAll: () => _goToItemListingSearch(context),
-      children: _corporatePackageItems.map(_itemContainer).toList(),
-    );
-  }
-
   Widget _itemContainer(ItemModel item) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 12.0),
         child: Row(
@@ -412,6 +403,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
       );
 
   // Add a new method to build exclusive experiences section
+
   Widget _buildExclusiveExperiences() {
     final items = _experienceItems;
 
@@ -425,7 +417,10 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
         height: 400,
         padding: EdgeInsets.symmetric(horizontal: context.screenWidth * 0.05),
       ),
-      onViewAll: () => _goToItemListingSearch(context),
+      onViewAll: () => _goToItemListingSearch(context,
+          filter: ItemFilterModel(
+            serviceType: PostType.experience.name,
+          )),
       children: items.map(_itemContainer).toList(),
     );
   }
@@ -456,7 +451,10 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
       isLoading: _isLoadingNewestItems,
       error: _newestItemsError == null ? null : 'Failed to load newest items: $_newestItemsError',
       shimmerEffect: HomeShimmerEffect(),
-      onViewAll: () => _goToItemListingSearch(context),
+      onViewAll: () => _goToItemListingSearch(context,
+          filter: ItemFilterModel(
+            serviceType: PostType.service.name,
+          )),
       children: _newestItems.map(_itemContainer).toList(),
     );
   }
@@ -467,8 +465,35 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
       isLoading: _isLoadingWomenExclusive,
       error: _womenExclusiveError == null ? null : 'Failed to load women-exclusive services: $_womenExclusiveError',
       shimmerEffect: HomeShimmerEffect(),
-      onViewAll: () => _goToItemListingSearch(context),
+      onViewAll: () => _goToItemListingSearch(
+        context,
+        filter: ItemFilterModel(
+          serviceType: PostType.service.name,
+          specialTags: {
+            'exclusive_women': 'true',
+          },
+        ),
+      ),
       children: _womenExclusiveItems.map(_itemContainer).toList(),
+    );
+  }
+
+  Widget _buildCorporatePackages() {
+    return HomeList(
+      title: 'Corporate Packages',
+      isLoading: _isLoadingCorporatePackages,
+      error: _corporatePackagesError == null ? null : 'Failed to load corporate packages: $_corporatePackagesError',
+      shimmerEffect: HomeShimmerEffect(),
+      onViewAll: () => _goToItemListingSearch(
+        context,
+        filter: ItemFilterModel(
+          serviceType: PostType.service.name,
+          specialTags: {
+            'corporate_package': 'true',
+          },
+        ),
+      ),
+      children: _corporatePackageItems.map(_itemContainer).toList(),
     );
   }
 

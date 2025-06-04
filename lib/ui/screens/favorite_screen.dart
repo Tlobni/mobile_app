@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/favorite/favorite_cubit.dart';
 import 'package:tlobni/data/helper/designs.dart';
-import 'package:tlobni/data/model/item/item_model.dart';
-import 'package:tlobni/ui/screens/home/widgets/item_horizontal_card.dart';
+import 'package:tlobni/ui/screens/home/widgets/item_container.dart';
+import 'package:tlobni/ui/screens/item/add_item_screen/models/post_type.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/errors/no_data_found.dart';
 import 'package:tlobni/ui/screens/widgets/errors/no_internet.dart';
@@ -12,18 +13,27 @@ import 'package:tlobni/ui/screens/widgets/errors/something_went_wrong.dart';
 import 'package:tlobni/ui/screens/widgets/intertitial_ads_screen.dart';
 import 'package:tlobni/ui/screens/widgets/shimmerLoadingContainer.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/buttons/unelevated_regular_button.dart';
+import 'package:tlobni/ui/widgets/text/heading_text.dart';
 import 'package:tlobni/utils/api.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/extensions/lib/iterable.dart';
+import 'package:tlobni/utils/extensions/lib/list.dart';
+import 'package:tlobni/utils/extensions/lib/widget_iterable.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
 
 class FavoriteScreen extends StatefulWidget {
-  const FavoriteScreen({super.key});
+  const FavoriteScreen({super.key, required this.showBack});
+
+  final bool showBack;
 
   static Route route(RouteSettings settings) {
     return BlurredRouter(
       builder: (context) {
-        return const FavoriteScreen();
+        return FavoriteScreen(
+          showBack: (settings.arguments as Map<String, dynamic>?)?['showBack'] ?? false,
+        );
       },
     );
   }
@@ -44,6 +54,8 @@ class FavoriteScreenState extends State<FavoriteScreen> {
         }
       },
     );
+
+  PostType _currentType = PostType.service;
 
   @override
   void initState() {
@@ -79,7 +91,7 @@ class FavoriteScreenState extends State<FavoriteScreen> {
       },
       color: context.color.territoryColor,
       child: Scaffold(
-        appBar: UiUtils.buildAppBar(context, showBackButton: false, title: "favorites".translate(context)),
+        appBar: UiUtils.buildAppBar(context, showBackButton: widget.showBack, title: "favorites".translate(context)),
         body: !HiveUtils.isUserAuthenticated()
             ? _buildLoginRequiredMessage()
             : BlocBuilder<FavoriteCubit, FavoriteState>(
@@ -87,48 +99,102 @@ class FavoriteScreenState extends State<FavoriteScreen> {
                   if (state is FavoriteFetchInProgress) {
                     return shimmerEffect();
                   } else if (state is FavoriteFetchSuccess) {
-                    if (state.favorite.isEmpty) {
-                      return Center(
-                        child: NoDataFound(
-                          onTap: getFavorite,
-                        ),
-                      );
-                    }
                     return Column(
-                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        Row(
+                            children: PostType.values
+                                .map(
+                                  (e) => UnelevatedRegularButton(
+                                    onPressed: () => setState(() => _currentType = e),
+                                    color: Colors.transparent,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.max,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        IntrinsicWidth(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                                            children: [
+                                              Padding(
+                                                padding: EdgeInsets.all(20),
+                                                child: HeadingText(
+                                                  e.toString(),
+                                                  fontSize: 18,
+                                                  color: _currentType == e ? null : Colors.grey,
+                                                  weight: _currentType == e ? FontWeight.w500 : null,
+                                                ),
+                                              ),
+                                              Divider(
+                                                height: 3,
+                                                thickness: 3,
+                                                color: _currentType == e ? kColorSecondaryBeige : Colors.transparent,
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                                  ),
+                                )
+                                .mapExpandedSpaceBetween(0)),
+                        const Divider(height: 1, thickness: 0.5),
                         Expanded(
-                          child: ListView.builder(
-                            controller: _controller,
-                            physics: const BouncingScrollPhysics(),
-                            padding: const EdgeInsets.all(16.0),
-                            itemCount: state.favorite.length,
-                            shrinkWrap: true,
-                            itemBuilder: (context, index) {
-                              ItemModel item = state.favorite[index];
-                              return InkWell(
-                                onTap: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    Routes.adDetailsScreen,
-                                    arguments: {
-                                      'model': item,
-                                    },
-                                  );
-                                },
-                                child: ItemHorizontalCard(
-                                  item: item,
-                                  showLikeButton: true,
-                                  additionalImageWidth: 8,
+                          child: Builder(builder: (context) {
+                            final items = state.favorite.where((e) => e.type == _currentType.name).toList();
+                            if (items.isEmpty) {
+                              return Center(
+                                child: NoDataFound(
+                                  onTap: getFavorite,
                                 ),
                               );
-                            },
-                          ),
+                            }
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Expanded(
+                                  child: Builder(builder: (context) {
+                                    final rowCount = (items.length / 2).ceil();
+                                    final spacing = 10.0;
+                                    return ListView.separated(
+                                      separatorBuilder: (_, __) => SizedBox.square(dimension: spacing * 2),
+                                      padding: EdgeInsets.all(spacing * 2),
+                                      itemCount: rowCount,
+                                      itemBuilder: (context, index) {
+                                        final start = index * 2;
+                                        final end = start + 1;
+                                        final itemContainers = [
+                                          items[start],
+                                          items.getSafe(end),
+                                        ].whereNotNull().map((e) => ItemContainer(item: e, small: true));
+                                        return IntrinsicHeight(
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: itemContainers.length == 1
+                                                ? [
+                                                    (1, SizedBox()),
+                                                    (2, itemContainers.first),
+                                                    (1, SizedBox()),
+                                                  ].mapExpandedSpaceBetween(spacing / 2)
+                                                : [
+                                                    (1, itemContainers.first),
+                                                    (1, itemContainers.last),
+                                                  ].mapExpandedSpaceBetween(spacing),
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  }),
+                                ),
+                                if (state.isLoadingMore)
+                                  UiUtils.progress(
+                                    color: context.color.territoryColor,
+                                  )
+                              ],
+                            );
+                          }),
                         ),
-                        if (state.isLoadingMore)
-                          UiUtils.progress(
-                            color: context.color.territoryColor,
-                          )
                       ],
                     );
                   } else if (state is FavoriteFetchFailure) {

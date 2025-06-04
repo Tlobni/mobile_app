@@ -28,7 +28,7 @@ class CategoryHomeCard extends StatelessWidget {
       isFullImage = true;
     }
     return Container(
-      width: 110,
+      width: 100,
       child: UnelevatedRegularButton(
         onPressed: onTap,
         color: Colors.transparent,
@@ -38,7 +38,7 @@ class CategoryHomeCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Container(
-              height: 100,
+              height: 90,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: context.color.borderColor.darken(60), width: 1),

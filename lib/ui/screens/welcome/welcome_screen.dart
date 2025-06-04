@@ -68,7 +68,7 @@ class WelcomeScreen extends StatelessWidget {
   Widget buildWelcomeScreen(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        padding: const EdgeInsets.symmetric(horizontal: 40.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -81,12 +81,12 @@ class WelcomeScreen extends StatelessWidget {
               children: [
                 Image.asset(
                   'assets/images/tlobni-logo.png',
-                  height: 176,
-                  width: 240,
+                  height: 100,
+                  width: 180,
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 40),
 
             // Welcome Text
             HeadingText(
@@ -117,7 +117,7 @@ class WelcomeScreen extends StatelessWidget {
             SecondaryButton.text(
               'Create an Account',
               onPressed: () => navigateToSignup(context),
-              weight: FontWeight.w600,
+              weight: FontWeight.w700,
               padding: EdgeInsets.all(20),
             ),
 

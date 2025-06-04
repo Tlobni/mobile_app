@@ -7,8 +7,12 @@ import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/custom_text_form_field.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/buttons/primary_button.dart';
+import 'package:tlobni/ui/widgets/buttons/skip_for_later.dart';
+import 'package:tlobni/ui/widgets/miscellanious/logo.dart';
+import 'package:tlobni/ui/widgets/text/description_text.dart';
+import 'package:tlobni/ui/widgets/text/heading_text.dart';
 import 'package:tlobni/utils/api.dart';
-import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
@@ -35,64 +39,24 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
+        appBar: UiUtils.buildAppBar(context, showBackButton: true, actions: [SkipForLaterButton()]),
         backgroundColor: context.color.backgroundColor,
         body: Form(
           key: _formKey,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Align(
-                  alignment: AlignmentDirectional.topEnd,
-                  child: FittedBox(
-                    fit: BoxFit.none,
-                    child: MaterialButton(
-                        onPressed: () {
-                          Navigator.pushReplacementNamed(
-                            context,
-                            Routes.main,
-                            arguments: {
-                              "from": "login",
-                              "isSkipped": true,
-                            },
-                          );
-                        },
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        color: context.color.forthColor.withOpacity(0.102),
-                        elevation: 0,
-                        height: 28,
-                        minWidth: 64,
-                        child: CustomText(
-                          "skip".translate(context),
-                          color: context.color.forthColor,
-                        )),
-                  ),
-                ),
+                Logo(),
                 const SizedBox(
-                  height: 66,
+                  height: 60,
                 ),
-                CustomText(
-                  "forgotPassword".translate(context),
-                  fontSize: context.font.extraLarge,
-                ),
+                HeadingText("forgotPassword".translate(context)),
                 const SizedBox(
                   height: 20,
                 ),
-                CustomText(
-                  "forgotHeadingTxt".translate(context),
-                  fontSize: context.font.large,
-                ),
-                const SizedBox(
-                  height: 8,
-                ),
-                CustomText(
-                  "forgotSubHeadingTxt".translate(context),
-                  fontSize: context.font.small,
-                  color: context.color.textLightColor,
-                ),
+                DescriptionText("forgotHeadingTxt".translate(context) + '. ' + "forgotSubHeadingTxt".translate(context)),
                 const SizedBox(
                   height: 24,
                 ),
@@ -108,38 +72,37 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     listenable: _emailController,
                     builder: (context, child) {
                       log('build');
-                      return UiUtils.buildButton(
-                        context,
-                        disabled: _emailController.text.isEmpty,
-                        disabledColor: const Color.fromARGB(255, 104, 102, 106),
-                        buttonTitle: "submitBtnLbl".translate(context),
-                        radius: 8,
-                        onPressed: () async {
-                          FocusScope.of(context).unfocus(); //dismiss keyboard
-                          Future.delayed(const Duration(seconds: 1)).then((_) async {
-                            if (_formKey.currentState!.validate()) {
-                              try {
-                                final response = await Api.post(
-                                  url: Api.forgotPassword,
-                                  parameter: {
-                                    'email': _emailController.text,
-                                  },
-                                  options: Options(
-                                    followRedirects: true,
-                                    receiveDataWhenStatusError: true,
-                                  ),
-                                );
-                                print(response);
-                              } catch (e) {
-                                // if (e.type != DioExceptionType.badResponse) return;
-                              }
+                      return PrimaryButton.text(
+                        "submitBtnLbl".translate(context),
+                        padding: EdgeInsets.all(20),
+                        onPressed: _emailController.text.isEmpty
+                            ? null
+                            : () async {
+                                FocusScope.of(context).unfocus(); //dismiss keyboard
+                                Future.delayed(const Duration(seconds: 1)).then((_) async {
+                                  if (_formKey.currentState!.validate()) {
+                                    try {
+                                      final response = await Api.post(
+                                        url: Api.forgotPassword,
+                                        parameter: {
+                                          'email': _emailController.text,
+                                        },
+                                        options: Options(
+                                          followRedirects: true,
+                                          receiveDataWhenStatusError: true,
+                                        ),
+                                      );
+                                      print(response);
+                                    } catch (e) {
+                                      // if (e.type != DioExceptionType.badResponse) return;
+                                    }
 
-                              HelperUtils.showSnackBarMessage(context, "resetPasswordSuccess".translate(context),
-                                  type: MessageType.success);
-                              Navigator.of(context).pushNamedAndRemoveUntil(Routes.login, (route) => false);
-                            }
-                          });
-                        },
+                                    HelperUtils.showSnackBarMessage(context, "resetPasswordSuccess".translate(context),
+                                        type: MessageType.success);
+                                    Navigator.of(context).pushNamedAndRemoveUntil(Routes.login, (route) => false);
+                                  }
+                                });
+                              },
                       );
                     }),
               ],

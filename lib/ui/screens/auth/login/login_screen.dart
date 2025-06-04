@@ -4,6 +4,8 @@ import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/custom_text_form_field.dart';
 import 'package:tlobni/ui/theme/theme.dart';
 import 'package:tlobni/ui/widgets/buttons/primary_button.dart';
+import 'package:tlobni/ui/widgets/buttons/skip_for_later.dart';
+import 'package:tlobni/ui/widgets/miscellanious/logo.dart';
 import 'package:tlobni/ui/widgets/text/description_text.dart';
 import 'package:tlobni/ui/widgets/text/heading_text.dart';
 import 'package:tlobni/ui/widgets/text/small_text.dart';
@@ -237,33 +239,11 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               /// Skip Button
-              Align(
-                alignment: AlignmentDirectional.topEnd,
-                child: TextButton(
-                  onPressed: () {
-                    HiveUtils.setUserSkip();
-                    HelperUtils.killPreviousPages(
-                      context,
-                      Routes.main,
-                      {"from": "login", "isSkipped": true},
-                    );
-                  },
-                  child: Text(
-                    "Skip for later",
-                    style: context.textTheme.bodySmall,
-                  ),
-                ),
-              ),
+              SkipForLaterButton(),
 
               // Tlobni Logo
-              Center(
-                child: Image.asset(
-                  'assets/images/tlobni-logo.png',
-                  height: 80,
-                  width: 100,
-                ),
-              ),
-              const SizedBox(height: 20),
+              Logo(),
+              const SizedBox(height: 60),
 
               /// Title
               HeadingText("Sign In"),
@@ -315,7 +295,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                   child: DescriptionText(
                     "${"forgotPassword".translate(context)}?",
-                    color: context.color.textLightColor,
                   ),
                 ),
               ),

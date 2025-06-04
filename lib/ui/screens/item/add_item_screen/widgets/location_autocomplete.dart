@@ -10,6 +10,7 @@ class LocationAutocomplete extends StatefulWidget {
   final BorderRadius? radius;
   final EdgeInsets? padding;
   final double? fontSize;
+  final Color? borderColor;
 
   const LocationAutocomplete({
     Key? key,
@@ -20,6 +21,7 @@ class LocationAutocomplete extends StatefulWidget {
     this.padding,
     required this.hintText,
     this.fontSize = 14,
+    this.borderColor,
   }) : super(key: key);
 
   @override
@@ -253,7 +255,10 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final border = OutlineInputBorder(borderRadius: widget.radius ?? BorderRadius.zero, borderSide: BorderSide.none);
+    final border = OutlineInputBorder(
+      borderRadius: widget.radius ?? BorderRadius.zero,
+      borderSide: BorderSide(color: widget.borderColor ?? Colors.grey.withValues(alpha: 0.35)),
+    );
 
     return CompositedTransformTarget(
       link: _layerLink,
@@ -263,7 +268,7 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
         style: context.textTheme.bodyMedium,
         decoration: InputDecoration(
           hintText: widget.hintText,
-          hintStyle: context.textTheme.bodyMedium,
+          hintStyle: context.textTheme.bodyMedium?.copyWith(color: Colors.grey),
           prefixIcon: Container(
             margin: EdgeInsets.only(left: 10),
             alignment: Alignment.centerLeft,

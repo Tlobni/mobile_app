@@ -21,7 +21,7 @@ import 'package:tlobni/ui/screens/chat/chat_list_screen.dart';
 import 'package:tlobni/ui/screens/favorite_screen.dart';
 import 'package:tlobni/ui/screens/home/home_screen.dart';
 import 'package:tlobni/ui/screens/home/search_screen.dart';
-import 'package:tlobni/ui/screens/item/my_items_screen.dart';
+import 'package:tlobni/ui/screens/item/my_items/my_items_screen.dart';
 import 'package:tlobni/ui/screens/user_profile/profile_screen.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
@@ -162,7 +162,7 @@ class MainActivityState extends State<MainActivity> with TickerProviderStateMixi
       // );
     } else {
       print('Received deep link: $uri');
-      // Handle other deep link paths here if necessary
+      // Handle other deep link paths here i0f necessary
     }
   }
 
@@ -286,7 +286,7 @@ class MainActivityState extends State<MainActivity> with TickerProviderStateMixi
   late List<Widget> pages = [
     HomeScreen(from: widget.from),
     ChatListScreen(),
-    HiveUtils.getUserType() == "Client" ? const FavoriteScreen() : const ItemsScreen(),
+    HiveUtils.getUserType() == "Client" ? const FavoriteScreen(showBack: false) : const ItemsScreen(),
     const ProfileScreen(),
   ];
 
@@ -368,7 +368,7 @@ class MainActivityState extends State<MainActivity> with TickerProviderStateMixi
       UiUtils.checkUser(
           onNotGuest: () {
             // Re-initialize the page dynamically based on current user role
-            pages[2] = HiveUtils.getUserType() == "Client" ? const FavoriteScreen() : const ItemsScreen();
+            pages[2] = HiveUtils.getUserType() == "Client" ? const FavoriteScreen(showBack: false) : const ItemsScreen();
 
             currentTab = index;
             pageController.jumpToPage(currentTab);
@@ -489,7 +489,7 @@ class MainActivityState extends State<MainActivity> with TickerProviderStateMixi
             2,
             isClient ? AppIcons.favoriteNav : AppIcons.myAdsNav,
             isClient ? AppIcons.favoriteNavActive : AppIcons.myAdsNavActive,
-            isClient ? "favorites".translate(context) : "myAdsTab".translate(context),
+            isClient ? "favorites".translate(context) : 'Listings',
           ),
           buildBottomNavigationbarItem(3, AppIcons.profileNav, AppIcons.profileNavActive, "profileTab".translate(context))
         ]),

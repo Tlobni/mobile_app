@@ -15,6 +15,9 @@ import 'package:tlobni/ui/screens/item/add_item_screen/widgets/location_autocomp
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/custom_text_form_field.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/buttons/skip_for_later.dart';
+import 'package:tlobni/ui/widgets/text/description_text.dart';
+import 'package:tlobni/ui/widgets/text/heading_text.dart';
 import 'package:tlobni/utils/api.dart';
 import 'package:tlobni/utils/app_icon.dart';
 import 'package:tlobni/utils/cloud_state/cloud_state.dart';
@@ -450,6 +453,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
+        appBar: UiUtils.buildAppBar(context, showBackButton: true, actions: [SkipForLaterButton()]),
         backgroundColor: context.color.backgroundColor,
         bottomNavigationBar: termAndPolicyTxt(),
         body: AnnotatedRegion(
@@ -501,50 +505,11 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // "Skip" button
-                        Align(
-                          alignment: AlignmentDirectional.bottomEnd,
-                          child: TextButton(
-                            onPressed: () {
-                              Navigator.pushReplacementNamed(
-                                context,
-                                Routes.main,
-                                arguments: {
-                                  "from": "login",
-                                  "isSkipped": true,
-                                },
-                              );
-                            },
-                            child: CustomText(
-                              "Skip for later",
-                              color: const Color(0xFF0F2137).withOpacity(0.6),
-                              fontSize: context.font.small,
-                            ),
-                          ),
-                        ),
-
-                        // Tlobni Logo
-                        Center(
-                          child: Image.asset(
-                            'assets/images/tlobni-logo.png',
-                            height: 80,
-                            width: 100,
-                          ),
-                        ),
-
+                        const SizedBox(height: 30),
                         // Heading with account type
-                        CustomText(
-                          "Sign Up",
+                        HeadingText(
+                          "Create ${widget.userType == 'Client' ? 'Client' : _providerType} Account",
                           fontSize: context.font.extraLarge,
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Show what kind of account is being created
-                        CustomText(
-                          _userType == 'Client' ? "Client" : _providerType,
-                          fontSize: context.font.large,
-                          color: context.color.territoryColor,
-                          fontWeight: FontWeight.bold,
                         ),
                         const SizedBox(height: 24),
 
@@ -663,7 +628,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: ["Male", "Female"]
                     .map((gender) => ListTile(
-                          title: Text(gender),
+                          title: DescriptionText(gender),
                           onTap: () {
                             setState(() => _expertGender = gender);
                             Navigator.pop(context);
@@ -763,7 +728,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: ["Male", "Female"]
                     .map((gender) => ListTile(
-                          title: Text(gender),
+                          title: DescriptionText(gender),
                           onTap: () {
                             setState(() => _clientGender = gender);
                             Navigator.pop(context);
@@ -798,9 +763,9 @@ class _SignupScreenState extends CloudState<SignupScreen> {
             decoration: BoxDecoration(
               color: context.color.secondaryColor,
               borderRadius: BorderRadius.circular(8),
-              // border: Border.all(
-              //   color: context.color.borderColor.darken(50),
-              // ),
+              border: Border.all(
+                color: context.color.borderColor.darken(50),
+              ),
             ),
             child: Row(
               children: [
@@ -934,7 +899,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                         const Expanded(
                           child: Text(
                             "Select Categories",
-                            textAlign: TextAlign.center,
+                            textAlign: TextAlign.left,
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -957,6 +922,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                     padding: const EdgeInsets.all(16),
                     child: TextField(
                       controller: searchController,
+                      style: context.textTheme.bodyMedium,
                       decoration: InputDecoration(
                         hintText: "Search categories or subcategories",
                         prefixIcon: const Icon(Icons.search),
@@ -996,10 +962,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                                           ),
                                         ),
                                         child: ListTile(
-                                          title: Text(
-                                            category.name ?? "Unknown",
-                                            style: const TextStyle(fontWeight: FontWeight.w500),
-                                          ),
+                                          title: DescriptionText(category.name ?? "Unknown"),
                                           leading: Checkbox(
                                             value: _isCategorySelected(category.id ?? 0),
                                             onChanged: (bool? value) {
@@ -1074,7 +1037,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                                                   Padding(
                                                     padding: const EdgeInsets.only(left: 20.0),
                                                     child: ListTile(
-                                                      title: Text(subcategory.name ?? "Unknown"),
+                                                      title: DescriptionText(subcategory.name ?? "Unknown"),
                                                       leading: Checkbox(
                                                         value: _isCategorySelected(subcategory.id ?? 0),
                                                         onChanged: (bool? value) {

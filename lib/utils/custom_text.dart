@@ -40,20 +40,21 @@ class CustomText extends StatelessWidget {
   final bool firstUpperCaseWidget;
 
   TextStyle textStyle(BuildContext context) {
-    return TextStyle(
-      color: color ?? context.color.textDefaultColor,
-      fontWeight: fontWeight,
-      fontStyle: fontStyle,
-      fontSize: fontSize,
-      decoration: showLineThrough ?? false
-          ? TextDecoration.lineThrough
-          : showUnderline ?? false
-              ? TextDecoration.underline
-              : null,
-      decorationColor: underlineOrLineColor,
-      height: height,
-      letterSpacing: letterSpacing,
-    );
+    return context.textTheme.bodyMedium?.copyWith(
+          color: color ?? context.color.textDefaultColor,
+          fontWeight: fontWeight,
+          fontStyle: fontStyle,
+          fontSize: fontSize,
+          decoration: showLineThrough ?? false
+              ? TextDecoration.lineThrough
+              : showUnderline ?? false
+                  ? TextDecoration.underline
+                  : null,
+          decorationColor: underlineOrLineColor,
+          height: height,
+          letterSpacing: letterSpacing,
+        ) ??
+        TextStyle();
   }
 
   @override
