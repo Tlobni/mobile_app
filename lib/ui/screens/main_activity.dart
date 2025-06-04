@@ -5,6 +5,12 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:app_links/app_links.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/item/search_item_cubit.dart';
 import 'package:tlobni/data/cubits/subscription/fetch_user_package_limit_cubit.dart';
@@ -15,7 +21,7 @@ import 'package:tlobni/ui/screens/chat/chat_list_screen.dart';
 import 'package:tlobni/ui/screens/favorite_screen.dart';
 import 'package:tlobni/ui/screens/home/home_screen.dart';
 import 'package:tlobni/ui/screens/home/search_screen.dart';
-import 'package:tlobni/ui/screens/item/my_items_screen.dart';
+import 'package:tlobni/ui/screens/item/my_items/my_items_screen.dart';
 import 'package:tlobni/ui/screens/user_profile/profile_screen.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
@@ -30,12 +36,6 @@ import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/svg/svg_edit.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 List<ItemModel> myItemList = [];
@@ -64,11 +64,9 @@ List<ScrollController> controllerList = [
 class MainActivity extends StatefulWidget {
   final String from;
   final String? itemSlug;
-  static final GlobalKey<MainActivityState> globalKey =
-      GlobalKey<MainActivityState>();
+  static final GlobalKey<MainActivityState> globalKey = GlobalKey<MainActivityState>();
 
-  MainActivity({Key? key, required this.from, this.itemSlug})
-      : super(key: globalKey);
+  MainActivity({Key? key, required this.from, this.itemSlug}) : super(key: globalKey);
 
   @override
   State<MainActivity> createState() => MainActivityState();
@@ -95,8 +93,7 @@ class MainActivity extends StatefulWidget {
   }
 }
 
-class MainActivityState extends State<MainActivity>
-    with TickerProviderStateMixin {
+class MainActivityState extends State<MainActivity> with TickerProviderStateMixin {
   PageController pageController = PageController(initialPage: 0);
   int currentTab = 0;
   static final FirebaseMessaging firebaseMessaging = FirebaseMessaging.instance;
@@ -123,19 +120,14 @@ class MainActivityState extends State<MainActivity>
 
     rootBundle.loadString(AppIcons.plusIcon).then((value) {
       svgEdit.loadSVG(value);
-      svgEdit.change("Path_11299-2",
-          attribute: "fill",
-          value: svgEdit.flutterColorToHexColor(context.color.territoryColor));
+      svgEdit.change("Path_11299-2", attribute: "fill", value: svgEdit.flutterColorToHexColor(context.color.territoryColor));
       svgLoaded = true;
       setState(() {});
     });
 
-    FetchSystemSettingsCubit settings =
-        context.read<FetchSystemSettingsCubit>();
-    if (!const bool.fromEnvironment("force-disable-demo-mode",
-        defaultValue: false)) {
-      Constant.isDemoModeOn =
-          settings.getSetting(SystemSetting.demoMode) ?? false;
+    FetchSystemSettingsCubit settings = context.read<FetchSystemSettingsCubit>();
+    if (!const bool.fromEnvironment("force-disable-demo-mode", defaultValue: false)) {
+      Constant.isDemoModeOn = settings.getSetting(SystemSetting.demoMode) ?? false;
     }
     var numberWithSuffix = settings.getSetting(SystemSetting.numberWithSuffix);
     Constant.isNumberWithSuffix = numberWithSuffix == "1" ? true : false;
@@ -147,8 +139,7 @@ class MainActivityState extends State<MainActivity>
     initPageController();
 
     if (widget.itemSlug != null) {
-      Navigator.of(context).pushNamed(Routes.adDetailsScreen,
-          arguments: {"slug": widget.itemSlug!});
+      Navigator.of(context).pushNamed(Routes.adDetailsScreen, arguments: {"slug": widget.itemSlug!});
     }
   }
 
@@ -171,7 +162,7 @@ class MainActivityState extends State<MainActivity>
       // );
     } else {
       print('Received deep link: $uri');
-      // Handle other deep link paths here if necessary
+      // Handle other deep link paths here i0f necessary
     }
   }
 
@@ -193,22 +184,18 @@ class MainActivityState extends State<MainActivity>
   }
 
   void completeProfileCheck() {
-    if (HiveUtils.getUserDetails().name == "" ||
-        HiveUtils.getUserDetails().email == "") {
+    if (HiveUtils.getUserDetails().name == "" || HiveUtils.getUserDetails().email == "") {
       Future.delayed(
         const Duration(milliseconds: 100),
         () {
-          Navigator.pushReplacementNamed(context, Routes.completeProfile,
-              arguments: {"from": "login"});
+          Navigator.pushReplacementNamed(context, Routes.completeProfile, arguments: {"from": "login"});
         },
       );
     }
   }
 
   void versionCheck(settings) async {
-    var remoteVersion = settings.getSetting(Platform.isIOS
-        ? SystemSetting.iosVersion
-        : SystemSetting.androidVersion);
+    var remoteVersion = settings.getSetting(Platform.isIOS ? SystemSetting.iosVersion : SystemSetting.androidVersion);
     var remote = remoteVersion;
 
     var forceUpdate = settings.getSetting(SystemSetting.forceUpdate);
@@ -229,9 +216,7 @@ class MainActivityState extends State<MainActivity>
     if (remoteVersion > currentVersion) {
       Constant.isUpdateAvailable = true;
       Constant.newVersionNumber = settings.getSetting(
-        Platform.isIOS
-            ? SystemSetting.iosVersion
-            : SystemSetting.androidVersion,
+        Platform.isIOS ? SystemSetting.iosVersion : SystemSetting.androidVersion,
       );
 
       Future.delayed(
@@ -259,9 +244,7 @@ class MainActivityState extends State<MainActivity>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         CustomText("$current>$remote"),
-                        CustomText(
-                            "newVersionAvailableForce".translate(context),
-                            textAlign: TextAlign.center),
+                        CustomText("newVersionAvailableForce".translate(context), textAlign: TextAlign.center),
                       ],
                     )));
           } else {
@@ -269,8 +252,7 @@ class MainActivityState extends State<MainActivity>
               context,
               dialoge: BlurredDialogBox(
                 onAccept: () async {
-                  await launchUrl(Uri.parse(Constant.playstoreURLAndroid),
-                      mode: LaunchMode.externalApplication);
+                  await launchUrl(Uri.parse(Constant.playstoreURLAndroid), mode: LaunchMode.externalApplication);
                 },
                 svgImagePath: AppIcons.update,
                 svgImageColor: context.color.territoryColor,
@@ -291,9 +273,7 @@ class MainActivityState extends State<MainActivity>
   void didChangeDependencies() {
     super.didChangeDependencies();
     ErrorFilter.setContext(context);
-    svgEdit.change("Path_11299-2",
-        attribute: "fill",
-        value: svgEdit.flutterColorToHexColor(context.color.territoryColor));
+    svgEdit.change("Path_11299-2", attribute: "fill", value: svgEdit.flutterColorToHexColor(context.color.territoryColor));
   }
 
   @override
@@ -306,24 +286,19 @@ class MainActivityState extends State<MainActivity>
   late List<Widget> pages = [
     HomeScreen(from: widget.from),
     ChatListScreen(),
-    HiveUtils.getUserType() == "Client"
-        ? const FavoriteScreen()
-        : const ItemsScreen(),
+    HiveUtils.getUserType() == "Client" ? const FavoriteScreen(showBack: false) : const ItemsScreen(),
     const ProfileScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion(
-      value: UiUtils.getSystemUiOverlayStyle(
-          context: context, statusBarColor: context.color.primaryColor),
+      value: UiUtils.getSystemUiOverlayStyle(context: context, statusBarColor: context.color.primaryColor),
       child: PopScope(
         canPop: isBack,
         onPopInvokedWithResult: (didPop, result) {
           if (currentTab != 0) {
-            pageController.animateToPage(0,
-                duration: const Duration(milliseconds: 400),
-                curve: Curves.easeInOut);
+            pageController.animateToPage(0, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
             setState(() {
               currentTab = 0;
               isBack = false;
@@ -331,13 +306,10 @@ class MainActivityState extends State<MainActivity>
             return;
           } else {
             DateTime now = DateTime.now();
-            if (currentBackPressTime == null ||
-                now.difference(currentBackPressTime!) >
-                    const Duration(seconds: 2)) {
+            if (currentBackPressTime == null || now.difference(currentBackPressTime!) > const Duration(seconds: 2)) {
               currentBackPressTime = now;
 
-              HelperUtils.showSnackBarMessage(
-                  context, "pressAgainToExit".translate(context));
+              HelperUtils.showSnackBarMessage(context, "pressAgainToExit".translate(context));
 
               setState(() {
                 isBack = false;
@@ -352,8 +324,7 @@ class MainActivityState extends State<MainActivity>
         },
         child: Scaffold(
           backgroundColor: context.color.primaryColor,
-          bottomNavigationBar:
-              Constant.maintenanceMode == "1" ? null : bottomBar(),
+          bottomNavigationBar: Constant.maintenanceMode == "1" ? null : bottomBar(),
           body: Stack(
             children: <Widget>[
               PageView(
@@ -397,9 +368,7 @@ class MainActivityState extends State<MainActivity>
       UiUtils.checkUser(
           onNotGuest: () {
             // Re-initialize the page dynamically based on current user role
-            pages[2] = HiveUtils.getUserType() == "Client"
-                ? const FavoriteScreen()
-                : const ItemsScreen();
+            pages[2] = HiveUtils.getUserType() == "Client" ? const FavoriteScreen(showBack: false) : const ItemsScreen();
 
             currentTab = index;
             pageController.jumpToPage(currentTab);
@@ -418,8 +387,7 @@ class MainActivityState extends State<MainActivity>
   }
 
   BottomAppBar bottomBar() {
-    final isProvider = HiveUtils.getUserType() == "Expert" ||
-        HiveUtils.getUserType() == "Business";
+    final isProvider = HiveUtils.getUserType() == "Expert" || HiveUtils.getUserType() == "Business";
     log('Bottom navigation: User type is ${HiveUtils.getUserType()}, isProvider: $isProvider');
 
     // Check if user is logged in
@@ -436,111 +404,95 @@ class MainActivityState extends State<MainActivity>
         color: context.color.secondaryColor,
         // Consistent padding for all users
         padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Row(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: <Widget>[
-              buildBottomNavigationbarItem(0, AppIcons.homeNav,
-                  AppIcons.homeNavActive, "homeTab".translate(context)),
-              buildBottomNavigationbarItem(1, AppIcons.chatNav,
-                  AppIcons.chatNavActive, "chat".translate(context)),
-              // Only show post button if user is a provider
-              isProvider
-                  ? BlocListener<FetchUserPackageLimitCubit,
-                      FetchUserPackageLimitState>(
-                      listener: (context, state) {
-                        if (state is FetchUserPackageLimitFailure) {
-                          // Check if the error message is "User is pending"
-                          if (state.error.toString() == "User is pending") {
-                            // Show pending dialog for this specific error message
-                            UiUtils.showBlurredDialoge(
-                              context,
-                              dialoge: BlurredDialogBox(
-                                onAccept: () async {
-                                  // Just close the dialog without returning anything
-                                  // and use async to ensure it works as Future
-                                },
-                                svgImageColor: context.color.territoryColor,
-                                showCancelButton: false,
-                                title: "Pending".translate(context),
-                                content: CustomText(
-                                  "Your subscription is pending. The admin will contact you soon.",
-                                  textAlign: TextAlign.center,
-                                ),
-                                acceptButtonName:
-                                    "OK", // Ensuring the button text is OK or any label you prefer
-                                acceptTextColor: Colors
-                                    .white, // Setting button text color to white
-                              ),
-                            );
-                          } else {
-                            // Show the regular error dialog for other errors
-                            UiUtils.noPackageAvailableDialog(context);
-                          }
-                        }
-                        if (state is FetchUserPackageLimitPending) {
-                          UiUtils.showBlurredDialoge(
-                            context,
-                            dialoge: BlurredDialogBox(
-                              onAccept: () async {
-                                // Just close the dialog without returning anything
-                                // and use async to ensure it works as Future
-                                Navigator.of(context).pop();
-                              },
-                              svgImagePath: AppIcons.notification,
-                              svgImageColor: context.color.territoryColor,
-                              showCancelButton: false,
-                              title: "Pending".translate(context),
-                              content: CustomText(
-                                state.message,
-                                textAlign: TextAlign.center,
-                              ),
+        child: Row(mainAxisSize: MainAxisSize.max, mainAxisAlignment: MainAxisAlignment.spaceAround, children: <Widget>[
+          buildBottomNavigationbarItem(0, AppIcons.homeNav, AppIcons.homeNavActive, "homeTab".translate(context)),
+          buildBottomNavigationbarItem(1, AppIcons.chatNav, AppIcons.chatNavActive, "chat".translate(context)),
+          // Only show post button if user is a provider
+          isProvider
+              ? BlocListener<FetchUserPackageLimitCubit, FetchUserPackageLimitState>(
+                  listener: (context, state) {
+                    if (state is FetchUserPackageLimitFailure) {
+                      // Check if the error message is "User is pending"
+                      if (state.error.toString() == "User is pending") {
+                        // Show pending dialog for this specific error message
+                        UiUtils.showBlurredDialoge(
+                          context,
+                          dialoge: BlurredDialogBox(
+                            onAccept: () async {
+                              // Just close the dialog without returning anything
+                              // and use async to ensure it works as Future
+                            },
+                            svgImageColor: context.color.territoryColor,
+                            showCancelButton: false,
+                            title: "Pending".translate(context),
+                            content: CustomText(
+                              "Your subscription is pending. The admin will contact you soon.",
+                              textAlign: TextAlign.center,
                             ),
-                          );
-                        }
-                        if (state is FetchUserPackageLimitInSuccess) {
-                          Navigator.pushNamed(
-                              context, Routes.selectCategoryScreen);
-                        }
-                      },
-                      child: Transform(
-                        transform: Matrix4.identity()
-                          ..translate(0.toDouble(), -20),
-                        child: InkWell(
-                          onTap: () async {
-                            UiUtils.checkUser(
-                                onNotGuest: () {
-                                  context
-                                      .read<FetchUserPackageLimitCubit>()
-                                      .fetchUserPackageLimit(
-                                          packageType: "item_listing");
-                                },
-                                context: context);
+                            acceptButtonName: "OK", // Ensuring the button text is OK or any label you prefer
+                            acceptTextColor: Colors.white, // Setting button text color to white
+                          ),
+                        );
+                      } else {
+                        // Show the regular error dialog for other errors
+                        UiUtils.noPackageAvailableDialog(context);
+                      }
+                    }
+                    if (state is FetchUserPackageLimitPending) {
+                      UiUtils.showBlurredDialoge(
+                        context,
+                        dialoge: BlurredDialogBox(
+                          onAccept: () async {
+                            // Just close the dialog without returning anything
+                            // and use async to ensure it works as Future
+                            Navigator.of(context).pop();
                           },
-                          child: SizedBox(
-                            width: 53,
-                            height: 58,
-                            child: svgLoaded == false
-                                ? Container()
-                                : SvgPicture.string(
-                                    svgEdit.toSVGString() ?? "",
-                                  ),
+                          svgImagePath: AppIcons.notification,
+                          svgImageColor: context.color.territoryColor,
+                          showCancelButton: false,
+                          title: "Pending".translate(context),
+                          content: CustomText(
+                            state.message,
+                            textAlign: TextAlign.center,
                           ),
                         ),
+                      );
+                    }
+                    if (state is FetchUserPackageLimitInSuccess) {
+                      Navigator.pushNamed(context, Routes.selectPostTypeScreen);
+                    }
+                  },
+                  child: Transform(
+                    transform: Matrix4.identity()..translate(0.toDouble(), -20),
+                    child: InkWell(
+                      onTap: () async {
+                        UiUtils.checkUser(
+                            onNotGuest: () {
+                              context.read<FetchUserPackageLimitCubit>().fetchUserPackageLimit(packageType: "item_listing");
+                            },
+                            context: context);
+                      },
+                      child: SizedBox(
+                        width: 53,
+                        height: 58,
+                        child: svgLoaded == false
+                            ? Container()
+                            : SvgPicture.string(
+                                svgEdit.toSVGString() ?? "",
+                              ),
                       ),
-                    )
-                  : SizedBox(width: 10), // Fixed spacing when not a provider
-              buildBottomNavigationbarItem(
-                2,
-                isClient ? AppIcons.favoriteNav : AppIcons.myAdsNav,
-                isClient ? AppIcons.favoriteNavActive : AppIcons.myAdsNavActive,
-                isClient
-                    ? "favorites".translate(context)
-                    : "myAdsTab".translate(context),
-              ),
-              buildBottomNavigationbarItem(3, AppIcons.profileNav,
-                  AppIcons.profileNavActive, "profileTab".translate(context))
-            ]),
+                    ),
+                  ),
+                )
+              : SizedBox(width: 10), // Fixed spacing when not a provider
+          buildBottomNavigationbarItem(
+            2,
+            isClient ? AppIcons.favoriteNav : AppIcons.myAdsNav,
+            isClient ? AppIcons.favoriteNavActive : AppIcons.myAdsNavActive,
+            isClient ? "favorites".translate(context) : 'Listings',
+          ),
+          buildBottomNavigationbarItem(3, AppIcons.profileNav, AppIcons.profileNavActive, "profileTab".translate(context))
+        ]),
       ),
     );
   }
@@ -574,9 +526,7 @@ class MainActivityState extends State<MainActivity>
                     'assets/images/letter-logo.png',
                     width: iconSize,
                     height: iconSize,
-                    color: currentTab == index
-                        ? context.color.territoryColor
-                        : context.color.textLightColor.darken(30),
+                    color: currentTab == index ? context.color.territoryColor : context.color.textLightColor.darken(30),
                   ),
                 )
               else if (currentTab == index)
@@ -602,9 +552,7 @@ class MainActivityState extends State<MainActivity>
                 title,
                 textAlign: TextAlign.center,
                 fontSize: context.font.smaller,
-                color: currentTab == index
-                    ? context.color.textDefaultColor
-                    : context.color.textLightColor.darken(30),
+                color: currentTab == index ? context.color.textDefaultColor : context.color.textLightColor.darken(30),
               ),
             ],
           ),

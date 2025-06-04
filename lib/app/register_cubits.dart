@@ -1,8 +1,11 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nested/nested.dart';
 import 'package:tlobni/data/cubits/add_item_review_cubit.dart';
 import 'package:tlobni/data/cubits/auth/auth_cubit.dart';
 import 'package:tlobni/data/cubits/auth/authentication_cubit.dart';
 import 'package:tlobni/data/cubits/auth/delete_user_cubit.dart';
 import 'package:tlobni/data/cubits/auth/login_cubit.dart';
+import 'package:tlobni/data/cubits/category/fetch_all_categories_cubit.dart';
 import 'package:tlobni/data/cubits/category/fetch_category_cubit.dart';
 import 'package:tlobni/data/cubits/category/fetch_sub_categories_cubit.dart';
 import 'package:tlobni/data/cubits/chat/block_user_cubit.dart';
@@ -23,6 +26,7 @@ import 'package:tlobni/data/cubits/fetch_faqs_cubit.dart';
 import 'package:tlobni/data/cubits/fetch_item_buyer_cubit.dart';
 import 'package:tlobni/data/cubits/fetch_my_reviews_cubit.dart';
 import 'package:tlobni/data/cubits/fetch_notifications_cubit.dart';
+import 'package:tlobni/data/cubits/fetch_provider_cubit.dart';
 import 'package:tlobni/data/cubits/home/fetch_home_all_items_cubit.dart';
 import 'package:tlobni/data/cubits/home/fetch_home_screen_cubit.dart';
 import 'package:tlobni/data/cubits/home/fetch_section_items_cubit.dart';
@@ -66,17 +70,16 @@ import 'package:tlobni/data/cubits/system/get_api_keys_cubit.dart';
 import 'package:tlobni/data/cubits/system/language_cubit.dart';
 import 'package:tlobni/data/cubits/system/notification_cubit.dart';
 import 'package:tlobni/data/cubits/system/user_details.dart';
+import 'package:tlobni/data/cubits/user_has_rated_item_cubit.dart';
+import 'package:tlobni/data/cubits/user_has_rated_user_cubit.dart';
 import 'package:tlobni/data/cubits/utility/item_edit_global.dart';
 import 'package:tlobni/data/repositories/favourites_repository.dart';
 import 'package:tlobni/data/repositories/home/home_repository.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:nested/nested.dart';
 
 class RegisterCubits {
   List<SingleChildWidget> providers = [
     BlocProvider(create: (context) => FavoriteCubit(FavoriteRepository())),
-    BlocProvider(
-        create: (context) => UpdateFavoriteCubit(FavoriteRepository())),
+    BlocProvider(create: (context) => UpdateFavoriteCubit(FavoriteRepository())),
     BlocProvider(create: (context) => AuthCubit()),
     BlocProvider(create: (context) => LoginCubit()),
     BlocProvider(create: (context) => SliderCubit()),
@@ -89,12 +92,13 @@ class RegisterCubits {
     BlocProvider(create: (context) => FetchNotificationsCubit()),
     BlocProvider(create: (context) => LanguageCubit()),
     BlocProvider(create: (context) => FetchBlogsCubit()),
+    BlocProvider(create: (context) => FetchMyItemsCubit()),
     BlocProvider(create: (context) => FetchSystemSettingsCubit()),
     BlocProvider(create: (context) => UserDetailsCubit()),
     BlocProvider(create: (context) => FetchLanguageCubit()),
     BlocProvider(create: (context) => FetchMyPromotedItemsCubit()),
-    BlocProvider(
-        create: (context) => FetchAdsListingSubscriptionPackagesCubit()),
+    BlocProvider(create: (context) => FetchAdsListingSubscriptionPackagesCubit()),
+    BlocProvider(create: (context) => FetchProviderCubit()),
     BlocProvider(create: (context) => FetchFeaturedSubscriptionPackagesCubit()),
     BlocProvider(create: (context) => GetApiKeysCubit()),
     BlocProvider(create: (context) => GetBuyerChatListCubit()),
@@ -113,6 +117,8 @@ class RegisterCubits {
     BlocProvider(create: (context) => FetchPopularItemsCubit()),
     BlocProvider(create: (context) => SearchItemCubit()),
     BlocProvider(create: (context) => FetchSubCategoriesCubit()),
+    BlocProvider(create: (context) => UserHasRatedItemCubit()),
+    BlocProvider(create: (context) => UserHasRatedUserCubit()),
     BlocProvider(create: (context) => ChangeMyItemStatusCubit()),
     BlocProvider(create: (context) => CreateFeaturedAdCubit()),
     BlocProvider(create: (context) => AssignFreePackageCubit()),
@@ -146,5 +152,6 @@ class RegisterCubits {
     BlocProvider(create: (context) => FetchMyRatingsCubit()),
     BlocProvider(create: (context) => AddMyItemReviewReportCubit()),
     BlocProvider(create: (context) => RenewItemCubit()),
+    BlocProvider(create: (context) => FetchAllCategoriesCubit())
   ];
 }

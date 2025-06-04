@@ -1,8 +1,8 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tlobni/data/model/seller_ratings_model.dart';
 import 'package:tlobni/data/repositories/item_reviews_repository.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
-abstract class FetchItemReviewsState {}
+sealed class FetchItemReviewsState {}
 
 class FetchItemReviewsInitial extends FetchItemReviewsState {}
 
@@ -12,14 +12,18 @@ class FetchItemReviewsSuccess extends FetchItemReviewsState {
   final List<UserRatings> reviews;
   final int total;
   final int currentPage;
+  final int lastPage;
   final bool hasMoreData;
   final bool isLoadingMore;
+  final double averageRating;
 
   FetchItemReviewsSuccess({
     required this.reviews,
     required this.total,
     required this.currentPage,
+    required this.lastPage,
     required this.hasMoreData,
+    required this.averageRating,
     this.isLoadingMore = false,
   });
 
@@ -27,15 +31,19 @@ class FetchItemReviewsSuccess extends FetchItemReviewsState {
     List<UserRatings>? reviews,
     int? total,
     int? currentPage,
+    int? lastPage,
     bool? hasMoreData,
     bool? isLoadingMore,
+    double? averageRating,
   }) {
     return FetchItemReviewsSuccess(
       reviews: reviews ?? this.reviews,
       total: total ?? this.total,
       currentPage: currentPage ?? this.currentPage,
+      lastPage: lastPage ?? this.lastPage,
       hasMoreData: hasMoreData ?? this.hasMoreData,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      averageRating: averageRating ?? this.averageRating,
     );
   }
 }
@@ -51,11 +59,11 @@ class FetchItemReviewsCubit extends Cubit<FetchItemReviewsState> {
 
   FetchItemReviewsCubit() : super(FetchItemReviewsInitial());
 
-  Future<void> fetchItemReviews({required int itemId}) async {
+  Future<void> fetchItemReviews({required int itemId, int page = 0}) async {
     try {
       emit(FetchItemReviewsInProgress());
 
-      final result = await _repository.fetchItemReviews(itemId: itemId);
+      final result = await _repository.fetchItemReviews(itemId: itemId, page: page);
 
       if (result['error'] == true) {
         emit(FetchItemReviewsFailure(result['message']));
@@ -67,8 +75,7 @@ class FetchItemReviewsCubit extends Cubit<FetchItemReviewsState> {
 
       if (result['data'] != null) {
         // Extract reviews from response - correct nested structure
-        if (result['data']['reviews'] != null &&
-            result['data']['reviews']['data'] != null) {
+        if (result['data']['reviews'] != null && result['data']['reviews']['data'] != null) {
           for (var review in result['data']['reviews']['data']) {
             reviews.add(UserRatings.fromJson(review));
           }
@@ -81,8 +88,10 @@ class FetchItemReviewsCubit extends Cubit<FetchItemReviewsState> {
       emit(FetchItemReviewsSuccess(
         reviews: reviews,
         total: total,
-        currentPage: 1,
+        currentPage: result['data']['reviews']['current_page'],
+        lastPage: result['data']['reviews']['last_page'],
         hasMoreData: total > reviews.length,
+        averageRating: _getAverageRating(result),
       ));
     } catch (e) {
       print("Error fetching reviews: $e");
@@ -116,8 +125,7 @@ class FetchItemReviewsCubit extends Cubit<FetchItemReviewsState> {
 
         if (result['data'] != null) {
           // Extract reviews from response - correct nested structure
-          if (result['data']['reviews'] != null &&
-              result['data']['reviews']['data'] != null) {
+          if (result['data']['reviews'] != null && result['data']['reviews']['data'] != null) {
             for (var review in result['data']['reviews']['data']) {
               newReviews.add(UserRatings.fromJson(review));
             }
@@ -128,23 +136,21 @@ class FetchItemReviewsCubit extends Cubit<FetchItemReviewsState> {
         }
 
         // Combine existing and new reviews
-        List<UserRatings> updatedReviews = [
-          ...currentState.reviews,
-          ...newReviews
-        ];
+        List<UserRatings> updatedReviews = [...currentState.reviews, ...newReviews];
 
         emit(FetchItemReviewsSuccess(
           reviews: updatedReviews,
           total: total,
           currentPage: currentState.currentPage + 1,
           hasMoreData: total > updatedReviews.length,
+          lastPage: result['data']['reviews']['last_page'],
           isLoadingMore: false,
+          averageRating: _getAverageRating(result),
         ));
       } catch (e) {
         print("Error fetching more reviews: $e");
         if (state is FetchItemReviewsSuccess) {
-          emit((state as FetchItemReviewsSuccess)
-              .copyWith(isLoadingMore: false));
+          emit((state as FetchItemReviewsSuccess).copyWith(isLoadingMore: false));
         }
       }
     }
@@ -170,4 +176,6 @@ class FetchItemReviewsCubit extends Cubit<FetchItemReviewsState> {
       emit(currentState.copyWith(reviews: reviews));
     }
   }
+
+  double _getAverageRating(Map<dynamic, dynamic> result) => ((result['data']?['average_rating'] ?? 0) as num).toDouble();
 }

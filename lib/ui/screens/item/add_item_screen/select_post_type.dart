@@ -1,13 +1,16 @@
+import 'package:flutter/material.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/models/post_type.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/buttons/primary_button.dart';
+import 'package:tlobni/ui/widgets/text/description_text.dart';
+import 'package:tlobni/ui/widgets/text/heading_text.dart';
 import 'package:tlobni/utils/cloud_state/cloud_state.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
 
 class SelectPostTypeScreen extends StatefulWidget {
   final List<CategoryModel>? breadCrumbItems;
@@ -15,8 +18,7 @@ class SelectPostTypeScreen extends StatefulWidget {
   const SelectPostTypeScreen({super.key, this.breadCrumbItems});
 
   static Route route(RouteSettings settings) {
-    Map<String, dynamic>? arguments =
-        settings.arguments as Map<String, dynamic>?;
+    Map<String, dynamic>? arguments = settings.arguments as Map<String, dynamic>?;
     return BlurredRouter(
       builder: (context) {
         return SelectPostTypeScreen(
@@ -27,18 +29,73 @@ class SelectPostTypeScreen extends StatefulWidget {
   }
 
   @override
-  CloudState<SelectPostTypeScreen> createState() =>
-      _SelectPostTypeScreenState();
+  CloudState<SelectPostTypeScreen> createState() => _SelectPostTypeScreenState();
 }
 
 class _SelectPostTypeScreenState extends CloudState<SelectPostTypeScreen> {
   PostType? selectedPostType;
 
+  void _onClickedOnItem(PostType selectedPostType) {
+    // Store the selected post type in cloud data
+    addCloudData("post_type", selectedPostType);
+
+    // Navigate to add item details screen with breadcrumb items
+    Navigator.pushNamed(
+      context,
+      Routes.addItemDetails,
+      arguments: <String, dynamic>{
+        "breadCrumbItems": widget.breadCrumbItems,
+        "isEdit": false,
+        'postType': selectedPostType,
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: UiUtils.buildAppBar(context, title: 'Post Listing', showBackButton: true),
+      body: Padding(
+        padding: EdgeInsets.all(20.0),
+        child: Column(
+          spacing: 30,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ('Post a Service', 'Offer ongoing services to clients with flexible availability', PostType.service),
+            ('Post an Experience', 'Create time-limited, exclusive events for premium clients', PostType.experience),
+          ].map((e) {
+            final (title, description, resultType) = e;
+            return Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: kElevationToShadow[1],
+                color: Colors.white,
+                border: Border.all(color: context.color.secondary),
+              ),
+              padding: EdgeInsets.all(40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  HeadingText(title, textAlign: TextAlign.center),
+                  SizedBox(height: 20),
+                  DescriptionText(description, color: Colors.grey.shade600, textAlign: TextAlign.center, fontSize: 16),
+                  SizedBox(height: 30),
+                  PrimaryButton.text(
+                    title,
+                    padding: EdgeInsets.all(20),
+                    borderRadius: 10,
+                    fontSize: 15,
+                    onPressed: () => _onClickedOnItem(resultType),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
     return AnnotatedRegion(
-      value: UiUtils.getSystemUiOverlayStyle(
-          context: context, statusBarColor: context.color.secondaryColor),
+      value: UiUtils.getSystemUiOverlayStyle(context: context, statusBarColor: context.color.secondaryColor),
       child: SafeArea(
         child: Scaffold(
           appBar: UiUtils.buildAppBar(
@@ -83,8 +140,7 @@ class _SelectPostTypeScreenState extends CloudState<SelectPostTypeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Display selected category
-                  if (widget.breadCrumbItems != null &&
-                      widget.breadCrumbItems!.isNotEmpty) ...[
+                  if (widget.breadCrumbItems != null && widget.breadCrumbItems!.isNotEmpty) ...[
                     Container(
                       margin: const EdgeInsets.only(bottom: 15),
                       padding: const EdgeInsets.all(10),
@@ -108,19 +164,14 @@ class _SelectPostTypeScreenState extends CloudState<SelectPostTypeScreen> {
                                 "Selected Category".translate(context),
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onBackground
-                                      .withOpacity(0.7),
+                                  color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
                                 ),
                               ),
                               Text(
                                 widget.breadCrumbItems!.last.name ?? "",
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onBackground,
+                                  color: Theme.of(context).colorScheme.onBackground,
                                 ),
                               ),
                             ],
@@ -132,8 +183,7 @@ class _SelectPostTypeScreenState extends CloudState<SelectPostTypeScreen> {
                   ],
 
                   Text(
-                    "Select the type of post you want to create:"
-                        .translate(context),
+                    "Select the type of post you want to create:".translate(context),
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.onBackground,
                       fontWeight: FontWeight.bold,
@@ -142,13 +192,9 @@ class _SelectPostTypeScreenState extends CloudState<SelectPostTypeScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "Choose the option that best describes what you're offering"
-                        .translate(context),
+                    "Choose the option that best describes what you're offering".translate(context),
                     style: TextStyle(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onBackground
-                          .withOpacity(0.7),
+                      color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
                       fontSize: 16,
                     ),
                   ),
@@ -158,8 +204,7 @@ class _SelectPostTypeScreenState extends CloudState<SelectPostTypeScreen> {
                   _buildPostTypeCard(
                     context,
                     title: "Service",
-                    description:
-                        "Premium, always-available professional services",
+                    description: "Premium, always-available professional services",
                     isSelected: selectedPostType == PostType.service,
                     onTap: () {
                       setState(() {
@@ -174,8 +219,7 @@ class _SelectPostTypeScreenState extends CloudState<SelectPostTypeScreen> {
                   _buildPostTypeCard(
                     context,
                     title: "Exclusive Experience",
-                    description:
-                        "Limited-time, unique opportunities that disappear after they end",
+                    description: "Limited-time, unique opportunities that disappear after they end",
                     isSelected: selectedPostType == PostType.experience,
                     onTap: () {
                       setState(() {
@@ -241,14 +285,10 @@ class _SelectPostTypeScreenState extends CloudState<SelectPostTypeScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected
-              ? context.color.primaryColor.withOpacity(0.15)
-              : context.color.secondaryColor,
+          color: isSelected ? context.color.primaryColor.withOpacity(0.15) : context.color.secondaryColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected
-                ? context.color.primaryColor
-                : context.color.borderColor,
+            color: isSelected ? context.color.primaryColor : context.color.borderColor,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
@@ -268,13 +308,9 @@ class _SelectPostTypeScreenState extends CloudState<SelectPostTypeScreen> {
               height: 24,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isSelected
-                    ? context.color.territoryColor
-                    : Colors.transparent,
+                color: isSelected ? context.color.territoryColor : Colors.transparent,
                 border: Border.all(
-                  color: isSelected
-                      ? context.color.primaryColor
-                      : context.color.borderColor,
+                  color: isSelected ? context.color.primaryColor : context.color.borderColor,
                   width: 2,
                 ),
               ),
@@ -295,9 +331,7 @@ class _SelectPostTypeScreenState extends CloudState<SelectPostTypeScreen> {
                     title.translate(context),
                     fontWeight: FontWeight.w600,
                     fontSize: context.font.large,
-                    color: isSelected
-                        ? context.color.territoryColor
-                        : context.color.textColorDark,
+                    color: isSelected ? context.color.territoryColor : context.color.textColorDark,
                   ),
                   const SizedBox(height: 4),
                   CustomText(

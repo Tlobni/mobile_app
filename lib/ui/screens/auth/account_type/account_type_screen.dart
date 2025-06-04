@@ -1,12 +1,15 @@
+import 'package:flutter/material.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/theme/theme.dart';
-import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/ui/widgets/buttons/primary_button.dart';
+import 'package:tlobni/ui/widgets/miscellanious/logo.dart';
+import 'package:tlobni/ui/widgets/text/description_text.dart';
+import 'package:tlobni/ui/widgets/text/heading_text.dart';
+import 'package:tlobni/ui/widgets/text/small_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
-import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
 
 class AccountTypeScreen extends StatefulWidget {
   const AccountTypeScreen({Key? key}) : super(key: key);
@@ -52,8 +55,7 @@ class _AccountTypeScreenState extends State<AccountTypeScreen> {
         Routes.signup,
         arguments: {
           'userType': _selectedAccountType == 'Client' ? 'Client' : 'Provider',
-          'providerType':
-              _selectedAccountType == 'Client' ? null : _selectedAccountType,
+          'providerType': _selectedAccountType == 'Client' ? null : _selectedAccountType,
         },
       );
     }
@@ -74,86 +76,78 @@ class _AccountTypeScreenState extends State<AccountTypeScreen> {
     return Scaffold(
       backgroundColor: context.color.backgroundColor,
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Skip button
-            Align(
-              alignment: AlignmentDirectional.topEnd,
-              child: TextButton(
-                onPressed: _skipForNow,
-                child: CustomText(
-                  "Skip for later",
-                  color: const Color(0xFF0F2137).withOpacity(0.6),
-                  fontSize: context.font.small,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Skip button
+              Align(
+                alignment: AlignmentDirectional.topEnd,
+                child: TextButton(
+                  onPressed: _skipForNow,
+                  child: SmallText(
+                    "Skip for later",
+                  ),
                 ),
               ),
-            ),
 
-            const SizedBox(height: 10),
+              const SizedBox(height: 10),
 
-            // Tlobni Logo
-            Center(
-              child: Image.asset(
-                'assets/images/tlobni-logo.png',
-                height: 80,
-                width: 100,
+              // Tlobni Logo
+              Logo(),
+              const SizedBox(height: 60),
+
+              // Header
+              Center(
+                child: HeadingText("Account Type"),
               ),
-            ),
-            const SizedBox(height: 20),
+              const SizedBox(height: 12),
 
-            // Header
-            Center(
-              child: CustomText(
-                "Account Type",
-                fontSize: context.font.extraLarge,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF0F2137),
+              // Subtitle
+              Center(
+                child: DescriptionText(
+                  "Let us know more about you",
+                  color: Colors.grey[600],
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 40),
 
-            // Subtitle
-            Center(
-              child: CustomText(
-                "Let us know more about you",
-                fontSize: context.font.large,
-                color: Colors.grey[600],
+              // Account Type Options
+              ..._accountTypes.map(_buildAccountTypeOption),
+
+              const SizedBox(height: 40),
+
+              // Next Button - disabled when no selection
+              // Center(
+              //   child: UiUtils.buildButton(
+              //     context,
+              //     onPressed: _navigateToSignup,
+              //     buttonTitle: 'Next',
+              //     radius: 8,
+              //     height: 50,
+              //     width: MediaQuery.of(context).size.width * 0.9,
+              //     buttonColor: const Color(0xFF0F2137),
+              //     disabled: false,
+              //     disabledColor: const Color.fromARGB(255, 104, 102, 106),
+              //     textColor: const Color(0xFFE6CBA8),
+              //   ),
+              // ),
+              PrimaryButton.text(
+                'Next',
+                onPressed: _selectedAccountType == null ? null : _navigateToSignup,
+                padding: EdgeInsets.all(20),
               ),
-            ),
-            const SizedBox(height: 40),
-
-            // Account Type Options
-            ...List.generate(_accountTypes.length, (index) {
-              final accountType = _accountTypes[index];
-              return _buildAccountTypeOption(accountType, index);
-            }),
-
-            const Spacer(),
-
-            // Next Button - disabled when no selection
-            Center(
-              child: UiUtils.buildButton(
-                context,
-                onPressed: _navigateToSignup,
-                buttonTitle: 'Next',
-                radius: 8,
-                height: 50,
-                width: MediaQuery.of(context).size.width * 0.9,
-                buttonColor: const Color(0xFF0F2137),
-                disabled: false,
-                disabledColor: const Color.fromARGB(255, 104, 102, 106),
-                textColor: const Color(0xFFE6CBA8),
-              ),
-            ),
-            const SizedBox(height: 30),
-          ],
+              const SizedBox(height: 30),
+              const Spacer(),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildAccountTypeOption(String accountType, int index) {
+  Widget _buildAccountTypeOption(String accountType) {
     bool isSelected = _selectedAccountType == accountType;
 
     return GestureDetector(
@@ -163,25 +157,21 @@ class _AccountTypeScreenState extends State<AccountTypeScreen> {
         });
       },
       child: Container(
-        margin: EdgeInsets.only(bottom: index == 0 ? 30 : 10),
+        margin: EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
           color: const Color(0xFFE6CBA8),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Padding(
-              padding: const EdgeInsets.only(left: 40),
-              child: CustomText(
-                accountType,
-                fontSize: context.font.large,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF0F2137),
-              ),
+              padding: const EdgeInsets.only(left: 20),
+              child: DescriptionText(accountType, weight: FontWeight.w500),
             ),
             Padding(
-              padding: const EdgeInsets.only(right: 16),
+              padding: const EdgeInsets.only(right: 20),
               child: Container(
                 width: 24,
                 height: 24,
@@ -191,8 +181,7 @@ class _AccountTypeScreenState extends State<AccountTypeScreen> {
                     color: const Color(0xFF0F2137),
                     width: 2,
                   ),
-                  color:
-                      isSelected ? const Color(0xFF0F2137) : Colors.transparent,
+                  color: isSelected ? const Color(0xFF0F2137) : Colors.transparent,
                 ),
                 child: isSelected
                     ? const Center(

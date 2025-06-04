@@ -1,12 +1,12 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:tlobni/data/cubits/profile_setting_cubit.dart';
 import 'package:tlobni/data/helper/widgets.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/theme/theme.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileSettings extends StatefulWidget {
@@ -35,9 +35,7 @@ class ProfileSettingsState extends State<ProfileSettings> {
     super.initState();
 
     Future.delayed(Duration.zero, () {
-      context
-          .read<ProfileSettingCubit>()
-          .fetchProfileSetting(context, widget.param!, forceRefresh: true);
+      context.read<ProfileSettingCubit>().fetchProfileSetting(context, widget.param!, forceRefresh: true);
     });
   }
 
@@ -45,16 +43,11 @@ class ProfileSettingsState extends State<ProfileSettings> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.primaryColor,
-      appBar: UiUtils.buildAppBar(context,
-          title: widget.title!, showBackButton: true),
+      appBar: UiUtils.buildAppBar(context, title: widget.title!, showBackButton: true),
       // appBar: Widgets.setAppbar(widget.title!, context, []),
-      body: BlocBuilder<ProfileSettingCubit, ProfileSettingState>(
-          builder: (context, state) {
+      body: BlocBuilder<ProfileSettingCubit, ProfileSettingState>(builder: (context, state) {
         if (state is ProfileSettingFetchProgress) {
-          return Center(
-            child: UiUtils.progress(
-                normalProgressColor: context.color.territoryColor),
-          );
+          return Center(child: UiUtils.progress(color: context.color.territoryColor));
         } else if (state is ProfileSettingFetchSuccess) {
           return contentWidget(state, context);
         } else if (state is ProfileSettingFetchFailure) {
@@ -73,8 +66,7 @@ Widget contentWidget(ProfileSettingFetchSuccess state, BuildContext context) {
     padding: const EdgeInsets.symmetric(horizontal: 20),
     child: HtmlWidget(
       state.data.toString(),
-      onTapUrl: (url) =>
-          launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+      onTapUrl: (url) => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
       customStylesBuilder: (element) {
         if (element.localName == 'table') {
           return {'background-color': 'grey[50]'};
@@ -82,8 +74,7 @@ Widget contentWidget(ProfileSettingFetchSuccess state, BuildContext context) {
         if (element.localName == 'p') {
           return {'color': context.color.textColorDark.toString()};
         }
-        if (element.localName == 'p' &&
-            element.children.any((child) => child.localName == 'strong')) {
+        if (element.localName == 'p' && element.children.any((child) => child.localName == 'strong')) {
           return {
             'color': context.color.territoryColor.toString(),
             'font-size': 'larger',

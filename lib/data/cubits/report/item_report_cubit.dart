@@ -1,5 +1,5 @@
-import 'package:tlobni/data/repositories/report_item_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tlobni/data/repositories/report_item_repository.dart';
 
 abstract class ItemReportState {}
 
@@ -23,7 +23,7 @@ class ItemReportCubit extends Cubit<ItemReportState> {
   ItemReportCubit() : super(ItemReportInitial());
   ReportItemRepository repository = ReportItemRepository();
 
-  void report({
+  Future<void> report({
     required int item_id,
     required int reason_id,
     String? message,
@@ -31,8 +31,7 @@ class ItemReportCubit extends Cubit<ItemReportState> {
     try {
       emit(ItemReportInProgress());
 
-      Map response = await repository.reportItem(
-          reasonId: reason_id, itemId: item_id, message: message);
+      Map response = await repository.reportItem(reasonId: reason_id, itemId: item_id, message: message);
 
       if (response['error'] == false) {
         emit(ItemReportInSuccess(response['message']));

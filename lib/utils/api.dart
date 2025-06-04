@@ -1,14 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tlobni/data/cubits/chat/blocked_users_list_cubit.dart';
 import 'package:tlobni/data/cubits/chat/get_buyer_chat_users_cubit.dart';
 import 'package:tlobni/data/cubits/favorite/favorite_cubit.dart';
 import 'package:tlobni/data/cubits/report/update_report_items_list_cubit.dart';
-import 'package:tlobni/data/cubits/system/app_theme_cubit.dart';
 import 'package:tlobni/data/cubits/system/user_details.dart';
 import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/error_filter.dart';
@@ -16,8 +15,6 @@ import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/network_request_interseptor.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../main.dart';
 
 class ApiException implements Exception {
   ApiException(this.errorMessage);
@@ -33,8 +30,7 @@ class ApiException implements Exception {
 class Api {
   static Map<String, dynamic> headers() {
     if (!HiveUtils.isUserAuthenticated()) {
-      if (HiveUtils.getLanguage() != null ||
-          HiveUtils.getLanguage()?['data'] != null) {
+      if (HiveUtils.getLanguage() != null || HiveUtils.getLanguage()?['data'] != null) {
         log("User not authenticated, using language headers only");
         return {"Accept": "application/json", "Content-Language": "en" ?? ""};
       } else {
@@ -63,8 +59,7 @@ class Api {
   }
 
 //Place API
-  static const String _placeApiBaseUrl =
-      "https://maps.googleapis.com/maps/api/place/";
+  static const String _placeApiBaseUrl = "https://maps.googleapis.com/maps/api/place/";
   static String placeApiKey = "key";
   static const String input = "input";
   static const String types = "types";
@@ -81,7 +76,9 @@ class Api {
   static String updateProfileApi = "update-profile";
   static String getSliderApi = "get-slider";
   static String getCategoriesApi = "get-categories";
+  static String getAllCategoriesApi = "get-all-categories";
   static String getItemApi = "get-item";
+  static String getItemApiAuthenticated = "get-item-authenticated";
   static String getMyItemApi = "my-items";
   static String getNotificationListApi = "get-notification-list";
   static String deleteUserApi = "delete-user";
@@ -126,6 +123,8 @@ class Api {
   static String getVerificationRequestApi = "verification-request";
   static String addReviewReportApi = "add-review-report";
   static String renewItemApi = "renew-item";
+  static String userHasRatedUser = 'user-has-rated-user';
+  static String userHasRatedItem = 'user-has-rated-item';
 
 //Chat module apis
   static String sendMessageApi = "send-message";
@@ -263,6 +262,10 @@ class Api {
   static String featuredItemsApi = "featured-items";
   static String featuredUsersApi = "featured-users";
 
+  static String forgotPassword = 'forgot-password';
+
+  static String getProvider = 'get-provider';
+
   static Future<Map<String, dynamic>> post({
     required String url,
     dynamic parameter,
@@ -281,14 +284,10 @@ class Api {
         parameter.forEach((key, value) {
           if (value is File) {
 // If the value is a File, convert it to MultipartFile
-            formMap[key] = MultipartFile.fromFileSync(value.path,
-                filename: value.path.split('/').last);
+            formMap[key] = MultipartFile.fromFileSync(value.path, filename: value.path.split('/').last);
           } else if (value is List<File>) {
 // If the value is a List of Files, convert each to MultipartFile
-            formMap[key] = value
-                .map((file) => MultipartFile.fromFileSync(file.path,
-                    filename: file.path.split('/').last))
-                .toList();
+            formMap[key] = value.map((file) => MultipartFile.fromFileSync(file.path, filename: file.path.split('/').last)).toList();
           } else {
 // Otherwise, add the value as it is
             formMap[key] = value;
@@ -301,8 +300,7 @@ class Api {
           ListFormat.multiCompatible,
         );
       } else {
-        throw ArgumentError(
-            'Invalid parameter type. Expected Map<String, dynamic>.');
+        throw ArgumentError('Invalid parameter type. Expected Map<String, dynamic>.');
       }
 
       final response = await dio.post(
@@ -331,9 +329,7 @@ class Api {
       }
 
       throw ApiException(
-        e.error is SocketException
-            ? "no-internet"
-            : "Something went wrong with error ${e.response?.statusCode}",
+        e.error is SocketException ? "no-internet" : "Something went wrong with error ${e.response?.statusCode}",
       );
     } on ApiException catch (e) {
       throw ApiException(e.errorMessage);
@@ -343,23 +339,17 @@ class Api {
   }
 
   static void userExpired() {
-    HelperUtils.showSnackBarMessage(Constant.navigatorKey.currentContext!,
-        "userIsDeactivated".translate(Constant.navigatorKey.currentContext!),
+    HelperUtils.showSnackBarMessage(
+        Constant.navigatorKey.currentContext!, "userIsDeactivated".translate(Constant.navigatorKey.currentContext!),
         messageDuration: 3);
     Future.delayed(Duration(seconds: 2), () {
       HiveUtils.clear();
       Constant.favoriteItemList.clear();
       Constant.navigatorKey.currentContext!.read<UserDetailsCubit>().clear();
       Constant.navigatorKey.currentContext!.read<FavoriteCubit>().resetState();
-      Constant.navigatorKey.currentContext!
-          .read<UpdatedReportItemCubit>()
-          .clearItem();
-      Constant.navigatorKey.currentContext!
-          .read<GetBuyerChatListCubit>()
-          .resetState();
-      Constant.navigatorKey.currentContext!
-          .read<BlockedUsersListCubit>()
-          .resetState();
+      Constant.navigatorKey.currentContext!.read<UpdatedReportItemCubit>().clearItem();
+      Constant.navigatorKey.currentContext!.read<GetBuyerChatListCubit>().resetState();
+      Constant.navigatorKey.currentContext!.read<BlockedUsersListCubit>().resetState();
       HiveUtils.logoutUser(
         Constant.navigatorKey.currentContext!,
         onLogout: () {},
@@ -402,9 +392,7 @@ class Api {
       }
 
       throw ApiException(
-        e.error is SocketException
-            ? "no-internet"
-            : "Something went wrong with error ${e.response?.statusCode}",
+        e.error is SocketException ? "no-internet" : "Something went wrong with error ${e.response?.statusCode}",
       );
     } on ApiException catch (e) {
       throw ApiException(e.errorMessage);
@@ -413,10 +401,7 @@ class Api {
     }
   }
 
-  static Future<Map<String, dynamic>> get(
-      {required String url,
-      Map<String, dynamic>? queryParameters,
-      bool? useBaseUrl}) async {
+  static Future<Map<String, dynamic>> get({required String url, Map<String, dynamic>? queryParameters, bool? useBaseUrl}) async {
     try {
       log("Making GET request to: ${(useBaseUrl ?? true) ? Constant.baseUrl : ""}$url");
       log("Query parameters: $queryParameters");
@@ -424,10 +409,8 @@ class Api {
       final Dio dio = Dio();
       dio.interceptors.add(NetworkRequestInterceptor());
 
-      final response = await dio.get(
-          ((useBaseUrl ?? true) ? Constant.baseUrl : "") + url,
-          queryParameters: queryParameters,
-          options: Options(headers: headers()));
+      final response = await dio.get(((useBaseUrl ?? true) ? Constant.baseUrl : "") + url,
+          queryParameters: queryParameters, options: Options(headers: headers()));
 
       if (response.data['error'] == true) {
         log("API returned error: ${response.data['message']}");
@@ -465,9 +448,7 @@ class Api {
         throw ApiException("server-not-available");
       }
 
-      throw ApiException(e.error is SocketException
-          ? "no-internet"
-          : "Something went wrong with error ${e.response?.statusCode}");
+      throw ApiException(e.error is SocketException ? "no-internet" : "Something went wrong with error ${e.response?.statusCode}");
     } on ApiException catch (e) {
       log("ApiException: ${e.errorMessage}");
       throw ApiException(e.errorMessage);

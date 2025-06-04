@@ -1,11 +1,5 @@
-import 'package:tlobni/ui/screens/widgets/errors/something_went_wrong.dart';
-import 'package:tlobni/ui/theme/theme.dart';
-import 'package:tlobni/utils/extensions/extensions.dart';
-import 'package:tlobni/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:tlobni/utils/api.dart';
-import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/home/fetch_section_items_cubit.dart';
 import 'package:tlobni/data/helper/designs.dart';
@@ -14,7 +8,13 @@ import 'package:tlobni/ui/screens/home/widgets/item_horizontal_card.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/errors/no_data_found.dart';
 import 'package:tlobni/ui/screens/widgets/errors/no_internet.dart';
+import 'package:tlobni/ui/screens/widgets/errors/something_went_wrong.dart';
 import 'package:tlobni/ui/screens/widgets/shimmerLoadingContainer.dart';
+import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/utils/api.dart';
+import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/hive_utils.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 
 class SectionItemsScreen extends StatefulWidget {
   final String title;
@@ -31,10 +31,7 @@ class SectionItemsScreen extends StatefulWidget {
   static Route route(RouteSettings routeSettings) {
     Map arguments = routeSettings.arguments as Map;
     return BlurredRouter(
-      builder: (_) => SectionItemsScreen(
-          title: arguments['title'],
-          sectionId: arguments['sectionId'],
-          endpoint: arguments['endpoint']),
+      builder: (_) => SectionItemsScreen(title: arguments['title'], sectionId: arguments['sectionId'], endpoint: arguments['endpoint']),
     );
   }
 
@@ -98,8 +95,7 @@ class _SectionItemsScreenState extends State<SectionItemsScreen> {
         },
         color: context.color.territoryColor,
         child: Scaffold(
-          appBar: UiUtils.buildAppBar(context,
-              showBackButton: true, title: widget.title),
+          appBar: UiUtils.buildAppBar(context, showBackButton: true, title: widget.title),
           body: BlocBuilder<FetchSectionItemsCubit, FetchSectionItemsState>(
             builder: (context, state) {
               if (state is FetchSectionItemsInProgress) {
@@ -145,14 +141,12 @@ class _SectionItemsScreenState extends State<SectionItemsScreen> {
                     ),
                     if (state.isLoadingMore)
                       UiUtils.progress(
-                        normalProgressColor: context.color.territoryColor,
+                        color: context.color.territoryColor,
                       )
                   ],
                 );
               } else if (state is FetchSectionItemsFail) {
-                if (state.error is ApiException &&
-                    (state.error as ApiException).errorMessage ==
-                        "no-internet") {
+                if (state.error is ApiException && (state.error as ApiException).errorMessage == "no-internet") {
                   return NoInternet(
                     onRetry: getAllItems,
                   );

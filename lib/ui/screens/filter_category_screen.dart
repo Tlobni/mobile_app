@@ -2,30 +2,26 @@
 
 import 'dart:developer';
 
-import 'package:tlobni/app/routes.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tlobni/data/cubits/category/fetch_category_cubit.dart';
 import 'package:tlobni/data/cubits/custom_field/fetch_custom_fields_cubit.dart';
 import 'package:tlobni/data/model/category_model.dart';
-import 'package:tlobni/data/model/item_filter_model.dart';
+import 'package:tlobni/ui/screens/filter/item_listing_filter_screen.dart';
 import 'package:tlobni/ui/screens/filter/provider_filter_screen.dart';
-import 'package:tlobni/ui/screens/filter/service_filter_screen.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/custom_filed_structure/custom_field.dart';
-import 'package:tlobni/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
 import 'package:tlobni/ui/screens/main_activity.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/dynamic_field.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/text/description_text.dart';
+import 'package:tlobni/ui/widgets/text/small_text.dart';
 import 'package:tlobni/utils/api.dart';
-import 'package:tlobni/utils/app_icon.dart';
 import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:tlobni/ui/screens/item/add_item_screen/models/post_type.dart';
 
 // String extension for capitalization
 extension StringExtension on String {
@@ -49,8 +45,7 @@ class FilterCategoryScreen extends StatefulWidget {
   State<FilterCategoryScreen> createState() => _FilterCategoryScreenState();
 }
 
-class _FilterCategoryScreenState extends State<FilterCategoryScreen>
-    with TickerProviderStateMixin {
+class _FilterCategoryScreenState extends State<FilterCategoryScreen> with TickerProviderStateMixin {
   final ScrollController _pageScrollController = ScrollController();
   List<CategoryModel> allCategories = [];
   List<CategoryModel> filteredCategories = [];
@@ -104,8 +99,7 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen>
             // Add nested children if any
             if (child.children != null && child.children!.isNotEmpty) {
               for (var nestedChild in child.children!) {
-                if (!widget.categoryList
-                    .any((cat) => cat.id == nestedChild.id)) {
+                if (!widget.categoryList.any((cat) => cat.id == nestedChild.id)) {
                   widget.categoryList.add(nestedChild);
                 }
               }
@@ -123,8 +117,7 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen>
             // Remove nested children if any
             if (child.children != null && child.children!.isNotEmpty) {
               for (var nestedChild in child.children!) {
-                widget.categoryList
-                    .removeWhere((cat) => cat.id == nestedChild.id);
+                widget.categoryList.removeWhere((cat) => cat.id == nestedChild.id);
               }
             }
           }
@@ -140,13 +133,11 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen>
       } else {
         query = query.toLowerCase();
         filteredCategories = allCategories.where((category) {
-          final matchesMainCategory =
-              category.name?.toLowerCase().contains(query) ?? false;
+          final matchesMainCategory = category.name?.toLowerCase().contains(query) ?? false;
 
           // Check if any subcategory matches
-          final hasMatchingSubcategory = category.children?.any((subcategory) =>
-                  subcategory.name?.toLowerCase().contains(query) ?? false) ??
-              false;
+          final hasMatchingSubcategory =
+              category.children?.any((subcategory) => subcategory.name?.toLowerCase().contains(query) ?? false) ?? false;
 
           return matchesMainCategory || hasMatchingSubcategory;
         }).toList();
@@ -156,11 +147,8 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen>
           final category = filteredCategories[i];
           final originalIndex = allCategories.indexOf(category);
           if (originalIndex >= 0 && originalIndex < expandedPanels.length) {
-            final hasMatchingSubcategory = category.children?.any(
-                    (subcategory) =>
-                        subcategory.name?.toLowerCase().contains(query) ??
-                        false) ??
-                false;
+            final hasMatchingSubcategory =
+                category.children?.any((subcategory) => subcategory.name?.toLowerCase().contains(query) ?? false) ?? false;
 
             if (hasMatchingSubcategory) {
               expandedPanels[originalIndex] = true;
@@ -177,8 +165,7 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen>
 
   void toggleSubcategoryExpansion(int subCategoryId) {
     setState(() {
-      expandedSubcategories[subCategoryId] =
-          !(expandedSubcategories[subCategoryId] ?? false);
+      expandedSubcategories[subCategoryId] = !(expandedSubcategories[subCategoryId] ?? false);
     });
   }
 
@@ -194,12 +181,9 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen>
             onPressed: () {
               Navigator.pop(context);
             },
-            child: Text(
+            child: SmallText(
               "Done",
-              style: TextStyle(
-                color: context.color.territoryColor,
-                fontWeight: FontWeight.w600,
-              ),
+              weight: FontWeight.w600,
             ),
           ),
         ],
@@ -211,6 +195,7 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen>
             padding: const EdgeInsets.all(16),
             child: TextField(
               controller: searchController,
+              style: context.textTheme.bodyMedium,
               decoration: InputDecoration(
                 hintText: "Search categories".translate(context),
                 prefixIcon: const Icon(Icons.search),
@@ -233,10 +218,7 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen>
                 if (state is FetchCategorySuccess) {
                   // Initialize data when categories are fetched
                   setState(() {
-                    allCategories = state.categories
-                        .where(
-                            (category) => category.type == widget.categoryType)
-                        .toList();
+                    allCategories = state.categories.where((category) => category.type == widget.categoryType).toList();
 
                     // If the search field has text, apply filter
                     if (searchController.text.isNotEmpty) {
@@ -266,24 +248,22 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen>
 
                 if (state is FetchCategoryFailure) {
                   return Center(
-                    child: Text(state.errorMessage),
+                    child: DescriptionText(state.errorMessage),
                   );
                 }
 
                 if (state is FetchCategorySuccess) {
                   if (filteredCategories.isEmpty) {
                     return Center(
-                      child: CustomText("No Data Found".translate(context)),
+                      child: DescriptionText("No Data Found".translate(context)),
                     );
                   }
 
                   return ListView.builder(
                     controller: _pageScrollController,
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 10, horizontal: 10),
-                    itemCount: filteredCategories.length +
-                        (state.isLoadingMore ? 1 : 0),
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                    itemCount: filteredCategories.length + (state.isLoadingMore ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index == filteredCategories.length) {
                         return Center(
@@ -295,8 +275,7 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen>
 
                       final category = filteredCategories[index];
                       final originalIndex = allCategories.indexOf(category);
-                      final hasSubcategories = category.children != null &&
-                          category.children!.isNotEmpty;
+                      final hasSubcategories = category.children != null && category.children!.isNotEmpty;
 
                       return Column(
                         children: [
@@ -312,10 +291,9 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen>
                               ),
                             ),
                             child: ListTile(
-                              title: Text(
+                              title: DescriptionText(
                                 category.name ?? "Unknown",
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w500),
+                                weight: FontWeight.w500,
                               ),
                               leading: Checkbox(
                                 value: isCategorySelected(category.id ?? 0),
@@ -327,17 +305,14 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen>
                               ),
                               trailing: hasSubcategories
                                   ? Icon(
-                                      expandedPanels[originalIndex]
-                                          ? Icons.keyboard_arrow_up
-                                          : Icons.keyboard_arrow_down,
+                                      expandedPanels[originalIndex] ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                                       color: context.color.textDefaultColor,
                                     )
                                   : null,
                               onTap: hasSubcategories
                                   ? () {
                                       setState(() {
-                                        expandedPanels[originalIndex] =
-                                            !expandedPanels[originalIndex];
+                                        expandedPanels[originalIndex] = !expandedPanels[originalIndex];
                                       });
                                     }
                                   : null,
@@ -347,94 +322,64 @@ class _FilterCategoryScreenState extends State<FilterCategoryScreen>
                           // Subcategories (if expanded and has subcategories)
                           if (hasSubcategories && expandedPanels[originalIndex])
                             Container(
-                              color:
-                                  context.color.secondaryColor.withOpacity(0.5),
+                              color: context.color.secondaryColor.withOpacity(0.5),
                               child: Column(
                                 children: category.children!.map((subcategory) {
                                   // Filter subcategories if search is active
                                   if (searchController.text.isNotEmpty) {
-                                    final query =
-                                        searchController.text.toLowerCase();
-                                    if (!(subcategory.name
-                                            ?.toLowerCase()
-                                            .contains(query) ??
-                                        false)) {
+                                    final query = searchController.text.toLowerCase();
+                                    if (!(subcategory.name?.toLowerCase().contains(query) ?? false)) {
                                       return Container(); // Skip non-matching subcategories
                                     }
                                   }
 
-                                  final hasNestedSubcategories =
-                                      subcategory.children != null &&
-                                          subcategory.children!.isNotEmpty;
+                                  final hasNestedSubcategories = subcategory.children != null && subcategory.children!.isNotEmpty;
 
                                   return Column(
                                     children: [
                                       Padding(
-                                        padding:
-                                            const EdgeInsets.only(left: 20.0),
+                                        padding: const EdgeInsets.only(left: 20.0),
                                         child: ListTile(
-                                          title: Text(
-                                              subcategory.name ?? "Unknown"),
+                                          title: DescriptionText(subcategory.name ?? "Unknown"),
                                           leading: Checkbox(
-                                            value: isCategorySelected(
-                                                subcategory.id ?? 0),
+                                            value: isCategorySelected(subcategory.id ?? 0),
                                             onChanged: (bool? value) {
-                                              if (subcategory.id != null &&
-                                                  value != null) {
-                                                toggleCategorySelection(
-                                                    subcategory, value);
+                                              if (subcategory.id != null && value != null) {
+                                                toggleCategorySelection(subcategory, value);
                                               }
                                             },
                                           ),
                                           trailing: hasNestedSubcategories
                                               ? Icon(
-                                                  isSubcategoryExpanded(
-                                                          subcategory.id ?? 0)
+                                                  isSubcategoryExpanded(subcategory.id ?? 0)
                                                       ? Icons.keyboard_arrow_up
-                                                      : Icons
-                                                          .keyboard_arrow_down,
-                                                  color: context
-                                                      .color.textDefaultColor,
+                                                      : Icons.keyboard_arrow_down,
+                                                  color: context.color.textDefaultColor,
                                                 )
                                               : null,
                                           onTap: hasNestedSubcategories
                                               ? () {
-                                                  toggleSubcategoryExpansion(
-                                                      subcategory.id ?? 0);
+                                                  toggleSubcategoryExpansion(subcategory.id ?? 0);
                                                 }
                                               : null,
                                         ),
                                       ),
 
                                       // Nested subcategories
-                                      if (hasNestedSubcategories &&
-                                          isSubcategoryExpanded(
-                                              subcategory.id ?? 0))
+                                      if (hasNestedSubcategories && isSubcategoryExpanded(subcategory.id ?? 0))
                                         Container(
-                                          color: context.color.secondaryColor
-                                              .withOpacity(0.3),
+                                          color: context.color.secondaryColor.withOpacity(0.3),
                                           child: Column(
-                                            children: subcategory.children!
-                                                .map((nestedSubcategory) {
+                                            children: subcategory.children!.map((nestedSubcategory) {
                                               return Padding(
-                                                padding: const EdgeInsets.only(
-                                                    left: 40.0),
+                                                padding: const EdgeInsets.only(left: 40.0),
                                                 child: ListTile(
-                                                  title: Text(
-                                                      nestedSubcategory.name ??
-                                                          "Unknown"),
+                                                  title: DescriptionText(nestedSubcategory.name ?? "Unknown"),
                                                   leading: Checkbox(
-                                                    value: isCategorySelected(
-                                                        nestedSubcategory.id ??
-                                                            0),
+                                                    value: isCategorySelected(nestedSubcategory.id ?? 0),
                                                     onChanged: (bool? value) {
-                                                      if (nestedSubcategory
-                                                                  .id !=
-                                                              null &&
-                                                          value != null) {
-                                                        toggleCategorySelection(
-                                                            nestedSubcategory,
-                                                            value);
+                                                      if (nestedSubcategory.id != null && value != null) {
+                                                        toggleCategorySelection(nestedSubcategory, value);
                                                       }
                                                     },
                                                   ),
@@ -500,10 +445,8 @@ class FilterScreen extends StatefulWidget {
 class FilterScreenState extends State<FilterScreen> {
   List<String> selectedCategories = [];
 
-  TextEditingController minController =
-      TextEditingController(text: Constant.itemFilter?.minPrice);
-  TextEditingController maxController =
-      TextEditingController(text: Constant.itemFilter?.maxPrice);
+  TextEditingController minController = TextEditingController(text: Constant.itemFilter?.minPrice);
+  TextEditingController maxController = TextEditingController(text: Constant.itemFilter?.maxPrice);
   TextEditingController locationController = TextEditingController();
 
   // = 2; // 0: last_week   1: yesterday
@@ -524,15 +467,11 @@ class FilterScreenState extends State<FilterScreen> {
   String? _gender; // 'male' or 'female' (for experts)
   String? _serviceType; // 'service' or 'experience'
   Map<String, bool> _specialTags = {
-    "exclusive_women":
-        Constant.itemFilter?.specialTags?["exclusive_women"] == "true" || false,
-    "corporate_package":
-        Constant.itemFilter?.specialTags?["corporate_package"] == "true" ||
-            false
+    "exclusive_women": Constant.itemFilter?.specialTags?["exclusive_women"] == "true" || false,
+    "corporate_package": Constant.itemFilter?.specialTags?["corporate_package"] == "true" || false
   };
 
-  String postedOn =
-      Constant.itemFilter?.postedSince ?? Constant.postedSince[0].value;
+  String postedOn = Constant.itemFilter?.postedSince ?? Constant.postedSince[0].value;
 
   late List<CategoryModel> categoryList = widget.categoryList ?? [];
 
@@ -560,10 +499,8 @@ class FilterScreenState extends State<FilterScreen> {
 
       // Initialize special tags if they exist in the filter
       if (Constant.itemFilter?.specialTags != null) {
-        _specialTags["exclusive_women"] =
-            Constant.itemFilter?.specialTags?["exclusive_women"] == "true";
-        _specialTags["corporate_package"] =
-            Constant.itemFilter?.specialTags?["corporate_package"] == "true";
+        _specialTags["exclusive_women"] = Constant.itemFilter?.specialTags?["exclusive_women"] == "true";
+        _specialTags["corporate_package"] = Constant.itemFilter?.specialTags?["corporate_package"] == "true";
       }
     }
   }
@@ -574,8 +511,7 @@ class FilterScreenState extends State<FilterScreen> {
       selectedCategories.addAll(widget.categoryIds!);
     }
     if (widget.categoryList != null && widget.categoryList!.isNotEmpty) {
-      selectedCategories
-          .addAll(widget.categoryList!.map((e) => e.id.toString()).toList());
+      selectedCategories.addAll(widget.categoryList!.map((e) => e.id.toString()).toList());
     }
   }
 
@@ -627,9 +563,7 @@ class FilterScreenState extends State<FilterScreen> {
       getCustomFieldsData();
     } else {
       city = HiveUtils.getCityName() ?? "";
-      areaId = HiveUtils.getAreaId() != null
-          ? int.parse(HiveUtils.getAreaId().toString())
-          : null;
+      areaId = HiveUtils.getAreaId() != null ? int.parse(HiveUtils.getAreaId().toString()) : null;
       area = HiveUtils.getAreaName() ?? "";
       _state = HiveUtils.getStateName() ?? "";
       country = HiveUtils.getCountryName() ?? "";
@@ -637,11 +571,8 @@ class FilterScreenState extends State<FilterScreen> {
       longitude = HiveUtils.getLongitude() ?? null;
 
       // Update location controller text if available
-      if ([city, _state, country]
-          .where((element) => element.isNotEmpty)
-          .isNotEmpty) {
-        locationController.text =
-            [city, country].where((element) => element.isNotEmpty).join(", ");
+      if ([city, _state, country].where((element) => element.isNotEmpty).isNotEmpty) {
+        locationController.text = [city, country].where((element) => element.isNotEmpty).join(", ");
       }
     }
   }
@@ -715,17 +646,13 @@ class FilterScreenState extends State<FilterScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 // Listing Type Filter (Service or Experience)
-                CustomText('Listing Type'.translate(context),
-                    color: context.color.textDefaultColor,
-                    fontWeight: FontWeight.w600),
+                CustomText('Listing Type'.translate(context), color: context.color.textDefaultColor, fontWeight: FontWeight.w600),
                 const SizedBox(height: 5),
                 _buildServiceTypeFilter(context),
                 const SizedBox(height: 15),
 
                 // Provider Type Filter (Expert or Business)
-                CustomText('Provider Type'.translate(context),
-                    color: context.color.textDefaultColor,
-                    fontWeight: FontWeight.w600),
+                CustomText('Provider Type'.translate(context), color: context.color.textDefaultColor, fontWeight: FontWeight.w600),
                 const SizedBox(height: 5),
                 _buildUserTypeFilter(context),
               ],
@@ -774,10 +701,9 @@ class FilterScreenState extends State<FilterScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => ServiceFilterScreen(
-                  update: widget.update,
-                  fromServiceType: 'service',
-                ),
+                builder: (context) => ItemListingFilterScreen(
+                    // fromServiceType: 'service',
+                    ),
               ),
             );
           },
@@ -789,10 +715,9 @@ class FilterScreenState extends State<FilterScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => ServiceFilterScreen(
-                  update: widget.update,
-                  fromServiceType: 'experience',
-                ),
+                builder: (context) => ItemListingFilterScreen(
+                    // fromServiceType: 'experience',
+                    ),
               ),
             );
           },
@@ -814,9 +739,8 @@ class FilterScreenState extends State<FilterScreen> {
               context,
               MaterialPageRoute(
                 builder: (context) => ProviderFilterScreen(
-                  update: widget.update,
-                  providerType: 'expert',
-                ),
+                    // providerType: 'expert',
+                    ),
               ),
             );
           },
@@ -829,9 +753,8 @@ class FilterScreenState extends State<FilterScreen> {
               context,
               MaterialPageRoute(
                 builder: (context) => ProviderFilterScreen(
-                  update: widget.update,
-                  providerType: 'business',
-                ),
+                    // providerType: 'business',
+                    ),
               ),
             );
           },

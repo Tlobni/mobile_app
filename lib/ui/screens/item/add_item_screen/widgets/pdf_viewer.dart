@@ -40,11 +40,9 @@ class _PDFViewerState extends State<PdfViewer> {
     var url = widget.url;
 
     try {
-      Response response = await Dio()
-          .get(url, options: Options(responseType: ResponseType.bytes));
+      Response response = await Dio().get(url, options: Options(responseType: ResponseType.bytes));
       final bytes = response.data;
-      final filename =
-          path.basename(url); // Use path.basename instead of basename
+      final filename = path.basename(url); // Use path.basename instead of basename
       final dir = await getApplicationDocumentsDirectory();
       var file = File('${dir.path}/$filename');
       await file.writeAsBytes(bytes, flush: true);

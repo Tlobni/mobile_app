@@ -9,12 +9,14 @@ class DataOutput<T> {
   final List<T> modelList;
   final ExtraData? extraData;
   final int? page;
+  final int? lastPage;
 
   DataOutput({
     required this.total,
     required this.modelList,
     this.extraData,
     this.page,
+    this.lastPage,
   });
 
   DataOutput<T> copyWith({
@@ -22,12 +24,14 @@ class DataOutput<T> {
     List<T>? modelList,
     ExtraData? extraData,
     int? page,
+    int? lastPage,
   }) {
     return DataOutput<T>(
       total: total ?? this.total,
       modelList: modelList ?? this.modelList,
       extraData: extraData ?? this.extraData,
       page: page ?? this.page,
+      lastPage: lastPage ?? this.lastPage,
     );
   }
 }

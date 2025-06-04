@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/ui/widgets/text/description_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 
 class LocationAutocomplete extends StatefulWidget {
@@ -7,13 +7,21 @@ class LocationAutocomplete extends StatefulWidget {
   final Function(String) onSelected;
   final Function(Map<String, String>)? onLocationSelected;
   final String hintText;
+  final BorderRadius? radius;
+  final EdgeInsets? padding;
+  final double? fontSize;
+  final Color? borderColor;
 
   const LocationAutocomplete({
     Key? key,
     required this.controller,
     required this.onSelected,
     this.onLocationSelected,
+    this.radius,
+    this.padding,
     required this.hintText,
+    this.fontSize = 14,
+    this.borderColor,
   }) : super(key: key);
 
   @override
@@ -49,11 +57,7 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
     // Oman
     {'city': 'Muscat', 'state': 'Muscat Governorate', 'country': 'Oman'},
     {'city': 'Salalah', 'state': 'Dhofar Governorate', 'country': 'Oman'},
-    {
-      'city': 'Sohar',
-      'state': 'North Al Batinah Governorate',
-      'country': 'Oman'
-    },
+    {'city': 'Sohar', 'state': 'North Al Batinah Governorate', 'country': 'Oman'},
 
     // Kuwait
     {'city': 'Kuwait City', 'state': 'Al Asimah', 'country': 'Kuwait'},
@@ -64,24 +68,12 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
     {'city': 'Tripoli', 'state': 'North Governorate', 'country': 'Lebanon'},
     {'city': 'Sidon', 'state': 'South Governorate', 'country': 'Lebanon'},
     {'city': 'Tyre', 'state': 'South Governorate', 'country': 'Lebanon'},
-    {
-      'city': 'Byblos',
-      'state': 'Mount Lebanon Governorate',
-      'country': 'Lebanon'
-    },
-    {
-      'city': 'Baalbek',
-      'state': 'Baalbek-Hermel Governorate',
-      'country': 'Lebanon'
-    },
+    {'city': 'Byblos', 'state': 'Mount Lebanon Governorate', 'country': 'Lebanon'},
+    {'city': 'Baalbek', 'state': 'Baalbek-Hermel Governorate', 'country': 'Lebanon'},
 
     // Egypt
     {'city': 'Cairo', 'state': 'Cairo Governorate', 'country': 'Egypt'},
-    {
-      'city': 'Alexandria',
-      'state': 'Alexandria Governorate',
-      'country': 'Egypt'
-    },
+    {'city': 'Alexandria', 'state': 'Alexandria Governorate', 'country': 'Egypt'},
     {'city': 'Giza', 'state': 'Giza Governorate', 'country': 'Egypt'},
     {'city': 'Luxor', 'state': 'Luxor Governorate', 'country': 'Egypt'},
 
@@ -112,8 +104,7 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
 
     // If the controller already has text (from edit mode),
     // try to find the location in our list and trigger onLocationSelected
-    if (widget.controller.text.isNotEmpty &&
-        widget.onLocationSelected != null) {
+    if (widget.controller.text.isNotEmpty && widget.onLocationSelected != null) {
       final String text = widget.controller.text.toLowerCase();
 
       // First try to find a matching location from our predefined list
@@ -121,10 +112,8 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
       try {
         matchedLocation = _locations.firstWhere(
           (location) {
-            final String cityCountry =
-                "${location['city']}, ${location['country']}".toLowerCase();
-            final String countryCity =
-                "${location['country']}, ${location['city']}".toLowerCase();
+            final String cityCountry = "${location['city']}, ${location['country']}".toLowerCase();
+            final String countryCity = "${location['country']}, ${location['city']}".toLowerCase();
             return cityCountry.contains(text) || countryCity.contains(text);
           },
           orElse: () => <String, String>{},
@@ -161,13 +150,13 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
   }
 
   void _onTextChanged() {
+    widget.onLocationSelected?.call({});
     final text = widget.controller.text.toLowerCase();
     if (text.isEmpty) {
-      _filteredLocations = [];
+      _filteredLocations = _locations.toList();
     } else {
       _filteredLocations = _locations.where((location) {
-        return location['city']!.toLowerCase().contains(text) ||
-            location['country']!.toLowerCase().contains(text);
+        return '${location['city']}, ${location['country']}'.toLowerCase().contains(text.toLowerCase());
       }).toList();
     }
 
@@ -216,7 +205,7 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
               child: _filteredLocations.isEmpty
                   ? Container(
                       padding: EdgeInsets.all(16),
-                      child: CustomText(
+                      child: DescriptionText(
                         "No locations found",
                         color: theme.hintColor,
                       ),
@@ -227,12 +216,10 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
                       itemCount: _filteredLocations.length,
                       itemBuilder: (context, index) {
                         final location = _filteredLocations[index];
-                        final displayText =
-                            "${location['city']}, ${location['country']}";
+                        final displayText = "${location['city']}, ${location['country']}";
 
                         return ListTile(
-                          title: CustomText(displayText,
-                              color: theme.textTheme.bodyMedium?.color),
+                          title: DescriptionText(displayText),
                           onTap: () {
                             widget.controller.text = displayText;
                             widget.onSelected(displayText);
@@ -268,21 +255,20 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final border = OutlineInputBorder(
+      borderRadius: widget.radius ?? BorderRadius.zero,
+      borderSide: BorderSide(color: widget.borderColor ?? Colors.grey.withValues(alpha: 0.35)),
+    );
+
     return CompositedTransformTarget(
       link: _layerLink,
       child: TextField(
         controller: widget.controller,
         focusNode: _focusNode,
-        style: TextStyle(
-          color: theme.textTheme.bodyMedium?.color,
-          fontSize: 14,
-        ),
+        style: context.textTheme.bodyMedium,
         decoration: InputDecoration(
           hintText: widget.hintText,
-          hintStyle: TextStyle(
-            color: theme.hintColor,
-            fontSize: 14,
-          ),
+          hintStyle: context.textTheme.bodyMedium?.copyWith(color: Colors.grey),
           prefixIcon: Container(
             margin: EdgeInsets.only(left: 10),
             alignment: Alignment.centerLeft,
@@ -293,10 +279,10 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
             ),
           ),
           prefixIconConstraints: BoxConstraints(minWidth: 35, maxWidth: 35),
-          contentPadding: EdgeInsets.only(right: 35),
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
+          contentPadding: widget.padding ?? EdgeInsets.only(right: 35),
+          border: border,
+          enabledBorder: border,
+          focusedBorder: border,
           fillColor: theme.cardColor,
           filled: true,
         ),

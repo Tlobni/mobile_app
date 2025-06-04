@@ -2,11 +2,21 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/item/manage_item_cubit.dart';
 import 'package:tlobni/data/helper/widgets.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
-import 'package:tlobni/ui/screens/item/my_item_tab_screen.dart';
+import 'package:tlobni/ui/screens/item/my_items/my_item_tab_screen.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
 import 'package:tlobni/ui/theme/theme.dart';
@@ -19,16 +29,6 @@ import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
 import 'package:tlobni/utils/validator.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:shimmer/shimmer.dart';
 
 class ConfirmLocationScreen extends StatefulWidget {
   final bool? isEdit;
@@ -63,8 +63,7 @@ class ConfirmLocationScreen extends StatefulWidget {
   _ConfirmLocationScreenState createState() => _ConfirmLocationScreenState();
 }
 
-class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
-    with WidgetsBindingObserver {
+class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen> with WidgetsBindingObserver {
   final GlobalKey<FormState> _formKey = GlobalKey();
   TextEditingController cityTextController = TextEditingController();
   TextEditingController countryTextController = TextEditingController();
@@ -109,18 +108,10 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
     if (widget.isEdit!) {
       ItemModel itemModel = getCloudData('edit_request') as ItemModel;
 
-      currentLocation = [
-        itemModel.area,
-        itemModel.city,
-        itemModel.state,
-        itemModel.country
-      ].where((part) => part != null && part.isNotEmpty).join(', ');
+      currentLocation =
+          [itemModel.area, itemModel.city, itemModel.state, itemModel.country].where((part) => part != null && part.isNotEmpty).join(', ');
       formatedAddress = AddressComponent(
-          area: itemModel.area,
-          areaId: itemModel.areaId,
-          city: itemModel.city,
-          country: itemModel.country,
-          state: itemModel.state);
+          area: itemModel.area, areaId: itemModel.areaId, city: itemModel.city, country: itemModel.country, state: itemModel.state);
       latitude = itemModel.latitude;
       longitude = itemModel.longitude;
       _cameraPosition = CameraPosition(
@@ -141,16 +132,13 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
         HiveUtils.getCurrentCountryName()
       ].where((part) => part != null && part.isNotEmpty).join(', ');
       if (currentLocation == "") {
-        Position position = await Geolocator.getCurrentPosition(
-            locationSettings:
-                LocationSettings(accuracy: LocationAccuracy.high));
+        Position position = await Geolocator.getCurrentPosition(locationSettings: LocationSettings(accuracy: LocationAccuracy.high));
         _cameraPosition = CameraPosition(
           target: LatLng(position.latitude, position.longitude),
           zoom: 14.4746,
           bearing: 0,
         );
-        getLocationFromLatitudeLongitude(
-            latLng: LatLng(position.latitude, position.longitude));
+        getLocationFromLatitudeLongitude(latLng: LatLng(position.latitude, position.longitude));
         _markers.add(Marker(
           markerId: const MarkerId('currentLocation'),
           position: LatLng(position.latitude, position.longitude),
@@ -186,8 +174,7 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
     try {
       await setLocaleIdentifier("en_US");
       Placemark? placeMark = (await placemarkFromCoordinates(
-              latLng?.latitude ?? _cameraPosition!.target.latitude,
-              latLng?.longitude ?? _cameraPosition!.target.longitude))
+              latLng?.latitude ?? _cameraPosition!.target.latitude, latLng?.longitude ?? _cameraPosition!.target.longitude))
           .first;
 
       formatedAddress = AddressComponent(
@@ -220,8 +207,7 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
     } else if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
 
-      if (permission != LocationPermission.whileInUse &&
-          permission != LocationPermission.always) {
+      if (permission != LocationPermission.whileInUse && permission != LocationPermission.always) {
         // Handle permission not granted for while in use or always
         _showLocationServiceInstructions();
       } else {
@@ -236,8 +222,7 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
   void _showLocationServiceInstructions() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: CustomText(
-            'pleaseEnableLocationServicesManually'.translate(context)),
+        content: CustomText('pleaseEnableLocationServicesManually'.translate(context)),
         action: SnackBarAction(
           label: 'ok'.translate(context),
           textColor: context.color.secondaryColor,
@@ -274,24 +259,15 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
             padding: const EdgeInsets.only(bottom: 12, left: 18.0, right: 18),
             child: UiUtils.buildButton(context, onPressed: () async {
               if (formatedAddress == null ||
-                  ((formatedAddress!.city == "" ||
-                          formatedAddress!.city == null) &&
-                      (formatedAddress!.area == "" ||
-                          formatedAddress!.area == null))) {
-                HelperUtils.showSnackBarMessage(
-                    context, "cityRequired".translate(context));
+                  ((formatedAddress!.city == "" || formatedAddress!.city == null) &&
+                      (formatedAddress!.area == "" || formatedAddress!.area == null))) {
+                HelperUtils.showSnackBarMessage(context, "cityRequired".translate(context));
                 Future.delayed(Duration(seconds: 2), () {
                   dialogueBottomSheet(
-                      controller: cityTextController,
-                      title: "enterCity".translate(context),
-                      hintText: "city".translate(context),
-                      from: 1);
+                      controller: cityTextController, title: "enterCity".translate(context), hintText: "city".translate(context), from: 1);
                 });
-              } else if (formatedAddress == null ||
-                  (formatedAddress!.country == "" ||
-                      formatedAddress!.country == null)) {
-                HelperUtils.showSnackBarMessage(
-                    context, "countryRequired".translate(context));
+              } else if (formatedAddress == null || (formatedAddress!.country == "" || formatedAddress!.country == null)) {
+                HelperUtils.showSnackBarMessage(context, "countryRequired".translate(context));
                 Future.delayed(Duration(seconds: 2), () {
                   dialogueBottomSheet(
                       controller: countryTextController,
@@ -301,31 +277,23 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
                 });
               } else {
                 try {
-                  Map<String, dynamic> cloudData =
-                      getCloudData("with_more_details") ?? {};
+                  Map<String, dynamic> cloudData = getCloudData("with_more_details") ?? {};
 
                   cloudData['address'] = formatedAddress?.mixed;
                   if (latitude != null) cloudData['latitude'] = latitude;
                   if (longitude != null) cloudData['longitude'] = longitude;
                   cloudData['country'] = formatedAddress!.country;
-                  cloudData['city'] = (formatedAddress!.city == "" ||
-                          formatedAddress!.city == null)
-                      ? (formatedAddress!.area == "" ||
-                              formatedAddress!.area == null
-                          ? null
-                          : formatedAddress!.area)
+                  cloudData['city'] = (formatedAddress!.city == "" || formatedAddress!.city == null)
+                      ? (formatedAddress!.area == "" || formatedAddress!.area == null ? null : formatedAddress!.area)
                       : formatedAddress!.city;
                   cloudData['state'] = formatedAddress!.state;
-                  if (formatedAddress!.areaId != null)
-                    cloudData['area_id'] = formatedAddress!.areaId;
+                  if (formatedAddress!.areaId != null) cloudData['area_id'] = formatedAddress!.areaId;
 
                   if (widget.isEdit == true) {
-                    context.read<ManageItemCubit>().manage(ManageItemType.edit,
-                        cloudData, widget.mainImage, widget.otherImage!);
+                    context.read<ManageItemCubit>().manage(ManageItemType.edit, cloudData, widget.mainImage, widget.otherImage!);
                     return;
                   } else {
-                    context.read<ManageItemCubit>().manage(ManageItemType.add,
-                        cloudData, widget.mainImage!, widget.otherImage!);
+                    context.read<ManageItemCubit>().manage(ManageItemType.add, cloudData, widget.mainImage!, widget.otherImage!);
                     return;
                   }
                 } catch (e, st) {
@@ -341,12 +309,9 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
                 radius: 8,
                 disabledColor: const Color.fromARGB(255, 104, 102, 106),
                 disabled: (formatedAddress == null ||
-                    ((formatedAddress!.city == "" ||
-                            formatedAddress!.city == null) &&
-                        (formatedAddress!.area == "" ||
-                            formatedAddress!.area == null)) ||
-                    (formatedAddress!.country == "" ||
-                        formatedAddress!.country == null)),
+                    ((formatedAddress!.city == "" || formatedAddress!.city == null) &&
+                        (formatedAddress!.area == "" || formatedAddress!.area == null)) ||
+                    (formatedAddress!.country == "" || formatedAddress!.country == null)),
                 width: double.maxFinite,
                 buttonTitle: "postNow".translate(context)),
           ),
@@ -355,8 +320,7 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
   }
 
   Widget bodyData() {
-    return BlocConsumer<ManageItemCubit, ManageItemState>(
-        listener: (context, state) {
+    return BlocConsumer<ManageItemCubit, ManageItemState>(listener: (context, state) {
       if (state is ManageItemInProgress) {
         Widgets.showLoader(context);
       }
@@ -366,8 +330,7 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
         myAdsCubitReference[getCloudData("edit_from")]?.edit(state.model);
         Future.delayed(Duration(milliseconds: 500), () {
           if (mounted) {
-            Navigator.pushNamed(context, Routes.successItemScreen,
-                arguments: {'model': state.model, 'isEdit': widget.isEdit});
+            Navigator.pushNamed(context, Routes.successItemScreen, arguments: {'model': state.model, 'isEdit': widget.isEdit});
           }
         });
       }
@@ -392,13 +355,10 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
                 ),
                 Padding(
                   padding: EdgeInsets.only(top: 20, right: 15, left: 15),
-                  child: UiUtils.buildButton(context, height: 48,
-                      onPressed: () {
-                    Navigator.pushNamed(context, Routes.countriesScreen,
-                        arguments: {"from": "addItem"}).then((value) {
+                  child: UiUtils.buildButton(context, height: 48, onPressed: () {
+                    Navigator.pushNamed(context, Routes.countriesScreen, arguments: {"from": "addItem"}).then((value) {
                       if (value != null) {
-                        Map<String, dynamic> location =
-                            value as Map<String, dynamic>;
+                        Map<String, dynamic> location = value as Map<String, dynamic>;
 
                         if (mounted)
                           setState(() {
@@ -407,10 +367,7 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
                               location["city"] ?? null,
                               location["state"] ?? null,
                               location["country"] ?? null,
-                            ]
-                                .where(
-                                    (part) => part != null && part.isNotEmpty)
-                                .join(', ');
+                            ].where((part) => part != null && part.isNotEmpty).join(', ');
 
                             formatedAddress = AddressComponent(
                                 area: location["area"] ?? null,
@@ -441,10 +398,7 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
                       buttonTitle: "somewhereElseLbl".translate(context),
                       textColor: context.color.textDefaultColor,
                       buttonColor: context.color.secondaryColor,
-                      border: BorderSide(
-                          color:
-                              context.color.textDefaultColor.withOpacity(0.3),
-                          width: 1.5),
+                      border: BorderSide(color: context.color.textDefaultColor.withOpacity(0.3), width: 1.5),
                       radius: 5),
                 ),
                 SizedBox(
@@ -455,8 +409,7 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
                     children: <Widget>[
                       Container(
                         margin: EdgeInsets.symmetric(horizontal: 15),
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10)),
+                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(10),
                           child: GoogleMap(
@@ -466,8 +419,7 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
                               onCameraIdle: () async {
                                 if (markerMove == false) {
                                   if (LatLng(latitude!, longitude!) ==
-                                      LatLng(_cameraPosition!.target.latitude,
-                                          _cameraPosition!.target.longitude)) {
+                                      LatLng(_cameraPosition!.target.latitude, _cameraPosition!.target.longitude)) {
                                   } else {
                                     getLocationFromLatitudeLongitude();
                                   }
@@ -476,8 +428,7 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
                               initialCameraPosition: _cameraPosition!,
                               markers: _markers,
                               zoomControlsEnabled: false,
-                              minMaxZoomPreference:
-                                  const MinMaxZoomPreference(0, 16),
+                              minMaxZoomPreference: const MinMaxZoomPreference(0, 16),
                               compassEnabled: true,
                               indoorViewEnabled: true,
                               mapToolbarEnabled: true,
@@ -485,9 +436,7 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
                               mapType: MapType.normal,
                               gestureRecognizers: getMapGestureRecognizers(),
                               onMapCreated: (GoogleMapController controller) {
-                                Future.delayed(
-                                        const Duration(milliseconds: 500))
-                                    .then((value) {
+                                Future.delayed(const Duration(milliseconds: 500)).then((value) {
                                   _mapController = (controller);
                                   _mapController.animateCamera(
                                     CameraUpdate.newCameraPosition(
@@ -507,8 +456,7 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
                                   latitude = latLng.latitude;
                                   longitude = latLng.longitude;
 
-                                  getLocationFromLatitudeLongitude(
-                                      latLng: latLng); // Get location details
+                                  getLocationFromLatitudeLongitude(latLng: latLng); // Get location details
                                 });
                               }),
                         ),
@@ -536,13 +484,10 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
                           ),
                           onTap: () async {
                             Position position =
-                                await Geolocator.getCurrentPosition(
-                                    locationSettings: LocationSettings(
-                                        accuracy: LocationAccuracy.high));
+                                await Geolocator.getCurrentPosition(locationSettings: LocationSettings(accuracy: LocationAccuracy.high));
 
                             _cameraPosition = CameraPosition(
-                              target:
-                                  LatLng(position.latitude, position.longitude),
+                              target: LatLng(position.latitude, position.longitude),
                               zoom: 14.4746,
                               bearing: 0,
                             );
@@ -578,12 +523,9 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
                                       width: 25,
                                       height: 25,
                                       decoration: BoxDecoration(
-                                        color: context.color.territoryColor
-                                            .withOpacity(0.1),
+                                        color: context.color.territoryColor.withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(5),
-                                        border: Border.all(
-                                            width: Constant.borderWidth,
-                                            color: context.color.borderColor),
+                                        border: Border.all(width: Constant.borderWidth, color: context.color.borderColor),
                                       ),
                                       child: SizedBox(
                                           width: 8.11,
@@ -591,35 +533,23 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
                                           child: SvgPicture.asset(
                                             AppIcons.location,
                                             fit: BoxFit.none,
-                                            colorFilter: ColorFilter.mode(
-                                                context.color.territoryColor,
-                                                BlendMode.srcIn),
+                                            colorFilter: ColorFilter.mode(context.color.territoryColor, BlendMode.srcIn),
                                           )),
                                     ),
                                     SizedBox(
                                       width: 10,
                                     ),
                                     Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         CustomText(
                                           formatedAddress == null
                                               ? "____" // Fallback text if formatedAddress is null
-                                              : (formatedAddress!.city ==
-                                                          null ||
-                                                      formatedAddress!
-                                                          .city!.isEmpty)
-                                                  ? (formatedAddress!.area !=
-                                                              null &&
-                                                          formatedAddress!
-                                                              .area!.isNotEmpty
+                                              : (formatedAddress!.city == null || formatedAddress!.city!.isEmpty)
+                                                  ? (formatedAddress!.area != null && formatedAddress!.area!.isNotEmpty
                                                       ? formatedAddress!.area!
                                                       : "____")
-                                                  : (formatedAddress!.area !=
-                                                              null &&
-                                                          formatedAddress!
-                                                              .area!.isNotEmpty
+                                                  : (formatedAddress!.area != null && formatedAddress!.area!.isNotEmpty
                                                       ? "${formatedAddress!.area!}, ${formatedAddress!.city!}"
                                                       : formatedAddress!.city!),
                                           fontSize: context.font.large,
@@ -648,10 +578,7 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
   }
 
   void dialogueBottomSheet(
-      {required String title,
-      required TextEditingController controller,
-      required String hintText,
-      required int from}) async {
+      {required String title, required TextEditingController controller, required String hintText, required int from}) async {
     await UiUtils.showBlurredDialoge(
       context,
       dialoge: BlurredDialogBox(
@@ -664,17 +591,11 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
               if (formatedAddress != null) {
                 // Update existing formatedAddress
                 if (from == 1) {
-                  formatedAddress = AddressComponent.copyWithFields(
-                      formatedAddress!,
-                      newCity: controller.text);
+                  formatedAddress = AddressComponent.copyWithFields(formatedAddress!, newCity: controller.text);
                 } else if (from == 2) {
-                  formatedAddress = AddressComponent.copyWithFields(
-                      formatedAddress!,
-                      newState: controller.text);
+                  formatedAddress = AddressComponent.copyWithFields(formatedAddress!, newState: controller.text);
                 } else if (from == 3) {
-                  formatedAddress = AddressComponent.copyWithFields(
-                      formatedAddress!,
-                      newCountry: controller.text);
+                  formatedAddress = AddressComponent.copyWithFields(formatedAddress!, newCountry: controller.text);
                 }
               } else {
                 // Create a new AddressComponent if formatedAddress is null
@@ -712,8 +633,7 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
     );
   }
 
-  Widget dialogueWidget(
-      String title, TextEditingController controller, String hintText) {
+  Widget dialogueWidget(String title, TextEditingController controller, String hintText) {
     double bottomPadding = (MediaQuery.of(context).viewInsets.bottom - 50);
     bool isBottomPaddingNagative = bottomPadding.isNegative;
     return SizedBox(
@@ -735,23 +655,16 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
                 color: context.color.borderColor.darken(30),
               ),
               Padding(
-                padding: EdgeInsetsDirectional.only(
-                    bottom: isBottomPaddingNagative ? 0 : bottomPadding,
-                    start: 20,
-                    end: 20,
-                    top: 18),
+                padding: EdgeInsetsDirectional.only(bottom: isBottomPaddingNagative ? 0 : bottomPadding, start: 20, end: 20, top: 18),
                 child: TextFormField(
                   maxLines: null,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: context.color.textDefaultColor.withOpacity(0.3)),
+                  style: TextStyle(fontWeight: FontWeight.bold, color: context.color.textDefaultColor.withOpacity(0.3)),
                   controller: controller,
                   cursorColor: context.color.territoryColor,
                   validator: (val) {
                     if (val == null || val.isEmpty) {
-                      return Validator.nullCheckValidator(val,
-                          context: context);
+                      return Validator.nullCheckValidator(val, context: context);
                     } else {
                       return null;
                     }
@@ -759,25 +672,15 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
                   decoration: InputDecoration(
                       fillColor: context.color.borderColor.darken(20),
                       filled: true,
-                      contentPadding:
-                          EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                      contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
                       hintText: hintText,
-                      hintStyle: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color:
-                              context.color.textDefaultColor.withOpacity(0.3)),
+                      hintStyle: TextStyle(fontWeight: FontWeight.bold, color: context.color.textDefaultColor.withOpacity(0.3)),
                       focusColor: context.color.territoryColor,
                       enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                              color: context.color.borderColor.darken(60))),
+                          borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: context.color.borderColor.darken(60))),
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                              color: context.color.borderColor.darken(60))),
-                      focusedBorder: OutlineInputBorder(
-                          borderSide:
-                              BorderSide(color: context.color.territoryColor))),
+                          borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: context.color.borderColor.darken(60))),
+                      focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: context.color.territoryColor))),
                 ),
               ),
             ],
@@ -789,21 +692,18 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen>
 
   Set<Factory<OneSequenceGestureRecognizer>> getMapGestureRecognizers() {
     return <Factory<OneSequenceGestureRecognizer>>{}
-      ..add(Factory<PanGestureRecognizer>(
-          () => PanGestureRecognizer()..onUpdate = (dragUpdateDetails) {}))
-      ..add(Factory<ScaleGestureRecognizer>(
-          () => ScaleGestureRecognizer()..onStart = (dragUpdateDetails) {}))
+      ..add(Factory<PanGestureRecognizer>(() => PanGestureRecognizer()..onUpdate = (dragUpdateDetails) {}))
+      ..add(Factory<ScaleGestureRecognizer>(() => ScaleGestureRecognizer()..onStart = (dragUpdateDetails) {}))
       ..add(Factory<TapGestureRecognizer>(() => TapGestureRecognizer()))
-      ..add(Factory<VerticalDragGestureRecognizer>(
-          () => VerticalDragGestureRecognizer()
-            ..onDown = (dragUpdateDetails) {
-              if (markerMove == false) {
-              } else {
-                setState(() {
-                  markerMove = false;
-                });
-              }
-            }));
+      ..add(Factory<VerticalDragGestureRecognizer>(() => VerticalDragGestureRecognizer()
+        ..onDown = (dragUpdateDetails) {
+          if (markerMove == false) {
+          } else {
+            setState(() {
+              markerMove = false;
+            });
+          }
+        }));
   }
 
   Widget shimmerEffect() {
@@ -892,11 +792,8 @@ class AddressComponent {
           newCountry ?? original.country,
         );
 
-  static String _generateMixedString(
-      String? area, String? city, String? state, String? country) {
-    return [area, city, state, country]
-        .where((element) => element != null && element.isNotEmpty)
-        .join(', ');
+  static String _generateMixedString(String? area, String? city, String? state, String? country) {
+    return [area, city, state, country].where((element) => element != null && element.isNotEmpty).join(', ');
   }
 
   Map<String, dynamic> toMap() {

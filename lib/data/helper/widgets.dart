@@ -1,9 +1,9 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:tlobni/ui/theme/theme.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class Widgets {
   static bool isLoadingShowing = false;
@@ -29,7 +29,7 @@ class Widgets {
                 },
                 child: Center(
                   child: UiUtils.progress(
-                    normalProgressColor: context.color.territoryColor,
+                    color: context.color.territoryColor,
                   ),
                 ),
               ),

@@ -1,7 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:tlobni/ui/theme/theme.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
-import 'package:flutter/material.dart';
 
 class CustomText extends StatelessWidget {
   const CustomText(
@@ -40,20 +40,21 @@ class CustomText extends StatelessWidget {
   final bool firstUpperCaseWidget;
 
   TextStyle textStyle(BuildContext context) {
-    return TextStyle(
-      color: color ?? context.color.textDefaultColor,
-      fontWeight: fontWeight,
-      fontStyle: fontStyle,
-      fontSize: fontSize,
-      decoration: showLineThrough ?? false
-          ? TextDecoration.lineThrough
-          : showUnderline ?? false
-              ? TextDecoration.underline
-              : null,
-      decorationColor: underlineOrLineColor,
-      height: height,
-      letterSpacing: letterSpacing,
-    );
+    return context.textTheme.bodyMedium?.copyWith(
+          color: color ?? context.color.textDefaultColor,
+          fontWeight: fontWeight,
+          fontStyle: fontStyle,
+          fontSize: fontSize,
+          decoration: showLineThrough ?? false
+              ? TextDecoration.lineThrough
+              : showUnderline ?? false
+                  ? TextDecoration.underline
+                  : null,
+          decorationColor: underlineOrLineColor,
+          height: height,
+          letterSpacing: letterSpacing,
+        ) ??
+        TextStyle();
   }
 
   @override
@@ -62,7 +63,7 @@ class CustomText extends StatelessWidget {
       firstUpperCaseWidget ? text.toCapitalized() : text,
       maxLines: maxLines,
       softWrap: true,
-      overflow: maxLines != null ? TextOverflow.ellipsis : null,
+      overflow: null,
       style: textStyle(context),
       textAlign: textAlign,
       textScaler: TextScaler.noScaling,

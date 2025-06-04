@@ -3,13 +3,11 @@
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:tlobni/data/cubits/auth/authentication_cubit.dart';
-import 'package:tlobni/data/repositories/auth_repository.dart';
-import 'package:tlobni/utils/api.dart';
-import 'package:tlobni/utils/hive_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tlobni/data/repositories/auth_repository.dart';
+import 'package:tlobni/utils/hive_utils.dart';
 
 abstract class LoginState {}
 
@@ -58,12 +56,10 @@ class LoginCubit extends Cubit<LoginState> {
     try {
       emit(LoginInProgress());
       // 1. Firebase Authentication
-      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: email.trim(), password: password.trim());
+      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(email: email.trim(), password: password.trim());
 
       // 2. Backend Sanctum Login
-      final response =
-          await _authRepository.login(email.trim(), password.trim());
+      final response = await _authRepository.login(email.trim(), password.trim());
 
       HiveUtils.setJWT(response['token']!);
       log('response: ${response['user']['roles']}');
@@ -90,6 +86,10 @@ class LoginCubit extends Cubit<LoginState> {
         'showPersonalDetails': response['show_personal_details'],
         'autoApproveItem': true,
         'isVerified': true,
+        'facebook': response['facebook'],
+        'twitter': response['twitter'],
+        'instagram': response['instagram'],
+        'tiktok': response['tiktok'],
       });
 
       HiveUtils.setUserIsAuthenticated(true);

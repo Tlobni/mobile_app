@@ -33,8 +33,7 @@ class BlogDetails extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.color.primaryColor,
-      appBar: UiUtils.buildAppBar(context,
-          showBackButton: true, title: "blogs".translate(context)),
+      appBar: UiUtils.buildAppBar(context, showBackButton: true, title: "blogs".translate(context)),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Padding(

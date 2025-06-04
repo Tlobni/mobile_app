@@ -1,0 +1,38 @@
+import 'package:flutter/material.dart';
+
+class RegularButton extends MaterialButton {
+  RegularButton({
+    super.key,
+    required super.onPressed,
+    super.child,
+    super.onLongPress,
+    super.onHighlightChanged,
+    super.mouseCursor,
+    super.textTheme,
+    super.textColor,
+    super.color,
+    super.disabledTextColor,
+    super.disabledColor,
+    super.focusColor,
+    super.hoverColor,
+    super.highlightColor,
+    super.splashColor,
+    super.colorBrightness,
+    super.elevation,
+    super.focusElevation,
+    super.hoverElevation,
+    super.highlightElevation,
+    super.disabledElevation,
+    super.padding = EdgeInsets.zero,
+    super.visualDensity = VisualDensity.standard,
+    super.shape,
+    super.clipBehavior,
+    super.focusNode,
+    super.autofocus,
+    super.materialTapTargetSize = MaterialTapTargetSize.shrinkWrap,
+    super.animationDuration,
+    super.minWidth = 0,
+    super.height = 0,
+    super.enableFeedback,
+  });
+}

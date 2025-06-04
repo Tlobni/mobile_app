@@ -1,27 +1,19 @@
-import 'dart:async';
-import 'dart:developer';
-import 'dart:io';
-
-import 'package:tlobni/app/app_theme.dart';
+import 'package:flutter/material.dart';
 import 'package:tlobni/app/routes.dart';
-import 'package:tlobni/data/cubits/auth/login_cubit.dart';
-import 'package:tlobni/data/cubits/system/app_theme_cubit.dart';
-import 'package:tlobni/data/cubits/system/user_details.dart';
-import 'package:tlobni/data/helper/widgets.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/custom_text_form_field.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/buttons/primary_button.dart';
+import 'package:tlobni/ui/widgets/buttons/skip_for_later.dart';
+import 'package:tlobni/ui/widgets/miscellanious/logo.dart';
+import 'package:tlobni/ui/widgets/text/description_text.dart';
+import 'package:tlobni/ui/widgets/text/heading_text.dart';
+import 'package:tlobni/ui/widgets/text/small_text.dart';
 import 'package:tlobni/utils/api.dart';
-import 'package:tlobni/utils/app_icon.dart';
-import 'package:tlobni/utils/constant.dart';
-import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class LoginScreen extends StatefulWidget {
   final bool? isDeleteAccount;
@@ -89,8 +81,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _updateButtonState() {
-    final newState =
-        emailController.text.isNotEmpty && _passwordController.text.isNotEmpty;
+    final newState = emailController.text.isNotEmpty && _passwordController.text.isNotEmpty;
     if (newState != _isButtonEnabled) {
       setState(() {
         _isButtonEnabled = newState;
@@ -126,10 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // Call backend API directly
         final response = await Api.post(
           url: Api.login,
-          parameter: {
-            'email': emailController.text.trim(),
-            'password': _passwordController.text.trim()
-          },
+          parameter: {'email': emailController.text.trim(), 'password': _passwordController.text.trim()},
         );
 
         // Store token
@@ -149,6 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
           'address': response['user']['address'] ?? '',
           'categories': response['user']['categories'] ?? [],
           'phone': response['user']['phone'] ?? '',
+          'bio': response['user']['bio'] ?? '',
           'gender': response['user']['gender'] ?? '',
           'location': response['user']['location'] ?? '',
           'countryCode': response['user']['country_code'] ?? '',
@@ -156,13 +145,16 @@ class _LoginScreenState extends State<LoginScreen> {
           'showPersonalDetails': response['user']['show_personal_details'] ?? 1,
           'autoApproveItem': true,
           'isVerified': true,
+          'facebook': response['user']['facebook'],
+          'twitter': response['user']['twitter'],
+          'instagram': response['user']['instagram'],
+          'tiktok': response['user']['tiktok'],
         });
 
         HiveUtils.setUserIsAuthenticated(true);
 
         // Navigate based on profile completion
-        final isProfileCompleted =
-            response['user']['isProfileCompleted'] ?? true;
+        final isProfileCompleted = response['user']['isProfileCompleted'] ?? true;
 
         setState(() {
           _isLoading = false;
@@ -179,20 +171,15 @@ class _LoginScreenState extends State<LoginScreen> {
         });
 
         // Handle specific error cases with more appropriate messages
-        if (e.toString().contains('401') ||
-            e.toString().contains('invalid_credentials')) {
+        if (e.toString().contains('401') || e.toString().contains('invalid_credentials')) {
           // For 401 errors (unauthorized), show a clear message about invalid credentials
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(
-                    'Invalid email or password. Please check your credentials.')),
+            SnackBar(content: Text('Invalid email or password. Please check your credentials.')),
           );
         } else if (e.toString().contains('deactivated')) {
           // If account is actually deactivated (rather than non-existent)
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(
-                    'This account has been deactivated. Please contact support.')),
+            SnackBar(content: Text('This account has been deactivated. Please contact support.')),
           );
         } else {
           // For other errors
@@ -229,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 buildLoginForm(context),
                 if (_isLoading)
                   Container(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                     child: const Center(
                       child: CircularProgressIndicator(),
                     ),
@@ -249,52 +236,21 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 18.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               /// Skip Button
-              Align(
-                alignment: AlignmentDirectional.topEnd,
-                child: TextButton(
-                  onPressed: () {
-                    HiveUtils.setUserSkip();
-                    HelperUtils.killPreviousPages(
-                      context,
-                      Routes.main,
-                      {"from": "login", "isSkipped": true},
-                    );
-                  },
-                  child: CustomText(
-                    "Skip for later",
-                    color: const Color(0xFF0F2137).withOpacity(0.6),
-                    fontSize: context.font.small,
-                  ),
-                ),
-              ),
+              SkipForLaterButton(),
 
               // Tlobni Logo
-              Center(
-                child: Image.asset(
-                  'assets/images/tlobni-logo.png',
-                  height: 80,
-                  width: 100,
-                ),
-              ),
-              const SizedBox(height: 20),
+              Logo(),
+              const SizedBox(height: 60),
 
               /// Title
-              CustomText(
-                "Sign In",
-                fontSize: context.font.extraLarge,
-                color: context.color.textDefaultColor,
-              ),
+              HeadingText("Sign In"),
               const SizedBox(height: 8),
 
               /// Email Login Fields
-              CustomText(
-                'Enter your credentials to continue',
-                fontSize: context.font.large,
-                color: context.color.textColorDark,
-              ),
+              DescriptionText('Enter your credentials to continue'),
               const SizedBox(height: 24),
 
               Form(
@@ -337,28 +293,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () {
                     Navigator.pushNamed(context, Routes.forgotPassword);
                   },
-                  child: CustomText(
+                  child: DescriptionText(
                     "${"forgotPassword".translate(context)}?",
-                    color: context.color.textLightColor,
-                    fontSize: context.font.normal,
                   ),
                 ),
               ),
               const SizedBox(height: 10),
 
               /// Sign In Button
-              UiUtils.buildButton(
-                context,
+              PrimaryButton.text(
+                'signIn'.translate(context),
+                padding: EdgeInsets.all(20),
                 onPressed: () {
                   if (!_isLoading) {
                     onTapEmailLogin();
                   }
                 },
-                buttonTitle: 'signIn'.translate(context),
-                radius: 10,
-                disabled: _isLoading,
-                disabledColor: const Color.fromARGB(255, 104, 102, 106),
-                textColor: const Color(0xFFE6CBA8),
               ),
               const SizedBox(height: 20),
 
@@ -366,15 +316,13 @@ class _LoginScreenState extends State<LoginScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CustomText("dontHaveAcc".translate(context),
-                      color: context.color.textColorDark.brighten(50)),
+                  DescriptionText("dontHaveAcc".translate(context)),
                   const SizedBox(width: 12),
                   GestureDetector(
                     onTap: navigateToSignup,
-                    child: CustomText(
+                    child: DescriptionText(
                       "signUp".translate(context),
                       color: context.color.territoryColor,
-                      showUnderline: true,
                     ),
                   )
                 ],
@@ -390,59 +338,43 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget termAndPolicyTxt() {
     return Padding(
-      padding: const EdgeInsetsDirectional.only(
-          bottom: 15.0, start: 25.0, end: 25.0),
+      padding: const EdgeInsetsDirectional.only(bottom: 15.0, start: 25.0, end: 25.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         mainAxisSize: MainAxisSize.min,
         children: [
-          CustomText(
+          SmallText(
             "bySigningUpLoggingIn".translate(context),
-            color: context.color.textLightColor.withOpacity(0.8),
-            fontSize: context.font.small,
-            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 3),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               InkWell(
-                child: CustomText(
+                child: SmallText(
                   "termsOfService".translate(context),
-                  color: context.color.territoryColor,
-                  fontSize: context.font.small,
-                  showUnderline: true,
+                  decoration: TextDecoration.underline,
                 ),
                 onTap: () => Navigator.pushNamed(
                   context,
                   Routes.profileSettings,
-                  arguments: {
-                    'title': "termsConditions".translate(context),
-                    'param': Api.termsAndConditions
-                  },
+                  arguments: {'title': "termsConditions".translate(context), 'param': Api.termsAndConditions},
                 ),
               ),
               const SizedBox(width: 5.0),
-              CustomText(
+              SmallText(
                 "andTxt".translate(context),
-                color: context.color.textLightColor.withOpacity(0.8),
-                fontSize: context.font.small,
               ),
               const SizedBox(width: 5.0),
               InkWell(
-                child: CustomText(
+                child: SmallText(
                   "privacyPolicy".translate(context),
-                  color: context.color.territoryColor,
-                  fontSize: context.font.small,
-                  showUnderline: true,
+                  decoration: TextDecoration.underline,
                 ),
                 onTap: () => Navigator.pushNamed(
                   context,
                   Routes.profileSettings,
-                  arguments: {
-                    'title': "privacyPolicy".translate(context),
-                    'param': Api.privacyPolicy
-                  },
+                  arguments: {'title': "privacyPolicy".translate(context), 'param': Api.privacyPolicy},
                 ),
               ),
             ],
@@ -450,5 +382,9 @@ class _LoginScreenState extends State<LoginScreen> {
         ],
       ),
     );
+  }
+
+  Widget newUi() {
+    return SizedBox();
   }
 }

@@ -1,5 +1,10 @@
 import 'dart:convert';
 
+import 'package:tlobni/data/cubits/item/search_item_cubit.dart';
+import 'package:tlobni/data/cubits/user/search_providers_cubit.dart';
+import 'package:tlobni/data/model/category_model.dart';
+import 'package:tlobni/utils/extensions/lib/iterable.dart';
+
 class ItemFilterModel {
   final String? maxPrice;
   final String? minPrice;
@@ -21,6 +26,10 @@ class ItemFilterModel {
   final double? rating;
   final double? minRating;
   final double? maxRating;
+  final List<CategoryModel>? categories;
+  final SearchItemSortBy? itemSortBy;
+  final SearchProviderSortBy? providerSortBy;
+  final bool? featuredOnly;
 
   ItemFilterModel({
     this.maxPrice,
@@ -35,7 +44,7 @@ class ItemFilterModel {
     this.areaId,
     this.latitude,
     this.longitude,
-    this.customFields = const {},
+    this.customFields,
     this.userType,
     this.gender,
     this.serviceType,
@@ -43,6 +52,10 @@ class ItemFilterModel {
     this.rating,
     this.minRating,
     this.maxRating,
+    this.categories,
+    this.itemSortBy,
+    this.providerSortBy,
+    this.featuredOnly,
   });
 
   ItemFilterModel copyWith({
@@ -66,6 +79,12 @@ class ItemFilterModel {
     double? rating,
     double? minRating,
     double? maxRating,
+    List<CategoryModel>? categories,
+    SearchItemSortBy? itemSortBy,
+    bool resetItemSortBy = false,
+    SearchProviderSortBy? providerSortBy,
+    bool resetProviderSortBy = false,
+    bool? featuredOnly,
   }) {
     return ItemFilterModel(
       maxPrice: maxPrice ?? this.maxPrice,
@@ -88,6 +107,10 @@ class ItemFilterModel {
       rating: rating ?? this.rating,
       minRating: minRating ?? this.minRating,
       maxRating: maxRating ?? this.maxRating,
+      categories: categories ?? this.categories,
+      featuredOnly: featuredOnly ?? this.featuredOnly,
+      itemSortBy: resetItemSortBy ? null : itemSortBy ?? this.itemSortBy,
+      providerSortBy: resetProviderSortBy ? null : providerSortBy ?? this.providerSortBy,
     );
   }
 
@@ -114,6 +137,10 @@ class ItemFilterModel {
       'rating': rating,
       'min_rating': minRating,
       'max_rating': maxRating,
+      'categories': categories,
+      'item_sort_by': itemSortBy?.jsonName,
+      'provider_sort_by': providerSortBy?.jsonName,
+      'featured_only': featuredOnly,
     };
   }
 
@@ -127,36 +154,28 @@ class ItemFilterModel {
       categoryId: map['category_id']?.toString(),
       postedSince: map['posted_since']?.toString(),
       area: map['area']?.toString(),
-      radius:
-          map['radius'] != null ? int.tryParse(map['radius'].toString()) : null,
-      areaId: map['area_id'] != null
-          ? int.tryParse(map['area_id'].toString())
-          : null,
+      radius: map['radius'] != null ? int.tryParse(map['radius'].toString()) : null,
+      areaId: map['area_id'] != null ? int.tryParse(map['area_id'].toString()) : null,
       latitude: map['latitude'] != null ? map['latitude'] : null,
       longitude: map['longitude'] != null ? map['longitude'] : null,
       customFields: Map<String, dynamic>.from(map['custom_fields'] ?? {}),
       userType: map['user_type']?.toString(),
       gender: map['gender']?.toString(),
       serviceType: map['provider_item_type']?.toString(),
-      specialTags: map['special_tags'] != null
-          ? Map<String, String>.from(map['special_tags'])
-          : null,
-      rating: map['rating'] != null
-          ? double.tryParse(map['rating'].toString())
-          : null,
-      minRating: map['min_rating'] != null
-          ? double.tryParse(map['min_rating'].toString())
-          : null,
-      maxRating: map['max_rating'] != null
-          ? double.tryParse(map['max_rating'].toString())
-          : null,
+      specialTags: map['special_tags'] != null ? Map<String, String>.from(map['special_tags']) : null,
+      rating: map['rating'] != null ? double.tryParse(map['rating'].toString()) : null,
+      minRating: map['min_rating'] != null ? double.tryParse(map['min_rating'].toString()) : null,
+      maxRating: map['max_rating'] != null ? double.tryParse(map['max_rating'].toString()) : null,
+      categories: map['categories'] != null ? List<CategoryModel>.from(map['categories'].map((x) => CategoryModel.fromJson(x))) : [],
+      itemSortBy: SearchItemSortBy.values.firstWhereOrNull((e) => e.jsonName == map['item_sort_by']),
+      providerSortBy: SearchProviderSortBy.values.firstWhereOrNull((e) => e.jsonName == map['provider_sort_by']),
+      featuredOnly: map['featured_only'] ?? false,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory ItemFilterModel.fromJson(String source) =>
-      ItemFilterModel.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory ItemFilterModel.fromJson(String source) => ItemFilterModel.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   String toString() {
@@ -211,7 +230,8 @@ class ItemFilterModel {
         other.specialTags.toString() == specialTags.toString() &&
         other.rating == rating &&
         other.minRating == minRating &&
-        other.maxRating == maxRating;
+        other.maxRating == maxRating &&
+        other.itemSortBy == itemSortBy;
   }
 
   @override
@@ -235,6 +255,7 @@ class ItemFilterModel {
         specialTags.hashCode ^
         rating.hashCode ^
         minRating.hashCode ^
-        maxRating.hashCode;
+        maxRating.hashCode ^
+        itemSortBy.hashCode;
   }
 }

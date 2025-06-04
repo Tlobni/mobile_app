@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tlobni/data/cubits/subscription/assign_free_package_cubit.dart';
 import 'package:tlobni/data/cubits/subscription/fetch_ads_listing_subscription_packages_cubit.dart';
 import 'package:tlobni/data/cubits/subscription/fetch_featured_subscription_packages_cubit.dart';
@@ -21,10 +23,6 @@ import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/payment/gateaways/inapp_purchase_manager.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:in_app_purchase/in_app_purchase.dart';
 
 class SubscriptionPackageListScreen extends StatefulWidget {
   const SubscriptionPackageListScreen({super.key});
@@ -44,21 +42,16 @@ class SubscriptionPackageListScreen extends StatefulWidget {
   }
 
   @override
-  State<SubscriptionPackageListScreen> createState() =>
-      _SubscriptionPackageListScreenState();
+  State<SubscriptionPackageListScreen> createState() => _SubscriptionPackageListScreenState();
 }
 
-class _SubscriptionPackageListScreenState
-    extends State<SubscriptionPackageListScreen>
-    with SingleTickerProviderStateMixin {
+class _SubscriptionPackageListScreenState extends State<SubscriptionPackageListScreen> with SingleTickerProviderStateMixin {
   bool isLifeTimeSubscription = false;
   bool hasAlreadyPackage = false;
   bool isInterstitialAdShown = false;
 
-  PageController adsPageController =
-      PageController(initialPage: 0, viewportFraction: 0.8);
-  PageController featuredPageController =
-      PageController(initialPage: 0, viewportFraction: 0.8);
+  PageController adsPageController = PageController(initialPage: 0, viewportFraction: 0.8);
+  PageController featuredPageController = PageController(initialPage: 0, viewportFraction: 0.8);
 
   int currentIndex = 0;
   late final TabController? _tabController;
@@ -83,10 +76,7 @@ class _SubscriptionPackageListScreenState
       InAppPurchaseManager.getPending();
       _inAppPurchaseManager.listenIAP(context);
     }
-    isFreeAdListingEnabled = context
-            .read<FetchSystemSettingsCubit>()
-            .getSetting(SystemSetting.freeAdListing) ==
-        "1";
+    isFreeAdListingEnabled = context.read<FetchSystemSettingsCubit>().getSetting(SystemSetting.freeAdListing) == "1";
     if (!isFreeAdListingEnabled) {
       _tabController = TabController(length: 1, vsync: this);
       _tabController!.addListener(_handleTabSelection);
@@ -128,7 +118,6 @@ class _SubscriptionPackageListScreenState
         context,
         showBackButton: true,
         title: "subsctiptionPlane".translate(context),
-        bottomHeight: isFreeAdListingEnabled ? 0 : 49,
         actions: [
           // if (Platform.isIOS)
           //   CupertinoButton(
@@ -137,51 +126,6 @@ class _SubscriptionPackageListScreenState
           //         await InAppPurchase.instance.restorePurchases();
           //       })
         ],
-        bottom: isFreeAdListingEnabled
-            ? null
-            : [
-                Container(
-                  decoration: BoxDecoration(
-                      color: context.color.secondaryColor,
-                      // Set background color here
-                      boxShadow: [
-                        BoxShadow(
-                          color: context.color.borderColor.withOpacity(0.8),
-                          // Shadow color
-                          spreadRadius: 3,
-                          // Spread radius
-                          blurRadius: 2,
-                          // Blur radius
-                          offset: Offset(0, 1), // Shadow offset
-                        ),
-                      ]),
-                  child: TabBar(
-                    controller: _tabController!,
-                    tabs: [
-                      Tab(text: "Early Adopters Package".translate(context)),
-                      // Tab(text: "featuredAdsLbl".translate(context)),
-                    ],
-
-                    indicatorColor: context.color.territoryColor,
-                    // Line color
-                    indicatorWeight: 3,
-
-                    // Line thickness
-                    labelColor: context.color.territoryColor,
-                    // Selected tab text color
-                    unselectedLabelColor:
-                        context.color.textDefaultColor.withOpacity(0.3),
-                    // Unselected tab text color
-                    labelStyle: TextStyle(
-                      fontSize: 16,
-                    ),
-                    // Selected tab text style
-                    labelPadding: EdgeInsets.symmetric(horizontal: 16),
-                    // Padding around the tab text
-                    indicatorSize: TabBarIndicatorSize.tab,
-                  ),
-                ),
-              ],
       ),
       body: BlocListener<GetApiKeysCubit, GetApiKeysState>(
         listener: (context, state) {
@@ -220,10 +164,8 @@ class _SubscriptionPackageListScreenState
         AdHelper.showInterstitialAd();
         isInterstitialAdShown = true; // Update the flag
       }
-      return BlocConsumer<FetchAdsListingSubscriptionPackagesCubit,
-              FetchAdsListingSubscriptionPackagesState>(
-          listener:
-              (context, FetchAdsListingSubscriptionPackagesState state) {},
+      return BlocConsumer<FetchAdsListingSubscriptionPackagesCubit, FetchAdsListingSubscriptionPackagesState>(
+          listener: (context, FetchAdsListingSubscriptionPackagesState state) {},
           builder: (context, state) {
             if (state is FetchAdsListingSubscriptionPackagesInProgress) {
               return Center(
@@ -235,9 +177,7 @@ class _SubscriptionPackageListScreenState
                 if (state.errorMessage == "no-internet") {
                   return NoInternet(
                     onRetry: () {
-                      context
-                          .read<FetchAdsListingSubscriptionPackagesCubit>()
-                          .fetchPackages();
+                      context.read<FetchAdsListingSubscriptionPackagesCubit>().fetchPackages();
                     },
                   );
                 }
@@ -249,9 +189,7 @@ class _SubscriptionPackageListScreenState
               if (state.subscriptionPackages.isEmpty) {
                 return NoDataFound(
                   onTap: () {
-                    context
-                        .read<FetchAdsListingSubscriptionPackagesCubit>()
-                        .fetchPackages();
+                    context.read<FetchAdsListingSubscriptionPackagesCubit>().fetchPackages();
                   },
                 );
               }
@@ -282,8 +220,7 @@ class _SubscriptionPackageListScreenState
         AdHelper.showInterstitialAd();
         isInterstitialAdShown = true; // Update the flag
       }
-      return BlocConsumer<FetchFeaturedSubscriptionPackagesCubit,
-              FetchFeaturedSubscriptionPackagesState>(
+      return BlocConsumer<FetchFeaturedSubscriptionPackagesCubit, FetchFeaturedSubscriptionPackagesState>(
           listener: (context, FetchFeaturedSubscriptionPackagesState state) {},
           builder: (context, state) {
             if (state is FetchFeaturedSubscriptionPackagesInProgress) {
@@ -296,9 +233,7 @@ class _SubscriptionPackageListScreenState
                 if (state.errorMessage == "no-internet") {
                   return NoInternet(
                     onRetry: () {
-                      context
-                          .read<FetchFeaturedSubscriptionPackagesCubit>()
-                          .fetchPackages();
+                      context.read<FetchFeaturedSubscriptionPackagesCubit>().fetchPackages();
                     },
                   );
                 }
@@ -310,9 +245,7 @@ class _SubscriptionPackageListScreenState
               if (state.subscriptionPackages.isEmpty) {
                 return NoDataFound(
                   onTap: () {
-                    context
-                        .read<FetchFeaturedSubscriptionPackagesCubit>()
-                        .fetchPackages();
+                    context.read<FetchFeaturedSubscriptionPackagesCubit>().fetchPackages();
                   },
                 );
               }

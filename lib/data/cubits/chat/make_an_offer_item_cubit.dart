@@ -1,5 +1,5 @@
-import 'package:tlobni/data/repositories/item/item_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tlobni/data/repositories/item/item_repository.dart';
 
 abstract class MakeAnOfferItemState {}
 
@@ -35,8 +35,7 @@ class MakeAnOfferItemCubit extends Cubit<MakeAnOfferItemState> {
 
   MakeAnOfferItemCubit() : super(MakeAnOfferItemInitial());
 
-  Future<void> makeAnOfferItem(
-      {required int id, required String from, double? amount}) async {
+  Future<void> makeAnOfferItem({required int id, required String from, double? amount}) async {
     emit(MakeAnOfferItemInProgress());
 
     await _itemRepository.makeAnOfferItem(id, amount).then((value) {

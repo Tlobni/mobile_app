@@ -1,6 +1,12 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/home/fetch_home_all_items_cubit.dart';
@@ -22,12 +28,6 @@ import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:shimmer/shimmer.dart';
 
 class CountriesScreen extends StatefulWidget {
   final String from;
@@ -53,8 +53,7 @@ class CountriesScreen extends StatefulWidget {
   CountriesScreenState createState() => CountriesScreenState();
 }
 
-class CountriesScreenState extends State<CountriesScreen>
-    with WidgetsBindingObserver {
+class CountriesScreenState extends State<CountriesScreen> with WidgetsBindingObserver {
   bool isFocused = false;
   String previousSearchQuery = "";
   TextEditingController searchController = TextEditingController(text: null);
@@ -68,9 +67,7 @@ class CountriesScreenState extends State<CountriesScreen>
   @override
   void initState() {
     super.initState();
-    context
-        .read<FetchCountriesCubit>()
-        .fetchCountries(search: searchController.text);
+    context.read<FetchCountriesCubit>().fetchCountries(search: searchController.text);
 
     searchController = TextEditingController();
 
@@ -89,11 +86,9 @@ class CountriesScreenState extends State<CountriesScreen>
     if (state == AppLifecycleState.resumed && shouldListenToAppLifeCycle) {
       final isLocationEnabled = await Geolocator.isLocationServiceEnabled();
       final permission = await Geolocator.checkPermission();
-      final isPermissionGiven = permission != LocationPermission.denied &&
-          permission != LocationPermission.deniedForever;
+      final isPermissionGiven = permission != LocationPermission.denied && permission != LocationPermission.deniedForever;
       log('$permission', name: 'APP LIFECYCLE');
-      _locationStatus.value =
-          _getLocationStatus(isLocationEnabled, isPermissionGiven);
+      _locationStatus.value = _getLocationStatus(isLocationEnabled, isPermissionGiven);
       shouldListenToAppLifeCycle = false;
     }
   }
@@ -141,8 +136,7 @@ class CountriesScreenState extends State<CountriesScreen>
 
   PreferredSizeWidget appBarWidget(List<CountriesModel> countriesModel) {
     return AppBar(
-      systemOverlayStyle:
-          SystemUiOverlayStyle(statusBarColor: context.color.backgroundColor),
+      systemOverlayStyle: SystemUiOverlayStyle(statusBarColor: context.color.backgroundColor),
       bottom: PreferredSize(
           preferredSize: Size.fromHeight(58),
           child: Row(
@@ -156,27 +150,19 @@ class CountriesScreenState extends State<CountriesScreen>
                     alignment: AlignmentDirectional.center,
                     decoration: BoxDecoration(
                         border: Border.all(
-                            width:
-                                context.watch<AppThemeCubit>().state.appTheme ==
-                                        AppTheme.dark
-                                    ? 0
-                                    : 1,
+                            width: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark ? 0 : 1,
                             color: context.color.borderColor.darken(30)),
-                        borderRadius:
-                            const BorderRadius.all(Radius.circular(10)),
+                        borderRadius: const BorderRadius.all(Radius.circular(10)),
                         color: context.color.secondaryColor),
                     child: TextFormField(
                         controller: searchController,
                         decoration: InputDecoration(
                           border: InputBorder.none,
                           //OutlineInputBorder()
-                          fillColor:
-                              Theme.of(context).colorScheme.secondaryColor,
-                          hintText:
-                              "${"search".translate(context)}\t${"country".translate(context)}",
+                          fillColor: Theme.of(context).colorScheme.secondaryColor,
+                          hintText: "${"search".translate(context)}\t${"country".translate(context)}",
                           prefixIcon: setSearchIcon(),
-                          prefixIconConstraints:
-                              const BoxConstraints(minHeight: 5, minWidth: 5),
+                          prefixIconConstraints: const BoxConstraints(minHeight: 5, minWidth: 5),
                         ),
                         enableSuggestions: true,
                         onEditingComplete: () {
@@ -197,17 +183,14 @@ class CountriesScreenState extends State<CountriesScreen>
               if (widget.from != "addItem")
                 InkWell(
                   onTap: () {
-                    Navigator.pushNamed(context, Routes.nearbyLocationScreen,
-                        arguments: {"from": widget.from});
+                    Navigator.pushNamed(context, Routes.nearbyLocationScreen, arguments: {"from": widget.from});
                   },
                   child: Container(
                     width: 50,
                     height: 50,
                     margin: EdgeInsetsDirectional.only(end: sidePadding),
                     decoration: BoxDecoration(
-                      border: Border.all(
-                          width: 1,
-                          color: context.color.borderColor.darken(30)),
+                      border: Border.all(width: 1, color: context.color.borderColor.darken(30)),
                       color: context.color.secondaryColor,
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -244,26 +227,16 @@ class CountriesScreenState extends State<CountriesScreen>
                 child: Directionality(
                   textDirection: Directionality.of(context),
                   child: RotatedBox(
-                    quarterTurns:
-                        Directionality.of(context) == TextDirection.rtl
-                            ? 2
-                            : -4,
-                    child: UiUtils.getSvg(AppIcons.arrowLeft,
-                        fit: BoxFit.none,
-                        color: context.color.textDefaultColor),
+                    quarterTurns: Directionality.of(context) == TextDirection.rtl ? 2 : -4,
+                    child: UiUtils.getSvg(AppIcons.arrowLeft, fit: BoxFit.none, color: context.color.textDefaultColor),
                   ),
                 ))),
       ),
       /*BackButton(
         color: context.color.textDefaultColor,
       ),*/
-      elevation: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark
-          ? 0
-          : 6,
-      shadowColor:
-          context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark
-              ? null
-              : context.color.textDefaultColor.withOpacity(0.2),
+      elevation: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark ? 0 : 6,
+      shadowColor: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark ? null : context.color.textDefaultColor.withOpacity(0.2),
       backgroundColor: context.color.backgroundColor,
     );
   }
@@ -284,10 +257,8 @@ class CountriesScreenState extends State<CountriesScreen>
             padding: EdgeInsets.all(5),
             width: double.maxFinite,
             height: 56,
-            decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(5),
-                border:
-                    Border.all(color: context.color.borderColor.darken(30))),
+            decoration:
+                BoxDecoration(borderRadius: BorderRadius.circular(5), border: Border.all(color: context.color.borderColor.darken(30))),
           ),
         );
       },
@@ -296,8 +267,7 @@ class CountriesScreenState extends State<CountriesScreen>
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<FetchCountriesCubit, FetchCountriesState>(
-        builder: (context, state) {
+    return BlocBuilder<FetchCountriesCubit, FetchCountriesState>(builder: (context, state) {
       List<CountriesModel> countriesModel = [];
       if (state is FetchCountriesSuccess) {
         countriesModel = state.countriesModel;
@@ -323,13 +293,11 @@ class CountriesScreenState extends State<CountriesScreen>
     ].where((part) => part != null && part.isNotEmpty).join(', ');
     final isLocationEnabled = await Geolocator.isLocationServiceEnabled();
     final permission = await Geolocator.checkPermission();
-    final isPermissionGiven = permission != LocationPermission.denied &&
-        permission != LocationPermission.deniedForever;
+    final isPermissionGiven = permission != LocationPermission.denied && permission != LocationPermission.deniedForever;
     log('$permission - $isPermissionGiven - $isLocationEnabled');
-    _locationStatus.value =
-        _currentLocation.isNotEmpty && isLocationEnabled && isPermissionGiven
-            ? 'locationFetched'
-            : _getLocationStatus(isLocationEnabled, isPermissionGiven);
+    _locationStatus.value = _currentLocation.isNotEmpty && isLocationEnabled && isPermissionGiven
+        ? 'locationFetched'
+        : _getLocationStatus(isLocationEnabled, isPermissionGiven);
   }
 
   Future<void> _getCurrentLocation() async {
@@ -350,8 +318,7 @@ class CountriesScreenState extends State<CountriesScreen>
       if (permission == LocationPermission.denied) {
         final newPermission = await Geolocator.requestPermission();
         log('$newPermission');
-        if (newPermission == LocationPermission.deniedForever &&
-            permission == LocationPermission.denied) {
+        if (newPermission == LocationPermission.deniedForever && permission == LocationPermission.denied) {
           _locationStatus.value = 'pleaseEnableLocationServicesManually';
         }
         return;
@@ -365,8 +332,7 @@ class CountriesScreenState extends State<CountriesScreen>
       }
 
       // Get the current position
-      Position position = await Geolocator.getCurrentPosition(
-          locationSettings: LocationSettings(accuracy: LocationAccuracy.high));
+      Position position = await Geolocator.getCurrentPosition(locationSettings: LocationSettings(accuracy: LocationAccuracy.high));
 
       // Get placemarks from coordinates
       List<Placemark> placemarks = await placemarkFromCoordinates(
@@ -383,9 +349,7 @@ class CountriesScreenState extends State<CountriesScreen>
             placemark.administrativeArea,
             placemark.country,
           ].where((part) => part != null && part.isNotEmpty).join(', ');
-          _locationStatus.value = _currentLocation.isNotEmpty
-              ? 'locationFetched'
-              : 'enableLocation';
+          _locationStatus.value = _currentLocation.isNotEmpty ? 'locationFetched' : 'enableLocation';
 
           // Store current location in Hive
           HiveUtils.setCurrentLocation(
@@ -400,8 +364,7 @@ class CountriesScreenState extends State<CountriesScreen>
           // Additional handling based on widget.from
           if (widget.from == "home") {
             if (Constant.isDemoModeOn) {
-              UiUtils.setDefaultLocationValue(
-                  isCurrent: false, isHomeUpdate: true, context: context);
+              UiUtils.setDefaultLocationValue(isCurrent: false, isHomeUpdate: true, context: context);
               Navigator.pop(context);
             } else {
               HiveUtils.setLocation(
@@ -417,18 +380,14 @@ class CountriesScreenState extends State<CountriesScreen>
                 context.read<FetchHomeScreenCubit>().fetch(
                       city: placemark.locality!,
                     );
-                context
-                    .read<FetchHomeAllItemsCubit>()
-                    .fetch(city: placemark.locality!, radius: null);
+                context.read<FetchHomeAllItemsCubit>().fetch(city: placemark.locality!, radius: null);
               });
               Navigator.pop(context);
             }
           } else if (widget.from == "location") {
             if (Constant.isDemoModeOn) {
-              UiUtils.setDefaultLocationValue(
-                  isCurrent: false, isHomeUpdate: false, context: context);
-              HelperUtils.killPreviousPages(
-                  context, Routes.main, {"from": "login"});
+              UiUtils.setDefaultLocationValue(isCurrent: false, isHomeUpdate: false, context: context);
+              HelperUtils.killPreviousPages(context, Routes.main, {"from": "login"});
             } else {
               HiveUtils.setLocation(
                 area: placemark.subLocality,
@@ -438,8 +397,7 @@ class CountriesScreenState extends State<CountriesScreen>
                 latitude: position.latitude,
                 longitude: position.longitude,
               );
-              HelperUtils.killPreviousPages(
-                  context, Routes.main, {"from": "login"});
+              HelperUtils.killPreviousPages(context, Routes.main, {"from": "login"});
             }
           } else {
             Map<String, dynamic> result = {
@@ -503,9 +461,7 @@ class CountriesScreenState extends State<CountriesScreen>
                                   valueListenable: _locationStatus,
                                   builder: (context, value, child) {
                                     return CustomText(
-                                      value == 'locationFetched'
-                                          ? _currentLocation
-                                          : value.translate(context),
+                                      value == 'locationFetched' ? _currentLocation : value.translate(context),
                                       softWrap: true,
                                       overflow: TextOverflow.ellipsis,
                                       maxLines: 2,
@@ -547,9 +503,7 @@ class CountriesScreenState extends State<CountriesScreen>
                     return SingleChildScrollView(
                       child: NoInternet(
                         onRetry: () {
-                          context
-                              .read<FetchCountriesCubit>()
-                              .fetchCountries(search: searchController.text);
+                          context.read<FetchCountriesCubit>().fetchCountries(search: searchController.text);
                         },
                       ),
                     );
@@ -561,8 +515,7 @@ class CountriesScreenState extends State<CountriesScreen>
 
               if (state is FetchCountriesSuccess) {
                 if (state.countriesModel.isEmpty) {
-                  return Center(
-                      child: SingleChildScrollView(child: NoDataFound()));
+                  return Center(child: SingleChildScrollView(child: NoDataFound()));
                 }
 
                 return Container(
@@ -574,8 +527,7 @@ class CountriesScreenState extends State<CountriesScreen>
                     children: [
                       widget.from == "addItem"
                           ? Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 18, vertical: 18),
+                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
                               child: CustomText(
                                 "${"chooseLbl".translate(context)}\t${"country".translate(context)}",
                                 textAlign: TextAlign.center,
@@ -588,8 +540,7 @@ class CountriesScreenState extends State<CountriesScreen>
                             )
                           : InkWell(
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 15, vertical: 12),
+                                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
                                 child: Row(
                                   children: [
                                     CustomText(
@@ -606,10 +557,7 @@ class CountriesScreenState extends State<CountriesScreen>
                                         width: 32,
                                         height: 32,
                                         decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            color: context.color.borderColor
-                                                .darken(10)),
+                                            borderRadius: BorderRadius.circular(8), color: context.color.borderColor.darken(10)),
                                         child: Icon(
                                           Icons.chevron_right_outlined,
                                           color: context.color.textDefaultColor,
@@ -624,21 +572,15 @@ class CountriesScreenState extends State<CountriesScreen>
                                   Future.delayed(
                                     Duration.zero,
                                     () {
-                                      context
-                                          .read<FetchHomeScreenCubit>()
-                                          .fetch();
-                                      context
-                                          .read<FetchHomeAllItemsCubit>()
-                                          .fetch(radius: null);
+                                      context.read<FetchHomeScreenCubit>().fetch();
+                                      context.read<FetchHomeAllItemsCubit>().fetch(radius: null);
                                     },
                                   );
 
-                                  Navigator.popUntil(
-                                      context, (route) => route.isFirst);
+                                  Navigator.popUntil(context, (route) => route.isFirst);
                                 } else if (widget.from == "location") {
                                   HiveUtils.setLocation();
-                                  HelperUtils.killPreviousPages(
-                                      context, Routes.main, {"from": "login"});
+                                  HelperUtils.killPreviousPages(context, Routes.main, {"from": "login"});
                                 } else {
                                   Map<String, dynamic> result = {
                                     'area_id': null,
@@ -672,17 +614,12 @@ class CountriesScreenState extends State<CountriesScreen>
                             );
                           },
                           itemBuilder: (context, index) {
-                            CountriesModel country =
-                                state.countriesModel[index];
+                            CountriesModel country = state.countriesModel[index];
 
                             return ListTile(
                               onTap: () {
-                                Navigator.pushNamed(
-                                    context, Routes.statesScreen, arguments: {
-                                  "countryId": country.id!,
-                                  "countryName": country.name!,
-                                  "from": widget.from
-                                });
+                                Navigator.pushNamed(context, Routes.statesScreen,
+                                    arguments: {"countryId": country.id!, "countryName": country.name!, "from": widget.from});
                               },
                               title: CustomText(
                                 country.name!,
@@ -696,10 +633,8 @@ class CountriesScreenState extends State<CountriesScreen>
                               trailing: Container(
                                   width: 32,
                                   height: 32,
-                                  decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(8),
-                                      color:
-                                          context.color.borderColor.darken(10)),
+                                  decoration:
+                                      BoxDecoration(borderRadius: BorderRadius.circular(8), color: context.color.borderColor.darken(10)),
                                   child: Icon(
                                     Icons.chevron_right_outlined,
                                     color: context.color.textDefaultColor,
@@ -711,7 +646,7 @@ class CountriesScreenState extends State<CountriesScreen>
                       if (state.isLoadingMore)
                         Center(
                           child: UiUtils.progress(
-                            normalProgressColor: context.color.territoryColor,
+                            color: context.color.territoryColor,
                           ),
                         )
                     ],
@@ -727,10 +662,7 @@ class CountriesScreenState extends State<CountriesScreen>
   }
 
   Widget setSearchIcon() {
-    return Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: UiUtils.getSvg(AppIcons.search,
-            color: context.color.territoryColor));
+    return Padding(padding: const EdgeInsets.all(8.0), child: UiUtils.getSvg(AppIcons.search, color: context.color.territoryColor));
   }
 
   Widget setSuffixIcon() {

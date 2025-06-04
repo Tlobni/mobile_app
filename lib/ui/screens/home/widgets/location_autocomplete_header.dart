@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tlobni/app/routes.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tlobni/data/cubits/home/fetch_home_all_items_cubit.dart';
 import 'package:tlobni/data/cubits/home/fetch_home_screen_cubit.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
@@ -9,18 +9,15 @@ import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class LocationAutocompleteHeader extends StatefulWidget {
   const LocationAutocompleteHeader({Key? key}) : super(key: key);
 
   @override
-  State<LocationAutocompleteHeader> createState() =>
-      _LocationAutocompleteHeaderState();
+  State<LocationAutocompleteHeader> createState() => _LocationAutocompleteHeaderState();
 }
 
-class _LocationAutocompleteHeaderState
-    extends State<LocationAutocompleteHeader> {
+class _LocationAutocompleteHeaderState extends State<LocationAutocompleteHeader> {
   final TextEditingController _locationController = TextEditingController();
   bool _isExpanded = false;
   bool _preventAutoDismiss = false;
@@ -31,10 +28,7 @@ class _LocationAutocompleteHeaderState
     // Initialize with current location
     final cityName = HiveUtils.getCityName();
     final countryName = HiveUtils.getCountryName();
-    if (cityName != null &&
-        cityName.isNotEmpty &&
-        countryName != null &&
-        countryName.isNotEmpty) {
+    if (cityName != null && cityName.isNotEmpty && countryName != null && countryName.isNotEmpty) {
       _locationController.text = "$cityName, $countryName";
     }
   }
@@ -51,8 +45,7 @@ class _LocationAutocompleteHeaderState
       city: location['city'],
       state: location['state'],
       country: location['country'],
-      area: location[
-          'state'], // Using state as area since that's what seems to be done elsewhere
+      area: location['state'], // Using state as area since that's what seems to be done elsewhere
     );
 
     // Update the controller text with the new location
@@ -64,10 +57,7 @@ class _LocationAutocompleteHeaderState
 
     // Refresh data with new location
     context.read<FetchHomeScreenCubit>().fetch(
-        city: HiveUtils.getCityName(),
-        areaId: HiveUtils.getAreaId(),
-        country: HiveUtils.getCountryName(),
-        state: HiveUtils.getStateName());
+        city: HiveUtils.getCityName(), areaId: HiveUtils.getAreaId(), country: HiveUtils.getCountryName(), state: HiveUtils.getStateName());
 
     context.read<FetchHomeAllItemsCubit>().fetch(
         city: HiveUtils.getCityName(),
@@ -103,9 +93,7 @@ class _LocationAutocompleteHeaderState
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      width: _isExpanded
-          ? MediaQuery.of(context).size.width * 0.7
-          : MediaQuery.of(context).size.width * 0.55,
+      width: _isExpanded ? MediaQuery.of(context).size.width * 0.7 : MediaQuery.of(context).size.width * 0.55,
       child: _isExpanded ? _buildAutocompleteInput() : _buildLocationDisplay(),
     );
   }
@@ -144,9 +132,7 @@ class _LocationAutocompleteHeaderState
                 fontSize: context.font.smaller,
               ),
               CustomText(
-                _locationController.text.isEmpty
-                    ? "------"
-                    : _locationController.text,
+                _locationController.text.isEmpty ? "------" : _locationController.text,
                 maxLines: 1,
                 softWrap: true,
                 overflow: TextOverflow.ellipsis,
@@ -207,6 +193,7 @@ class _LocationAutocompleteHeaderState
                   }
                 },
                 onLocationSelected: (Map<String, String> location) {
+                  if (location.isEmpty) return;
                   _refreshData(location);
                   // Only collapse if not in prevent mode
                   if (!_preventAutoDismiss) {

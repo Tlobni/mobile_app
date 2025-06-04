@@ -44,8 +44,7 @@ class CustomFileField extends CustomField {
 
       if (_isImageFile(selectedFile)) {
         if (await selectedFile.length() > Constant.maxSizeInBytes) {
-          File compressedFile =
-              await HelperUtils.compressImageFile(selectedFile);
+          File compressedFile = await HelperUtils.compressImageFile(selectedFile);
           return compressedFile;
         } else {
           return selectedFile;
@@ -95,10 +94,7 @@ class CustomFileField extends CustomField {
                       child: FittedBox(
                         fit: BoxFit.none,
                         child: UiUtils.imageType(parameters['image'],
-                            width: 24,
-                            height: 24,
-                            fit: BoxFit.cover,
-                            color: context.color.textDefaultColor),
+                            width: 24, height: 24, fit: BoxFit.cover, color: context.color.textDefaultColor),
                       ),
                     ),
                   ),
@@ -126,29 +122,23 @@ class CustomFileField extends CustomField {
               onTap: () async {
                 File? file = await pickFile();
                 if (file != null) {
-                  MultipartFile multipartFile =
-                      await MultipartFile.fromFile(file.path);
+                  MultipartFile multipartFile = await MultipartFile.fromFile(file.path);
                   update(() {});
                   state.didChange(multipartFile);
-                  AbstractField.files.addAll({
-                    "custom_field_files[${parameters['id']}]": multipartFile
-                  });
+                  AbstractField.files.addAll({"custom_field_files[${parameters['id']}]": multipartFile});
                 }
               },
               child: DottedBorder(
                 borderType: BorderType.RRect,
                 radius: const Radius.circular(10),
-                color: state.hasError
-                    ? context.color.error
-                    : context.color.textLightColor.darken(50),
+                color: state.hasError ? context.color.error : context.color.textLightColor.darken(50),
                 strokeCap: StrokeCap.round,
                 padding: const EdgeInsets.all(5),
                 dashPattern: const [3, 3],
                 child: Container(
                   width: double.infinity,
                   height: 43,
-                  decoration:
-                      BoxDecoration(borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -191,8 +181,7 @@ class CustomFileField extends CustomField {
                             maxLines: 1,
                             fontWeight: FontWeight.w500,
                           ),
-                          if (!((picked ?? "").startsWith("http") ||
-                              (picked ?? "").startsWith("https")))
+                          if (!((picked ?? "").startsWith("http") || (picked ?? "").startsWith("https")))
                             CustomText(
                               HelperUtils.getFileSizeString(
                                 bytes: File((picked ?? "")).lengthSync(),

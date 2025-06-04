@@ -1,5 +1,5 @@
-import 'package:tlobni/ui/theme/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:tlobni/ui/theme/theme.dart';
 
 extension CustomContext on BuildContext {
   double get screenWidth => MediaQuery.of(this).size.width;
@@ -7,6 +7,12 @@ extension CustomContext on BuildContext {
 
   //This one for colorScheme shortcut
   ColorScheme get color => Theme.of(this).colorScheme;
+
+  ThemeData get theme => Theme.of(this);
+
+  TextTheme get textTheme => Theme.of(this).textTheme;
+
+  ButtonThemeData get buttonTheme => Theme.of(this).buttonTheme;
 
 //This one for fontSize
   ///I created different Font class to limit textTheme values, let's assume if some one is using context.font and he is getting too may options related to text theme so how will he know which one is for use??

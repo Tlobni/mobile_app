@@ -1,20 +1,19 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tlobni/ui/screens/chat/chat_audio/widgets/chat_widget.dart';
 import 'package:tlobni/ui/theme/theme.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 int sentMessages = 0;
 
 class ChatMessageHandler {
   static List<Widget> messages = [];
   static final List<Widget> _chat = [];
-  static final StreamController<List<Widget>> _chatMessageStream =
-      StreamController<List<Widget>>.broadcast();
+  static final StreamController<List<Widget>> _chatMessageStream = StreamController<List<Widget>>.broadcast();
 
   static void add(Widget chat) {
     _chat.clear();
@@ -33,8 +32,7 @@ class ChatMessageHandler {
     DateTime yesterday = today.subtract(const Duration(days: 1));
 
     for (int i = chats.length - 1; i >= 0; i--) {
-      DateTime date =
-          DateTime.parse((chats[i] as ChatMessage).createdAt).toLocal();
+      DateTime date = DateTime.parse((chats[i] as ChatMessage).createdAt).toLocal();
       String formattedDate;
 
       if (date.isAfter(today)) {
@@ -67,9 +65,7 @@ class ChatMessageHandler {
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Center(
           child: Container(
-        decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(7),
-            color: context.color.territoryColor.withOpacity(0.3)),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(7), color: context.color.territoryColor.withValues(alpha: 0.3)),
         child: Padding(
           padding: const EdgeInsets.all(5.0),
           child: CustomText(formattedDate),

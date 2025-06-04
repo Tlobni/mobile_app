@@ -1,10 +1,24 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tlobni/data/model/data_output.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/data/model/item_filter_model.dart';
 import 'package:tlobni/data/repositories/item/item_repository.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+
+enum SearchItemSortBy {
+  newest,
+  priceLowToHigh,
+  priceHighToLow,
+  topRated;
+
+  String get jsonName => switch (this) {
+        SearchItemSortBy.newest => 'new-to-old',
+        SearchItemSortBy.priceLowToHigh => 'price-low-to-high',
+        SearchItemSortBy.priceHighToLow => 'price-high-to-low',
+        SearchItemSortBy.topRated => 'top_rated',
+      };
+}
 
 abstract class SearchItemState {}
 
@@ -23,14 +37,15 @@ class SearchItemSuccess extends SearchItemState {
   final bool hasMore;
   final List<ItemModel> searchedItems;
 
-  SearchItemSuccess(
-      {required this.searchQuery,
-      required this.total,
-      required this.page,
-      required this.isLoadingMore,
-      required this.hasError,
-      required this.searchedItems,
-      required this.hasMore});
+  SearchItemSuccess({
+    required this.searchQuery,
+    required this.total,
+    required this.page,
+    required this.isLoadingMore,
+    required this.hasError,
+    required this.searchedItems,
+    required this.hasMore,
+  });
 
   SearchItemSuccess copyWith({
     int? total,
@@ -71,8 +86,7 @@ class SearchItemCubit extends Cubit<SearchItemState> {
   }) async {
     try {
       emit(SearchItemFetchProgress());
-      DataOutput<ItemModel> result =
-          await _itemRepository.searchItem(query, filter, page: page);
+      DataOutput<ItemModel> result = await _itemRepository.searchItem(query, filter, page: page);
 
       emit(SearchItemSuccess(
           searchQuery: query,
@@ -87,13 +101,7 @@ class SearchItemCubit extends Cubit<SearchItemState> {
         //incase of 0 Favorite length - make it success for fresh users
 
         emit(SearchItemSuccess(
-            searchQuery: query,
-            total: 0,
-            hasError: false,
-            isLoadingMore: false,
-            page: page,
-            searchedItems: [],
-            hasMore: false));
+            searchQuery: query, total: 0, hasError: false, isLoadingMore: false, page: page, searchedItems: [], hasMore: false));
       } else {
         emit(SearchItemFailure(e.toString()));
       }
@@ -122,8 +130,7 @@ class SearchItemCubit extends Cubit<SearchItemState> {
           filter,
           page: (state as SearchItemSuccess).page + 1,
         );
-        List<ItemModel> updatedResults =
-            (state as SearchItemSuccess).searchedItems;
+        List<ItemModel> updatedResults = (state as SearchItemSuccess).searchedItems;
         updatedResults.addAll(result.modelList);
 
         emit(
@@ -150,8 +157,6 @@ class SearchItemCubit extends Cubit<SearchItemState> {
   }
 
   bool hasMoreData() {
-    return (state is SearchItemSuccess)
-        ? (state as SearchItemSuccess).hasMore
-        : false;
+    return (state is SearchItemSuccess) ? (state as SearchItemSuccess).hasMore : false;
   }
 }

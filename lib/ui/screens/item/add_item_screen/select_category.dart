@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/category/fetch_category_cubit.dart';
 import 'package:tlobni/data/cubits/category/fetch_sub_categories_cubit.dart';
@@ -12,14 +15,11 @@ import 'package:tlobni/utils/api.dart';
 import 'package:tlobni/utils/app_icon.dart';
 import 'package:tlobni/utils/cloud_state/cloud_state.dart';
 import 'package:tlobni/utils/constant.dart';
+import 'package:tlobni/utils/custom_silver_grid_delegate.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
-import 'package:tlobni/utils/custom_silver_grid_delegate.dart';
 import 'package:tlobni/utils/touch_manager.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shimmer/shimmer.dart';
 
 int screenStack = 0;
 
@@ -35,8 +35,7 @@ class SelectCategoryScreen extends StatefulWidget {
   }
 
   @override
-  CloudState<SelectCategoryScreen> createState() =>
-      _SelectCategoryScreenState();
+  CloudState<SelectCategoryScreen> createState() => _SelectCategoryScreenState();
 }
 
 class _SelectCategoryScreenState extends CloudState<SelectCategoryScreen> {
@@ -62,9 +61,7 @@ class _SelectCategoryScreenState extends CloudState<SelectCategoryScreen> {
       final fetchCategoryCubit = context.read<FetchCategoryCubit>();
       final state = fetchCategoryCubit.state;
 
-      if (state is! FetchCategorySuccess ||
-          (state is FetchCategorySuccess &&
-              state.categoryType != CategoryType.serviceExperience)) {
+      if (state is! FetchCategorySuccess || (state is FetchCategorySuccess && state.categoryType != CategoryType.serviceExperience)) {
         fetchCategoryCubit.fetchCategories(
           type: CategoryType.serviceExperience,
         );
@@ -101,13 +98,10 @@ class _SelectCategoryScreenState extends CloudState<SelectCategoryScreen> {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion(
-      value: UiUtils.getSystemUiOverlayStyle(
-          context: context, statusBarColor: context.color.secondaryColor),
+      value: UiUtils.getSystemUiOverlayStyle(context: context, statusBarColor: context.color.secondaryColor),
       child: SafeArea(
         child: Scaffold(
-          appBar: UiUtils.buildAppBar(context,
-              showBackButton: true,
-              title: "Choose Category".translate(context), onBackPress: () {
+          appBar: UiUtils.buildAppBar(context, showBackButton: true, title: "Choose Category".translate(context), onBackPress: () {
             Navigator.of(context).popUntil((route) => route.isFirst);
           }),
           body: !_isInitialized
@@ -117,8 +111,7 @@ class _SelectCategoryScreenState extends CloudState<SelectCategoryScreen> {
                   controller: controller,
                   child: Padding(
                     padding: const EdgeInsets.all(18),
-                    child: BlocBuilder<FetchCategoryCubit, FetchCategoryState>(
-                        builder: (context, state) {
+                    child: BlocBuilder<FetchCategoryCubit, FetchCategoryState>(builder: (context, state) {
                       if (state is FetchCategoryFailure) {
                         return CustomText(state.errorMessage);
                       }
@@ -128,25 +121,21 @@ class _SelectCategoryScreenState extends CloudState<SelectCategoryScreen> {
 
                       if (state is FetchCategorySuccess) {
                         // Filter categories to only show service_experience type
-                        final serviceCategories = state.categories
-                            .where((category) =>
-                                category.type == CategoryType.serviceExperience)
-                            .toList();
+                        final serviceCategories =
+                            state.categories.where((category) => category.type == CategoryType.serviceExperience).toList();
 
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             CustomText(
-                              "First, select a category for your post:"
-                                  .translate(context),
+                              "First, select a category for your post:".translate(context),
                               fontSize: context.font.large,
                               fontWeight: FontWeight.w600,
                               color: context.color.textColorDark,
                             ),
                             const SizedBox(height: 8),
                             CustomText(
-                              "Choosing the right category helps your post reach the right audience"
-                                  .translate(context),
+                              "Choosing the right category helps your post reach the right audience".translate(context),
                               fontSize: context.font.small,
                               color: context.color.textLightColor,
                             ),
@@ -154,43 +143,33 @@ class _SelectCategoryScreenState extends CloudState<SelectCategoryScreen> {
                             GridView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCountAndFixedHeight(
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCountAndFixedHeight(
                                 crossAxisCount: 3,
-                                height: MediaQuery.of(context).size.height *
-                                    0.18, //149,
+                                height: MediaQuery.of(context).size.height * 0.18, //149,
                                 crossAxisSpacing: 14,
                                 mainAxisSpacing: 14,
                               ),
                               itemBuilder: (context, index) {
-                                CategoryModel category =
-                                    serviceCategories[index];
+                                CategoryModel category = serviceCategories[index];
 
                                 return CategoryCard(
                                   onTap: () {
-                                    if (category.children!.isEmpty &&
-                                        category.subcategoriesCount == 0) {
+                                    if (category.children!.isEmpty && category.subcategoriesCount == 0) {
                                       if (TouchManager.canProcessTouch()) {
                                         addCloudData("breadCrumb", [category]);
-                                        List<CategoryModel>? breadCrumbList =
-                                            getCloudData("breadCrumb")
-                                                as List<CategoryModel>?;
+                                        List<CategoryModel>? breadCrumbList = getCloudData("breadCrumb") as List<CategoryModel>?;
 
                                         screenStack++;
                                         Navigator.pushNamed(
                                           context,
                                           Routes.selectPostTypeScreen,
-                                          arguments: <String, dynamic>{
-                                            "breadCrumbItems": breadCrumbList
-                                          },
+                                          arguments: <String, dynamic>{"breadCrumbItems": breadCrumbList},
                                         ).then((value) {
-                                          List<CategoryModel> bcd =
-                                              getCloudData("breadCrumb");
+                                          List<CategoryModel> bcd = getCloudData("breadCrumb");
                                           addCloudData("breadCrumb", bcd);
                                           //}
                                         });
-                                        Future.delayed(Duration(seconds: 1),
-                                            () {
+                                        Future.delayed(Duration(seconds: 1), () {
                                           // Notify that touch processing is complete
                                           TouchManager.touchProcessed();
                                         });
@@ -200,13 +179,10 @@ class _SelectCategoryScreenState extends CloudState<SelectCategoryScreen> {
                                         addCloudData("breadCrumb", [category]);
 
                                         screenStack++;
-                                        Navigator.pushNamed(context,
-                                            Routes.selectNestedCategoryScreen,
-                                            arguments: {
-                                              "current": category,
-                                            });
-                                        Future.delayed(Duration(seconds: 1),
-                                            () {
+                                        Navigator.pushNamed(context, Routes.selectNestedCategoryScreen, arguments: {
+                                          "current": category,
+                                        });
+                                        Future.delayed(Duration(seconds: 1), () {
                                           // Notify that touch processing is complete
                                           TouchManager.touchProcessed();
                                         });
@@ -253,8 +229,7 @@ class SelectNestedCategory extends StatefulWidget {
   }
 
   @override
-  CloudState<SelectNestedCategory> createState() =>
-      _SelectNestedCategoryState();
+  CloudState<SelectNestedCategory> createState() => _SelectNestedCategoryState();
 }
 
 class _SelectNestedCategoryState extends CloudState<SelectNestedCategory> {
@@ -322,8 +297,7 @@ class _SelectNestedCategoryState extends CloudState<SelectNestedCategory> {
   Widget build(BuildContext context) {
     breadCrumbData = getCloudData('breadCrumb');
     return AnnotatedRegion(
-      value: UiUtils.getSystemUiOverlayStyle(
-          context: context, statusBarColor: context.color.secondaryColor),
+      value: UiUtils.getSystemUiOverlayStyle(context: context, statusBarColor: context.color.secondaryColor),
       child: PopScope(
         canPop: true,
         onPopInvokedWithResult: (didPop, result) async {
@@ -331,8 +305,7 @@ class _SelectNestedCategoryState extends CloudState<SelectNestedCategory> {
         },
         child: SafeArea(
           child: Scaffold(
-            appBar: UiUtils.buildAppBar(context,
-                showBackButton: true, title: "adListing".translate(context)),
+            appBar: UiUtils.buildAppBar(context, showBackButton: true, title: "adListing".translate(context)),
             body: Padding(
               padding: const EdgeInsets.all(18),
               child: Column(
@@ -359,9 +332,7 @@ class _SelectNestedCategoryState extends CloudState<SelectNestedCategory> {
                               await Future.delayed(
                                 const Duration(milliseconds: 5),
                                 () {
-                                  for (int i = 0;
-                                      i < breadCrumbData.length;
-                                      i++) {
+                                  for (int i = 0; i < breadCrumbData.length; i++) {
                                     Navigator.pop(context);
                                   }
                                 },
@@ -381,28 +352,22 @@ class _SelectNestedCategoryState extends CloudState<SelectNestedCategory> {
                               scrollDirection: Axis.horizontal,
                               physics: const NeverScrollableScrollPhysics(),
                               itemBuilder: (context, index) {
-                                bool isNotLast =
-                                    (breadCrumbData.length - 1) != index;
+                                bool isNotLast = (breadCrumbData.length - 1) != index;
 
                                 return Row(
                                   children: [
                                     GestureDetector(
                                         onTap: () {
-                                          _onBreadCrumbItemTap(
-                                              breadCrumbData, index);
+                                          _onBreadCrumbItemTap(breadCrumbData, index);
                                         },
                                         child: CustomText(
                                           breadCrumbData[index].name!,
-                                          color: isNotLast
-                                              ? context.color.territoryColor
-                                              : context.color.textColorDark,
+                                          color: isNotLast ? context.color.territoryColor : context.color.textColorDark,
                                           firstUpperCaseWidget: true,
                                         )),
 
                                     ///if it is not last
-                                    if (isNotLast)
-                                      CustomText(" > ",
-                                          color: context.color.territoryColor)
+                                    if (isNotLast) CustomText(" > ", color: context.color.territoryColor)
                                   ],
                                 );
                               },
@@ -419,34 +384,26 @@ class _SelectNestedCategoryState extends CloudState<SelectNestedCategory> {
                           child: ListView.builder(
                             shrinkWrap: true,
                             itemBuilder: (context, index) {
-                              CategoryModel category =
-                                  widget.current.children![index];
+                              CategoryModel category = widget.current.children![index];
 
                               return GestureDetector(
                                 onTap: () {
-                                  if (widget.current.children![index].children!
-                                          .isEmpty &&
-                                      widget.current.children![index]
-                                              .subcategoriesCount ==
-                                          0) {
+                                  if (widget.current.children![index].children!.isEmpty &&
+                                      widget.current.children![index].subcategoriesCount == 0) {
                                     if (TouchManager.canProcessTouch()) {
                                       screenStack++;
                                       Navigator.pushNamed(
                                         context,
                                         Routes.selectPostTypeScreen,
                                         arguments: <String, dynamic>{
-                                          "breadCrumbItems": breadCrumbData
-                                            ..add(
-                                                widget.current.children![index])
+                                          "breadCrumbItems": breadCrumbData..add(widget.current.children![index])
                                         },
                                       ).then((value) {
                                         screenStack--;
 
-                                        List<CategoryModel> bcd =
-                                            getCloudData("breadCrumb");
+                                        List<CategoryModel> bcd = getCloudData("breadCrumb");
 
-                                        bcd.remove(
-                                            widget.current.children![index]);
+                                        bcd.remove(widget.current.children![index]);
                                         addCloudData("breadCrumb", bcd);
                                       });
 
@@ -457,9 +414,7 @@ class _SelectNestedCategoryState extends CloudState<SelectNestedCategory> {
                                     }
                                   } else {
                                     if (TouchManager.canProcessTouch()) {
-                                      List<CategoryModel> cloudData =
-                                          getCloudData("breadCrumb")
-                                              as List<CategoryModel>;
+                                      List<CategoryModel> cloudData = getCloudData("breadCrumb") as List<CategoryModel>;
                                       cloudData.add(category);
                                       setCloudData("breadCrumb", cloudData);
 
@@ -470,19 +425,15 @@ class _SelectNestedCategoryState extends CloudState<SelectNestedCategory> {
                                         arguments: {
                                           /*  "breadCrumbItems": breadCrumbData
                                     ..add(widget.children[index]),*/
-                                          "current":
-                                              widget.current.children![index],
+                                          "current": widget.current.children![index],
                                         },
                                       ).then((value) {
                                         if (value == true) {
                                           screenStack--;
 
-                                          breadCrumbData.remove(
-                                              widget.current.children![index]);
-                                          List<CategoryModel> bcd =
-                                              getCloudData("breadCrumb");
-                                          bcd.remove(
-                                              widget.current.children![index]);
+                                          breadCrumbData.remove(widget.current.children![index]);
+                                          List<CategoryModel> bcd = getCloudData("breadCrumb");
+                                          bcd.remove(widget.current.children![index]);
                                           addCloudData("breadCrumb", bcd);
                                         }
                                       });
@@ -512,18 +463,13 @@ class _SelectNestedCategoryState extends CloudState<SelectNestedCategory> {
                                       children: [
                                         Expanded(
                                           child: CustomText(category.name!,
-                                              color:
-                                                  context.color.textColorDark,
-                                              firstUpperCaseWidget: true,
-                                              fontWeight: FontWeight.w600),
+                                              color: context.color.textColorDark, firstUpperCaseWidget: true, fontWeight: FontWeight.w600),
                                         ),
                                         Container(
                                           width: 32,
                                           height: 32,
-                                          decoration: BoxDecoration(
-                                              color: context.color.primaryColor,
-                                              borderRadius:
-                                                  BorderRadius.circular(10)),
+                                          decoration:
+                                              BoxDecoration(color: context.color.primaryColor, borderRadius: BorderRadius.circular(10)),
                                           child: Icon(
                                             Icons.arrow_forward_ios_sharp,
                                             color: context.color.textColorDark,
@@ -595,17 +541,13 @@ class _SelectNestedCategoryState extends CloudState<SelectNestedCategory> {
 
                   return GestureDetector(
                     onTap: () {
-                      if (state.categories[index].children!.isEmpty &&
-                          state.categories[index].subcategoriesCount == 0) {
+                      if (state.categories[index].children!.isEmpty && state.categories[index].subcategoriesCount == 0) {
                         screenStack++;
 
                         Navigator.pushNamed(
                           context,
                           Routes.selectPostTypeScreen,
-                          arguments: <String, dynamic>{
-                            "breadCrumbItems": breadCrumbData
-                              ..add(state.categories[index])
-                          },
+                          arguments: <String, dynamic>{"breadCrumbItems": breadCrumbData..add(state.categories[index])},
                         ).then((value) {
                           screenStack--;
 
@@ -616,8 +558,7 @@ class _SelectNestedCategoryState extends CloudState<SelectNestedCategory> {
                         });
                       } else {
                         if (TouchManager.canProcessTouch()) {
-                          List<CategoryModel> cloudData =
-                              getCloudData("breadCrumb") as List<CategoryModel>;
+                          List<CategoryModel> cloudData = getCloudData("breadCrumb") as List<CategoryModel>;
                           cloudData.add(category);
                           setCloudData("breadCrumb", cloudData);
 
@@ -633,8 +574,7 @@ class _SelectNestedCategoryState extends CloudState<SelectNestedCategory> {
                               screenStack--;
 
                               breadCrumbData.remove(state.categories[index]);
-                              List<CategoryModel> bcd =
-                                  getCloudData("breadCrumb");
+                              List<CategoryModel> bcd = getCloudData("breadCrumb");
                               bcd.remove(state.categories[index]);
                               addCloudData("breadCrumb", bcd);
                             }
@@ -673,9 +613,7 @@ class _SelectNestedCategoryState extends CloudState<SelectNestedCategory> {
                             Container(
                               width: 32,
                               height: 32,
-                              decoration: BoxDecoration(
-                                  color: context.color.primaryColor,
-                                  borderRadius: BorderRadius.circular(10)),
+                              decoration: BoxDecoration(color: context.color.primaryColor, borderRadius: BorderRadius.circular(10)),
                               child: Icon(
                                 Icons.arrow_forward_ios_sharp,
                                 color: context.color.textColorDark,
@@ -721,10 +659,8 @@ class _SelectNestedCategoryState extends CloudState<SelectNestedCategory> {
               padding: EdgeInsets.all(5),
               width: double.maxFinite,
               height: 56,
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(5),
-                  border:
-                      Border.all(color: context.color.borderColor.darken(30))),
+              decoration:
+                  BoxDecoration(borderRadius: BorderRadius.circular(5), border: Border.all(color: context.color.borderColor.darken(30))),
             ),
           );
         },

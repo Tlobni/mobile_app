@@ -13,12 +13,13 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
     <!-- <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/> -->
 
@@ -49,7 +50,7 @@
         android:name="${applicationName}"
         android:allowBackup="false"
         android:fullBackupOnly="false"
-        android:icon="@mipmap/launcher_icon"
+        android:icon="@mipmap/ic_launcher"
         android:label="Tlobni"
         android:largeHeap="true"
         android:requestLegacyExternalStorage="true"
@@ -85,15 +86,11 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data
-                    android:host="eclassify-dev.vercel.app"
-                    android:pathPattern="/product-details/.*"
-                    android:scheme="tlobni" />
-                <data
-                    android:host="eclassifyweb.wrteam.me"
-                    android:pathPattern="/product-details/.*"
-                    android:scheme="tlobni" />
-                <data
                     android:host="tlobni.thewrteam.in"
+                    android:pathPattern="/product-details/.*"
+                    android:scheme="tlobni" />
+                <data
+                    android:host="dashboard.tlobni.com"
                     android:pathPattern="/product-details/.*"
                     android:scheme="tlobni" />
             </intent-filter>

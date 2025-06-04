@@ -1,10 +1,10 @@
 // ignore_for_file: file_names
+import 'package:flutter/material.dart';
 import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/item_filter_model.dart';
 import 'package:tlobni/data/model/system_settings_model.dart';
 import 'package:tlobni/settings.dart';
-import 'package:tlobni/ui/screens/filter_screen.dart';
-import 'package:flutter/material.dart';
+import 'package:tlobni/ui/screens/filter_category_screen.dart';
 
 const String svgPath = 'assets/svg/';
 
@@ -60,27 +60,22 @@ class Constant {
   ///This maxCategoryLength is for show limited number of categories and show "More" button,
   ///You have to set less than [loadLimit] constant
 
-  static const int maxCategoryLength =
-      AppSettings.maxCategoryShowLengthInHomeScreen;
+  static const int maxCategoryLength = AppSettings.maxCategoryShowLengthInHomeScreen;
 
   //
 
   ///Lottie animation
-  static const String loadingSuccessLottieFile =
-      AppSettings.successLoadingLottieFile;
-  static const String successItemLottieFile =
-      AppSettings.successCheckLottieFile;
-  static const String progressLottieFileWhite = AppSettings
-      .progressLottieFileWhite; //When there is dark background and you want to show progress so it will be used
+  static const String loadingSuccessLottieFile = AppSettings.successLoadingLottieFile;
+  static const String successItemLottieFile = AppSettings.successCheckLottieFile;
+  static const String progressLottieFileWhite =
+      AppSettings.progressLottieFileWhite; //When there is dark background and you want to show progress so it will be used
 
-  static const String maintenanceModeLottieFile =
-      AppSettings.maintenanceModeLottieFile;
+  static const String maintenanceModeLottieFile = AppSettings.maintenanceModeLottieFile;
 
   ///
 
   ///Put your loading json file in assets/lottie/ folder
-  static const bool useLottieProgress = AppSettings
-      .useLottieProgress; //if you don't want to use lottie progress then set it to false'
+  static const bool useLottieProgress = AppSettings.useLottieProgress; //if you don't want to use lottie progress then set it to false'
 
   static const String notificationChannel = AppSettings.notificationChannel;
   static int uploadImageQuality = AppSettings.uploadImageQuality; //0 to 100

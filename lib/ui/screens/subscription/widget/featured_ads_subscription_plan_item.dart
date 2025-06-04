@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tlobni/data/cubits/subscription/assign_free_package_cubit.dart';
 import 'package:tlobni/data/cubits/subscription/get_payment_intent_cubit.dart';
 import 'package:tlobni/data/helper/widgets.dart';
@@ -17,8 +19,6 @@ import 'package:tlobni/utils/payment/gateaways/inapp_purchase_manager.dart';
 import 'package:tlobni/utils/payment/gateaways/payment_webview.dart';
 import 'package:tlobni/utils/payment/gateaways/stripe_service.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class FeaturedAdsSubscriptionPlansItem extends StatefulWidget {
   final List<SubscriptionPackageModel> modelList;
@@ -31,12 +31,10 @@ class FeaturedAdsSubscriptionPlansItem extends StatefulWidget {
   });
 
   @override
-  _FeaturedAdsSubscriptionPlansItemState createState() =>
-      _FeaturedAdsSubscriptionPlansItemState();
+  _FeaturedAdsSubscriptionPlansItemState createState() => _FeaturedAdsSubscriptionPlansItemState();
 }
 
-class _FeaturedAdsSubscriptionPlansItemState
-    extends State<FeaturedAdsSubscriptionPlansItem> {
+class _FeaturedAdsSubscriptionPlansItemState extends State<FeaturedAdsSubscriptionPlansItem> {
   String? _selectedGateway;
   int? selectedIndex;
 
@@ -88,65 +86,48 @@ class _FeaturedAdsSubscriptionPlansItemState
             ),
             if (selectedIndex != null)
               Builder(builder: (context) {
-                return BlocListener<GetPaymentIntentCubit,
-                    GetPaymentIntentState>(
+                return BlocListener<GetPaymentIntentCubit, GetPaymentIntentState>(
                   listener: (context, state) {
                     if (state is GetPaymentIntentInSuccess) {
                       Widgets.hideLoder(context);
 
                       if (_selectedGateway == "stripe") {
                         PaymentGateways.stripe(context,
-                            price: widget.modelList[selectedIndex!].finalPrice!
-                                .toDouble(),
+                            price: widget.modelList[selectedIndex!].finalPrice!.toDouble(),
                             packageId: widget.modelList[selectedIndex!].id!,
                             paymentIntent: state.paymentIntent);
                       } else if (_selectedGateway == "paystack") {
                         Navigator.of(context).push(MaterialPageRoute(
                           builder: (context) => PaymentWebView(
-                            authorizationUrl:
-                                state.paymentIntent["payment_gateway_response"]
-                                    ["data"]["authorization_url"],
-                            reference:
-                                state.paymentIntent["payment_gateway_response"]
-                                    ["data"]["reference"],
+                            authorizationUrl: state.paymentIntent["payment_gateway_response"]["data"]["authorization_url"],
+                            reference: state.paymentIntent["payment_gateway_response"]["data"]["reference"],
                             onSuccess: (reference) {
-                              HelperUtils.showSnackBarMessage(
-                                  context,
-                                  "paymentSuccessfullyCompleted"
-                                      .translate(context));
+                              HelperUtils.showSnackBarMessage(context, "paymentSuccessfullyCompleted".translate(context));
                               // Handle successful payment
                             },
                             onFailed: (reference) {
-                              HelperUtils.showSnackBarMessage(
-                                  context, "purchaseFailed".translate(context));
+                              HelperUtils.showSnackBarMessage(context, "purchaseFailed".translate(context));
                               // Handle failed payment
                             },
                             onCancel: () {
-                              HelperUtils.showSnackBarMessage(context,
-                                  "subscriptionsCancelled".translate(context));
+                              HelperUtils.showSnackBarMessage(context, "subscriptionsCancelled".translate(context));
                             },
                           ),
                         ));
                       } else if (_selectedGateway == "phonepe") {
                         Navigator.of(context).push(MaterialPageRoute(
                           builder: (context) => PaymentWebView(
-                            authorizationUrl:
-                                state.paymentIntent["payment_gateway_response"],
+                            authorizationUrl: state.paymentIntent["payment_gateway_response"],
                             onSuccess: (reference) {
-                              HelperUtils.showSnackBarMessage(
-                                  context,
-                                  "paymentSuccessfullyCompleted"
-                                      .translate(context));
+                              HelperUtils.showSnackBarMessage(context, "paymentSuccessfullyCompleted".translate(context));
                               // Handle successful payment
                             },
                             onFailed: (reference) {
-                              HelperUtils.showSnackBarMessage(
-                                  context, "purchaseFailed".translate(context));
+                              HelperUtils.showSnackBarMessage(context, "purchaseFailed".translate(context));
                               // Handle failed payment
                             },
                             onCancel: () {
-                              HelperUtils.showSnackBarMessage(context,
-                                  "subscriptionsCancelled".translate(context));
+                              HelperUtils.showSnackBarMessage(context, "subscriptionsCancelled".translate(context));
                             },
                           ),
                         ));
@@ -155,8 +136,7 @@ class _FeaturedAdsSubscriptionPlansItemState
                           orderId: state.paymentIntent["id"].toString(),
                           context: context,
                           packageId: widget.modelList[selectedIndex!].id!,
-                          price: widget.modelList[selectedIndex!].finalPrice!
-                              .toDouble(),
+                          price: widget.modelList[selectedIndex!].finalPrice!.toDouble(),
                         );
                       }
                     }
@@ -167,23 +147,19 @@ class _FeaturedAdsSubscriptionPlansItemState
 
                     if (state is GetPaymentIntentFailure) {
                       Widgets.hideLoder(context);
-                      HelperUtils.showSnackBarMessage(
-                          context, state.error.toString());
+                      HelperUtils.showSnackBarMessage(context, state.error.toString());
                     }
                   },
-                  child: BlocListener<AssignFreePackageCubit,
-                          AssignFreePackageState>(
+                  child: BlocListener<AssignFreePackageCubit, AssignFreePackageState>(
                       listener: (context, state) {
                         if (state is AssignFreePackageInSuccess) {
                           Widgets.hideLoder(context);
-                          HelperUtils.showSnackBarMessage(
-                              context, state.responseMessage);
+                          HelperUtils.showSnackBarMessage(context, state.responseMessage);
                           Navigator.pop(context);
                         }
                         if (state is AssignFreePackageFailure) {
                           Widgets.hideLoder(context);
-                          HelperUtils.showSnackBarMessage(
-                              context, state.error.toString());
+                          HelperUtils.showSnackBarMessage(context, state.error.toString());
                         }
                         if (state is AssignFreePackageInProgress) {
                           Widgets.showLoader(context);
@@ -193,42 +169,26 @@ class _FeaturedAdsSubscriptionPlansItemState
                         UiUtils.checkUser(
                             onNotGuest: () {
                               if (!widget.modelList[selectedIndex!].isActive!) {
-                                if (widget
-                                        .modelList[selectedIndex!].finalPrice! >
-                                    0) {
+                                if (widget.modelList[selectedIndex!].finalPrice! > 0) {
                                   if (Platform.isIOS) {
                                     //_purchaseSubscription(widget.modelList[selectedIndex!]);
                                     widget.inAppPurchaseManager.buy(
-                                        widget.modelList[selectedIndex!]
-                                            .iosProductId!,
-                                        widget.modelList[selectedIndex!].id!
-                                            .toString());
+                                        widget.modelList[selectedIndex!].iosProductId!, widget.modelList[selectedIndex!].id!.toString());
                                   } else {
                                     paymentGatewayBottomSheet().then((value) {
-                                      context
-                                          .read<GetPaymentIntentCubit>()
-                                          .getPaymentIntent(
-                                              paymentMethod:
-                                                  _selectedGateway == "stripe"
-                                                      ? "Stripe"
-                                                      : _selectedGateway ==
-                                                              "paystack"
-                                                          ? "Paystack"
-                                                          : _selectedGateway ==
-                                                                  "razorpay"
-                                                              ? "Razorpay"
-                                                              : "PhonePe",
-                                              packageId: widget
-                                                  .modelList[selectedIndex!]
-                                                  .id!);
+                                      context.read<GetPaymentIntentCubit>().getPaymentIntent(
+                                          paymentMethod: _selectedGateway == "stripe"
+                                              ? "Stripe"
+                                              : _selectedGateway == "paystack"
+                                                  ? "Paystack"
+                                                  : _selectedGateway == "razorpay"
+                                                      ? "Razorpay"
+                                                      : "PhonePe",
+                                          packageId: widget.modelList[selectedIndex!].id!);
                                     });
                                   }
                                 } else {
-                                  context
-                                      .read<AssignFreePackageCubit>()
-                                      .assignFreePackage(
-                                          packageId: widget
-                                              .modelList[selectedIndex!].id!);
+                                  context.read<AssignFreePackageCubit>().assignFreePackage(packageId: widget.modelList[selectedIndex!].id!);
                                 }
                               }
                             },
@@ -237,16 +197,13 @@ class _FeaturedAdsSubscriptionPlansItemState
                           radius: 10,
                           height: 46,
                           fontSize: context.font.large,
-                          buttonColor:
-                              widget.modelList[selectedIndex!].isActive!
-                                  ? context.color.textLightColor.brighten(300)
-                                  : context.color.territoryColor,
+                          buttonColor: widget.modelList[selectedIndex!].isActive!
+                              ? context.color.textLightColor.brighten(300)
+                              : context.color.territoryColor,
                           textColor: widget.modelList[selectedIndex!].isActive!
                               ? context.color.textDefaultColor.withOpacity(0.3)
                               : context.color.secondaryColor,
-                          buttonTitle: widget
-                                      .modelList[selectedIndex!].finalPrice! >
-                                  0
+                          buttonTitle: widget.modelList[selectedIndex!].finalPrice! > 0
                               ? "${"payLbl".translate(context)}\t${widget.modelList[selectedIndex!].finalPrice!.currencyFormat}"
                               : "purchaseThisPackage".translate(context),
 
@@ -295,10 +252,7 @@ class _FeaturedAdsSubscriptionPlansItemState
                   height: 17,
                   padding: EdgeInsets.only(top: 3),
                   child: CustomText('activePlanLbl'.translate(context),
-                      color: context.color.secondaryColor,
-                      textAlign: TextAlign.center,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 12),
+                      color: context.color.secondaryColor, textAlign: TextAlign.center, fontWeight: FontWeight.w500, fontSize: 12),
                 ),
               ),
             ),
@@ -316,14 +270,11 @@ class _FeaturedAdsSubscriptionPlansItemState
               decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16.0),
                   border: Border.all(
-                      color: widget.modelList[index].isActive! ||
-                              index == selectedIndex
+                      color: widget.modelList[index].isActive! || index == selectedIndex
                           ? context.color.territoryColor
                           : context.color.textDefaultColor.withOpacity(0.1),
                       width: 1.5)),
-              child: !widget.modelList[index].isActive!
-                  ? adsWidget(index)
-                  : activeAdsWidget(index),
+              child: !widget.modelList[index].isActive! ? adsWidget(index) : activeAdsWidget(index),
             ),
           ),
         ],
@@ -374,9 +325,7 @@ class _FeaturedAdsSubscriptionPlansItemState
         Padding(
           padding: EdgeInsetsDirectional.only(start: 10.0),
           child: CustomText(
-            widget.modelList[index].finalPrice! > 0
-                ? widget.modelList[index].finalPrice!.currencyFormat
-                : "free".translate(context),
+            widget.modelList[index].finalPrice! > 0 ? widget.modelList[index].finalPrice!.currencyFormat : "free".translate(context),
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -416,15 +365,12 @@ class _FeaturedAdsSubscriptionPlansItemState
                       children: [
                         if (widget.modelList[index].limit != "unlimited")
                           TextSpan(
-                            text:
-                                '${widget.modelList[index].userPurchasedPackages![0].remainingItemLimit}',
-                            style: TextStyle(
-                                color: context.color.textDefaultColor),
+                            text: '${widget.modelList[index].userPurchasedPackages![0].remainingItemLimit}',
+                            style: TextStyle(color: context.color.textDefaultColor),
                           ),
                         if (widget.modelList[index].limit != "unlimited")
                           TextSpan(
-                            text:
-                                '/${widget.modelList[index].limit.toString()}\t${"adsLbl".translate(context)}\t\t·\t\t',
+                            text: '/${widget.modelList[index].limit.toString()}\t${"adsLbl".translate(context)}\t\t·\t\t',
                           ),
                       ],
                     ),
@@ -438,21 +384,17 @@ class _FeaturedAdsSubscriptionPlansItemState
                             ? "${"unlimitedLbl".translate(context)}\t${"days".translate(context)}"
                             : '',
                         style: TextStyle(
-                          color:
-                              context.color.textDefaultColor.withOpacity(0.3),
+                          color: context.color.textDefaultColor.withOpacity(0.3),
                         ),
                         children: [
                           if (widget.modelList[index].duration != "unlimited")
                             TextSpan(
-                              text:
-                                  '${widget.modelList[index].userPurchasedPackages![0].remainingDays}',
-                              style: TextStyle(
-                                  color: context.color.textDefaultColor),
+                              text: '${widget.modelList[index].userPurchasedPackages![0].remainingDays}',
+                              style: TextStyle(color: context.color.textDefaultColor),
                             ),
                           if (widget.modelList[index].duration != "unlimited")
                             TextSpan(
-                              text:
-                                  '/${widget.modelList[index].duration.toString()}\t${"days".translate(context)}',
+                              text: '/${widget.modelList[index].duration.toString()}\t${"days".translate(context)}',
                             ),
                         ],
                       ),
@@ -481,8 +423,7 @@ class _FeaturedAdsSubscriptionPlansItemState
   }
 
   Future<void> paymentGatewayBottomSheet() async {
-    List<PaymentGateway> enabledGateways =
-        AppSettings.getEnabledPaymentGateways();
+    List<PaymentGateway> enabledGateways = AppSettings.getEnabledPaymentGateways();
 
     if (enabledGateways.isEmpty) {
       return;
@@ -521,8 +462,7 @@ class _FeaturedAdsSubscriptionPlansItemState
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(3),
-                          color:
-                              context.color.textDefaultColor.withOpacity(0.1),
+                          color: context.color.textDefaultColor.withOpacity(0.1),
                         ),
                         height: 6,
                         width: 60,
@@ -546,14 +486,12 @@ class _FeaturedAdsSubscriptionPlansItemState
                     itemBuilder: (context, index) {
                       return PaymentMethodTile(
                         gateway: enabledGateways[index],
-                        isSelected: _localSelectedGateway ==
-                            enabledGateways[index].type,
+                        isSelected: _localSelectedGateway == enabledGateways[index].type,
                         onSelect: (String? value) {
                           setState(() {
                             _localSelectedGateway = value;
                           });
-                          Navigator.pop(
-                              context, value); // Return the selected value
+                          Navigator.pop(context, value); // Return the selected value
                         },
                       );
                     },
@@ -588,13 +526,11 @@ class PaymentMethodTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: UiUtils.getSvg(gatewayIcon(gateway.type),
-          width: 23, height: 23, fit: BoxFit.contain),
+      leading: UiUtils.getSvg(gatewayIcon(gateway.type), width: 23, height: 23, fit: BoxFit.contain),
       title: CustomText(gateway.name),
       trailing: isSelected
           ? Icon(Icons.check_circle, color: context.color.territoryColor)
-          : Icon(Icons.radio_button_unchecked,
-              color: context.color.textDefaultColor.withOpacity(0.3)),
+          : Icon(Icons.radio_button_unchecked, color: context.color.textDefaultColor.withOpacity(0.3)),
       onTap: () => onSelect(gateway.type),
     );
   }

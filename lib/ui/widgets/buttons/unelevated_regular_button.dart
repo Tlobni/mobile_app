@@ -1,0 +1,38 @@
+import 'package:tlobni/ui/widgets/buttons/regular_button.dart';
+
+class UnelevatedRegularButton extends RegularButton {
+  UnelevatedRegularButton({
+    super.key,
+    required super.onPressed,
+    super.child,
+    super.onLongPress,
+    super.onHighlightChanged,
+    super.mouseCursor,
+    super.textTheme,
+    super.textColor,
+    super.disabledTextColor,
+    super.disabledColor,
+    super.focusColor,
+    super.hoverColor,
+    super.highlightColor,
+    super.splashColor,
+    super.colorBrightness,
+    super.elevation = 0,
+    super.focusElevation = 0,
+    super.hoverElevation = 0,
+    super.highlightElevation = 0,
+    super.disabledElevation = 0,
+    super.padding,
+    super.visualDensity,
+    super.shape,
+    super.clipBehavior,
+    super.focusNode,
+    super.autofocus,
+    super.materialTapTargetSize,
+    super.animationDuration,
+    super.minWidth,
+    super.height,
+    super.enableFeedback,
+    super.color,
+  });
+}

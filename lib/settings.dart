@@ -1,5 +1,5 @@
-import 'package:tlobni/utils/helper_utils.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:tlobni/utils/helper_utils.dart';
 
 ///tlobni configuration file
 /// Configure your app from here
@@ -30,7 +30,7 @@ class AppSettings {
   static const String androidPackageName = 'com.tlobni.app';
   static const String shareAppText = "Share this App";
 
-  // static const String demoUrl = "http://127.0.0.1:8000";
+  // static const String demoUrl = "http://192.168.0.103:8000";
   static const String demoUrl = "https://dashboard.tlobni.com";
 
   ///API Setting
@@ -38,9 +38,8 @@ class AppSettings {
   static const int apiDataLoadLimit = 20;
   static const int maxCategoryShowLengthInHomeScreen = 5;
 
-  //TODO: Change to demo url when releasing
-  static final String baseUrl =
-      "${HelperUtils.checkHost(demoUrl)}api/"; //don't change this
+  //TODO: Change to demo url when releasingA
+  static final String baseUrl = "${HelperUtils.checkHost(demoUrl)}api/"; //don't change this
 
   static const int hiddenAPIProcessDelay = 1;
 
@@ -57,15 +56,14 @@ it will call API in background without showing the process and when data availab
   //TODO: Change to Demo Url when releasing
   static const String shareNavigationWebUrl = "dashboard.tlobni.com";
 
-  static const MapType googleMapType =
-      MapType.normal; //none , normal , satellite , terrain , hybrid
+  static const MapType googleMapType = MapType.normal; //none , normal , satellite , terrain , hybrid
 
   ///Firebase authentication OTP timer.
   static const int otpResendSecond = 60 * 2;
   static const int otpTimeOutSecond = 60 * 2;
 
   ///This code will show on login screen [Note: don't add  + symbol]
-  static const String defaultCountryCode = "91";
+  static const String defaultCountryCode = "961";
   static const bool disableCountrySelection = false;
 
   ///Lottie animation
@@ -77,14 +75,12 @@ it will call API in background without showing the process and when data availab
 
   static const String maintenanceModeLottieFile = "maintenancemode.json";
 
-  static const bool useLottieProgress =
-      true; //if you don't want to use lottie progress then set it to false'
+  static const bool useLottieProgress = true; //if you don't want to use lottie progress then set it to false'
 
   ///Other settings
   static const String notificationChannel = "basic_channel"; //
   static int uploadImageQuality = 50; //0 to 100th
-  static const Set additionalRTLlanguages =
-      {}; //Add language code in brackat  {"ab","bc"}
+  static const Set additionalRTLlanguages = {}; //Add language code in brackat  {"ab","bc"}
 
 /////Advance settings
 //This file is located in assets/riveAnimations

@@ -1,9 +1,17 @@
+import 'dart:convert';
+
 import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/custom_field/custom_field_model.dart';
 import 'package:tlobni/data/model/seller_ratings_model.dart';
-import 'dart:convert';
 
 class ItemModel {
+  static const List<String> locationTypes = [
+    'client_location',
+    'public_venue',
+    'my_location',
+    'virtual',
+  ];
+
   int? id;
   String? name;
   String? slug;
@@ -246,9 +254,7 @@ class ItemModel {
     id = json['id'];
     name = json['name'];
     slug = json['slug'];
-    category = json['category'] != null
-        ? CategoryModel.fromJson(json['category'])
-        : null;
+    category = json['category'] != null ? CategoryModel.fromJson(json['category']) : null;
     totalLikes = json['total_likes'];
     views = json['clicks'];
     description = json['description'];
@@ -259,8 +265,7 @@ class ItemModel {
       if (json['special_tags'] is String) {
         try {
           // If it's a string, try to parse it as JSON
-          specialTags = Map<String, dynamic>.from(
-              jsonDecode(json['special_tags'] as String));
+          specialTags = Map<String, dynamic>.from(jsonDecode(json['special_tags'] as String));
         } catch (e) {
           specialTags = null;
         }
@@ -298,11 +303,7 @@ class ItemModel {
     if (json['location_type'] != null) {
       if (json['location_type'] is String) {
         // If it's a comma separated string, split it
-        locationType = (json['location_type'] as String)
-            .split(',')
-            .map((e) => e.trim())
-            .where((e) => e.isNotEmpty)
-            .toList();
+        locationType = (json['location_type'] as String).split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
       } else if (json['location_type'] is List) {
         // If it's already a List, convert each element to String
         locationType = List<String>.from(json['location_type']);
@@ -346,6 +347,27 @@ class ItemModel {
         customFields!.add(CustomFieldModel.fromMap(v));
       });
     }
+  }
+
+  static String locationTypeString(String? locationType) => switch (locationType) {
+        'client_location' => 'Client\'s location',
+        'public_venue' => 'Public venue',
+        'my_location' => 'Provider\'s location',
+        'virtual' => 'Online (Virtual)',
+        _ => '',
+      };
+
+  bool get isWomenExclusive => specialTags?['exclusive_women'] == 'true';
+
+  bool get isCorporatePackage => specialTags?['corporate_package'] == 'true';
+
+  String? get location {
+    if (country == null || city == null) {
+      if (country != null) return country!;
+      if (city != null) return city;
+      return null;
+    }
+    return '$city, $country';
   }
 
   Map<String, dynamic> toJson() {
@@ -405,7 +427,7 @@ class ItemModel {
         'name': area,
       };
     }
-    data['user'] = user!.toJson();
+    if (user != null) data['user'] = user!.toJson();
 
     if (galleryImages != null) {
       data['gallery_images'] = galleryImages!.map((v) => v.toJson()).toList();
@@ -438,6 +460,7 @@ class User {
   String? instagram;
   String? tiktok;
   String? profile;
+  double? averageRating;
   String? fcmId;
   String? firebaseId;
   int? status;
@@ -447,29 +470,43 @@ class User {
   String? updatedAt;
   int? showPersonalDetails;
   int? isVerified;
+  String? country, state, city;
+  List<int>? categoriesIds;
+  int? totalReviews;
+  List<String>? categories;
+  bool? isFeatured;
 
-  User(
-      {this.id,
-      this.name,
-      this.mobile,
-      this.email,
-      this.type,
-      this.bio,
-      this.website,
-      this.facebook,
-      this.twitter,
-      this.instagram,
-      this.tiktok,
-      this.profile,
-      this.fcmId,
-      this.firebaseId,
-      this.status,
-      this.apiToken,
-      this.address,
-      this.createdAt,
-      this.updatedAt,
-      this.isVerified,
-      this.showPersonalDetails});
+  User({
+    this.id,
+    this.name,
+    this.mobile,
+    this.email,
+    this.type,
+    this.bio,
+    this.website,
+    this.facebook,
+    this.twitter,
+    this.instagram,
+    this.tiktok,
+    this.profile,
+    this.fcmId,
+    this.firebaseId,
+    this.status,
+    this.apiToken,
+    this.address,
+    this.createdAt,
+    this.updatedAt,
+    this.isVerified,
+    this.country,
+    this.state,
+    this.totalReviews,
+    this.city,
+    this.categoriesIds,
+    this.showPersonalDetails,
+    this.categories,
+    this.averageRating,
+    this.isFeatured,
+  });
 
   User.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -489,11 +526,35 @@ class User {
     status = json['status'];
     apiToken = json['api_token'];
     address = json['address'];
+    if (json['total_reviews'] != null) {
+      totalReviews = (json['total_reviews'] as num?)?.toInt();
+    }
     createdAt = json['created_at'];
     updatedAt = json['updated_at'];
     isVerified = json['is_verified'];
+
+    if (json['average_rating'] != null) {
+      averageRating =
+          (json['average_rating'] is num? ? json['average_rating'] as num? : double.tryParse(json['average_rating']?.toString() ?? ''))
+              ?.toDouble();
+    }
+    country = json['country'];
+    city = json['city'];
+    state = json['state'];
+    categoriesIds = ((json['category_ids'] ?? json['categories']) as String?)
+        ?.split(',')
+        .where((String e) => e.isNotEmpty)
+        .toList()
+        .map(int.parse)
+        .toList();
     showPersonalDetails = json['show_personal_details'];
+    categories = (json['categories_array'] as List<dynamic>?)?.map((e) => (e is Map<String, dynamic> ? e['name'] : e).toString()).toList();
+    isFeatured = json['is_featured'] == 1 || json['is_featured'] == true;
   }
+
+  bool get hasLocation => country != null && city != null;
+
+  String? get location => hasLocation ? '$city, $country' : null;
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
@@ -510,6 +571,7 @@ class User {
     data['tiktok'] = tiktok;
     data['profile'] = profile;
     data['fcm_id'] = fcmId;
+    data['average_rating'] = averageRating;
     data['firebase_id'] = firebaseId;
     data['status'] = status;
     data['api_token'] = apiToken;
@@ -517,7 +579,13 @@ class User {
     data['created_at'] = createdAt;
     data['updated_at'] = updatedAt;
     data['is_verified'] = isVerified;
+    data['country'] = country;
+    data['city'] = city;
+    data['state'] = state;
     data['show_personal_details'] = showPersonalDetails;
+    data['categories'] = categoriesIds?.join(',');
+    data['total_reviews'] = totalReviews;
+    data['is_featured'] = isFeatured;
     return data;
   }
 }
@@ -529,8 +597,7 @@ class GalleryImages {
   String? updatedAt;
   int? itemId;
 
-  GalleryImages(
-      {this.id, this.image, this.createdAt, this.updatedAt, this.itemId});
+  GalleryImages({this.id, this.image, this.createdAt, this.updatedAt, this.itemId});
 
   GalleryImages.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -559,13 +626,7 @@ class ItemOffers {
   String? updatedAt;
   double? amount;
 
-  ItemOffers(
-      {this.id,
-      this.sellerId,
-      this.createdAt,
-      this.updatedAt,
-      this.buyerId,
-      this.amount});
+  ItemOffers({this.id, this.sellerId, this.createdAt, this.updatedAt, this.buyerId, this.amount});
 
   ItemOffers.fromJson(Map<String, dynamic> json) {
     id = json['id'];

@@ -1,4 +1,7 @@
-import 'package:tlobni/app/routes.dart';
+import 'dart:developer' as developer;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tlobni/data/cubits/fetch_notifications_cubit.dart';
 import 'package:tlobni/data/helper/custom_exception.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
@@ -10,15 +13,11 @@ import 'package:tlobni/ui/screens/widgets/errors/something_went_wrong.dart';
 import 'package:tlobni/ui/screens/widgets/intertitial_ads_screen.dart';
 import 'package:tlobni/ui/screens/widgets/shimmerLoadingContainer.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/text/description_text.dart';
 import 'package:tlobni/utils/api.dart';
-import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
-import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'dart:developer' as developer;
 
 late NotificationData selectedNotification;
 
@@ -76,8 +75,7 @@ class NotificationsState extends State<Notifications> {
         title: "notifications".translate(context),
         showBackButton: true,
       ),
-      body: BlocBuilder<FetchNotificationsCubit, FetchNotificationsState>(
-          builder: (context, state) {
+      body: BlocBuilder<FetchNotificationsCubit, FetchNotificationsState>(builder: (context, state) {
         if (state is FetchNotificationsInProgress) {
           return buildNotificationShimmer();
         }
@@ -167,95 +165,32 @@ class NotificationsState extends State<Notifications> {
               controller: _pageScrollController,
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.all(10),
-              separatorBuilder: (context, index) => const SizedBox(
-                    height: 12,
-                  ),
+              separatorBuilder: (context, index) => const SizedBox(height: 35),
               itemCount: state.notificationdata.length,
               itemBuilder: (context, index) {
-                NotificationData notificationData =
-                    state.notificationdata[index];
+                NotificationData notificationData = state.notificationdata[index];
 
                 // For providers, visually mark provider-specific notifications as read
                 // when they view them
-                if (HiveUtils.getUserType() == "Expert" ||
-                    HiveUtils.getUserType() == "Business") {
-                  if (notificationData.isProviderNotification() &&
-                      !notificationData.isRead) {
+                if (HiveUtils.getUserType() == "Expert" || HiveUtils.getUserType() == "Business") {
+                  if (notificationData.isProviderNotification() && !notificationData.isRead) {
                     notificationData.markAsRead();
                   }
                 }
 
-                return GestureDetector(
-                  onTap: () {
-                    selectedNotification = notificationData;
-
-                    HelperUtils.goToNextPage(
-                        Routes.notificationDetailPage, context, false);
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.secondaryColor,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                          color: context.color.borderColor.darken(50),
-                          width: 1),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(child: DescriptionText(notificationData.title ?? '', maxLines: 1)),
+                        DescriptionText(UiUtils.dateToAgoString(notificationData.createdAt), fontSize: 14),
+                      ],
                     ),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 12),
-                    child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          ClipRRect(
-                            clipBehavior: Clip.antiAliasWithSaveLayer,
-                            borderRadius: const BorderRadius.all(
-                              Radius.circular(15),
-                            ),
-                            child: UiUtils.getImage(notificationData.image!,
-                                height: 53, width: 53, fit: BoxFit.fill),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                              child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                Text(
-                                  notificationData.title!.firstUpperCase(),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium!
-                                      .merge(const TextStyle(
-                                          fontWeight: FontWeight.w500)),
-                                ),
-                                Padding(
-                                    padding: const EdgeInsets.only(top: 3.0),
-                                    child: Text(
-                                      notificationData.message!
-                                          .firstUpperCase(),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall!
-                                          .copyWith(
-                                              color:
-                                                  context.color.textLightColor),
-                                    )),
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4.0),
-                                  child: CustomText(
-                                    notificationData.createdAt!
-                                        .formatDate()
-                                        .toString(),
-                                    fontSize: context.font.smaller,
-                                    color: context.color.textLightColor,
-                                  ),
-                                )
-                              ])),
-                        ]),
-                  ),
+                    const SizedBox(height: 5),
+                    DescriptionText(notificationData.message ?? '', fontSize: 14),
+                  ],
                 );
               }),
         ),
@@ -283,8 +218,7 @@ class NotificationsState extends State<Notifications> {
   // Mark provider notifications as read
   void _markNotificationsAsRead() {
     // Only mark as read for providers
-    final isProvider = HiveUtils.getUserType() == "Expert" ||
-        HiveUtils.getUserType() == "Business";
+    final isProvider = HiveUtils.getUserType() == "Expert" || HiveUtils.getUserType() == "Business";
 
     if (!isProvider) return;
 

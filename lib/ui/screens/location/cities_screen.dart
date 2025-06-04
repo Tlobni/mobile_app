@@ -1,5 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/home/fetch_home_all_items_cubit.dart';
@@ -22,10 +26,6 @@ import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shimmer/shimmer.dart';
 
 class CitiesScreen extends StatefulWidget {
   final int stateId;
@@ -82,9 +82,7 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
   @override
   void initState() {
     super.initState();
-    context
-        .read<FetchCitiesCubit>()
-        .fetchCities(search: searchController.text, stateId: widget.stateId);
+    context.read<FetchCitiesCubit>().fetchCities(search: searchController.text, stateId: widget.stateId);
     searchController = TextEditingController();
 
     searchController.addListener(searchItemListener);
@@ -94,9 +92,7 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
   void pageScrollListen() {
     if (controller.isEndReached()) {
       if (context.read<FetchCitiesCubit>().hasMoreData()) {
-        context
-            .read<FetchCitiesCubit>()
-            .fetchCitiesMore(stateId: widget.stateId);
+        context.read<FetchCitiesCubit>().fetchCitiesMore(stateId: widget.stateId);
       }
     }
   }
@@ -117,9 +113,7 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
   void itemSearch() {
     // if (searchController.text.isNotEmpty) {
     if (previousSearchQuery != searchController.text) {
-      context
-          .read<FetchCitiesCubit>()
-          .fetchCities(search: searchController.text, stateId: widget.stateId);
+      context.read<FetchCitiesCubit>().fetchCities(search: searchController.text, stateId: widget.stateId);
       previousSearchQuery = searchController.text;
       setState(() {});
     }
@@ -130,8 +124,7 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
 
   PreferredSizeWidget appBarWidget() {
     return AppBar(
-      systemOverlayStyle:
-          SystemUiOverlayStyle(statusBarColor: context.color.backgroundColor),
+      systemOverlayStyle: SystemUiOverlayStyle(statusBarColor: context.color.backgroundColor),
       bottom: PreferredSize(
           preferredSize: Size.fromHeight(58),
           child: Container(
@@ -141,10 +134,7 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
               alignment: AlignmentDirectional.center,
               decoration: BoxDecoration(
                   border: Border.all(
-                      width: context.watch<AppThemeCubit>().state.appTheme ==
-                              AppTheme.dark
-                          ? 0
-                          : 1,
+                      width: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark ? 0 : 1,
                       color: context.color.borderColor.darken(30)),
                   borderRadius: const BorderRadius.all(Radius.circular(10)),
                   color: context.color.secondaryColor),
@@ -154,11 +144,9 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
                     border: InputBorder.none,
                     //OutlineInputBorder()
                     fillColor: Theme.of(context).colorScheme.secondaryColor,
-                    hintText:
-                        "${"search".translate(context)}\t${"city".translate(context)}",
+                    hintText: "${"search".translate(context)}\t${"city".translate(context)}",
                     prefixIcon: setSearchIcon(),
-                    prefixIconConstraints:
-                        const BoxConstraints(minHeight: 5, minWidth: 5),
+                    prefixIconConstraints: const BoxConstraints(minHeight: 5, minWidth: 5),
                   ),
                   enableSuggestions: true,
                   onEditingComplete: () {
@@ -197,26 +185,16 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
               child: Directionality(
                   textDirection: Directionality.of(context),
                   child: RotatedBox(
-                    quarterTurns:
-                        Directionality.of(context) == TextDirection.rtl
-                            ? 2
-                            : -4,
-                    child: UiUtils.getSvg(AppIcons.arrowLeft,
-                        fit: BoxFit.none,
-                        color: context.color.textDefaultColor),
+                    quarterTurns: Directionality.of(context) == TextDirection.rtl ? 2 : -4,
+                    child: UiUtils.getSvg(AppIcons.arrowLeft, fit: BoxFit.none, color: context.color.textDefaultColor),
                   ))),
         ),
       ),
       /*BackButton(
         color: context.color.textDefaultColor,
       ),*/
-      elevation: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark
-          ? 0
-          : 6,
-      shadowColor:
-          context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark
-              ? null
-              : context.color.textDefaultColor.withOpacity(0.2),
+      elevation: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark ? 0 : 6,
+      shadowColor: context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark ? null : context.color.textDefaultColor.withOpacity(0.2),
       backgroundColor: context.color.backgroundColor,
     );
   }
@@ -241,10 +219,8 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
             padding: EdgeInsets.all(5),
             width: double.maxFinite,
             height: 56,
-            decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(5),
-                border:
-                    Border.all(color: context.color.borderColor.darken(30))),
+            decoration:
+                BoxDecoration(borderRadius: BorderRadius.circular(5), border: Border.all(color: context.color.borderColor.darken(30))),
           ),
         );
       },
@@ -277,8 +253,7 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
               return SingleChildScrollView(
                 child: NoInternet(
                   onRetry: () {
-                    context.read<FetchCitiesCubit>().fetchCities(
-                        search: searchController.text, stateId: widget.stateId);
+                    context.read<FetchCitiesCubit>().fetchCities(search: searchController.text, stateId: widget.stateId);
                   },
                 ),
               );
@@ -293,8 +268,7 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
             return SingleChildScrollView(
               child: NoDataFound(
                 onTap: () {
-                  context.read<FetchCitiesCubit>().fetchCities(
-                      search: searchController.text, stateId: widget.stateId);
+                  context.read<FetchCitiesCubit>().fetchCities(search: searchController.text, stateId: widget.stateId);
                 },
               ),
             );
@@ -309,8 +283,7 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
                 children: [
                   widget.from == "addItem"
                       ? Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 18, vertical: 18),
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
                           child: CustomText(
                             "${"chooseLbl".translate(context)}\t${"city".translate(context)}",
                             textAlign: TextAlign.center,
@@ -323,8 +296,7 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
                         )
                       : InkWell(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 15, vertical: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
                             child: Row(
                               children: [
                                 CustomText(
@@ -340,10 +312,8 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
                                 Container(
                                     width: 32,
                                     height: 32,
-                                    decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(8),
-                                        color: context.color.borderColor
-                                            .darken(10)),
+                                    decoration:
+                                        BoxDecoration(borderRadius: BorderRadius.circular(8), color: context.color.borderColor.darken(10)),
                                     child: Icon(
                                       Icons.chevron_right_outlined,
                                       color: context.color.textDefaultColor,
@@ -353,31 +323,22 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
                           ),
                           onTap: () {
                             if (widget.from == "home") {
-                              HiveUtils.setLocation(
-                                  country: widget.countryName,
-                                  state: widget.stateName);
+                              HiveUtils.setLocation(country: widget.countryName, state: widget.stateName);
 
                               Future.delayed(
                                 Duration.zero,
                                 () {
-                                  context.read<FetchHomeScreenCubit>().fetch(
-                                      country: widget.countryName,
-                                      state: widget.stateName);
-                                  context.read<FetchHomeAllItemsCubit>().fetch(
-                                      country: widget.countryName,
-                                      state: widget.stateName,
-                                      radius: null);
+                                  context.read<FetchHomeScreenCubit>().fetch(country: widget.countryName, state: widget.stateName);
+                                  context
+                                      .read<FetchHomeAllItemsCubit>()
+                                      .fetch(country: widget.countryName, state: widget.stateName, radius: null);
                                 },
                               );
 
-                              Navigator.popUntil(
-                                  context, (route) => route.isFirst);
+                              Navigator.popUntil(context, (route) => route.isFirst);
                             } else if (widget.from == "location") {
-                              HiveUtils.setLocation(
-                                  country: widget.countryName,
-                                  state: widget.stateName);
-                              HelperUtils.killPreviousPages(
-                                  context, Routes.main, {"from": "login"});
+                              HiveUtils.setLocation(country: widget.countryName, state: widget.stateName);
+                              HelperUtils.killPreviousPages(context, Routes.main, {"from": "login"});
                             } else {
                               Map<String, dynamic> result = {
                                 'area_id': null,
@@ -417,40 +378,30 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
                         return BlocProvider(
                           create: (context) => FetchAreasCubit(),
                           child: Builder(builder: (context) {
-                            return BlocListener<FetchAreasCubit,
-                                FetchAreasState>(
+                            return BlocListener<FetchAreasCubit, FetchAreasState>(
                               listener: (context, area) {
                                 if (area is FetchAreasSuccess) {
                                   if (area.areasModel.isNotEmpty) {
-                                    Navigator.pushNamed(
-                                        context, Routes.areasScreen,
-                                        arguments: {
-                                          "cityId": city.id!,
-                                          "cityName": city.name!,
-                                          "from": widget.from,
-                                          "stateName": widget.stateName,
-                                          "countryName": widget.countryName,
-                                          "latitude":
-                                              double.parse(city.latitude!),
-                                          "longitude":
-                                              double.parse(city.longitude!)
-                                        });
+                                    Navigator.pushNamed(context, Routes.areasScreen, arguments: {
+                                      "cityId": city.id!,
+                                      "cityName": city.name!,
+                                      "from": widget.from,
+                                      "stateName": widget.stateName,
+                                      "countryName": widget.countryName,
+                                      "latitude": double.parse(city.latitude!),
+                                      "longitude": double.parse(city.longitude!)
+                                    });
                                   } else {
                                     if (widget.from == "home") {
                                       if (Constant.isDemoModeOn) {
-                                        UiUtils.setDefaultLocationValue(
-                                            isCurrent: false,
-                                            isHomeUpdate: true,
-                                            context: context);
-                                        Navigator.popUntil(
-                                            context, (route) => route.isFirst);
+                                        UiUtils.setDefaultLocationValue(isCurrent: false, isHomeUpdate: true, context: context);
+                                        Navigator.popUntil(context, (route) => route.isFirst);
                                       } else {
                                         HiveUtils.setLocation(
                                             city: city.name!,
                                             state: widget.stateName,
                                             country: widget.countryName,
-                                            latitude:
-                                                double.parse(city.latitude!),
+                                            latitude: double.parse(city.latitude!),
                                             longitude: double.parse(
                                               city.longitude!,
                                             ));
@@ -458,44 +409,30 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
                                         Future.delayed(
                                           Duration.zero,
                                           () {
-                                            context
-                                                .read<FetchHomeScreenCubit>()
-                                                .fetch(
+                                            context.read<FetchHomeScreenCubit>().fetch(
                                                   city: city.name!,
                                                 );
-                                            context
-                                                .read<FetchHomeAllItemsCubit>()
-                                                .fetch(
-                                                    city: city.name!,
-                                                    radius: null);
+                                            context.read<FetchHomeAllItemsCubit>().fetch(city: city.name!, radius: null);
                                           },
                                         );
 
-                                        Navigator.popUntil(
-                                            context, (route) => route.isFirst);
+                                        Navigator.popUntil(context, (route) => route.isFirst);
                                       }
                                     } else if (widget.from == "location") {
                                       if (Constant.isDemoModeOn) {
-                                        UiUtils.setDefaultLocationValue(
-                                            isCurrent: false,
-                                            isHomeUpdate: false,
-                                            context: context);
-                                        HelperUtils.killPreviousPages(context,
-                                            Routes.main, {"from": "login"});
+                                        UiUtils.setDefaultLocationValue(isCurrent: false, isHomeUpdate: false, context: context);
+                                        HelperUtils.killPreviousPages(context, Routes.main, {"from": "login"});
                                       } else {
                                         HiveUtils.setLocation(
                                           area: null,
                                           city: city.name!,
                                           state: widget.stateName,
                                           country: widget.countryName,
-                                          latitude:
-                                              double.parse(city.latitude!),
-                                          longitude:
-                                              double.parse(city.longitude!),
+                                          latitude: double.parse(city.latitude!),
+                                          longitude: double.parse(city.longitude!),
                                         );
 
-                                        HelperUtils.killPreviousPages(context,
-                                            Routes.main, {"from": "login"});
+                                        HelperUtils.killPreviousPages(context, Routes.main, {"from": "login"});
                                       }
                                     } else {
                                       Map<String, dynamic> result = {
@@ -504,10 +441,8 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
                                         'city': city.name!,
                                         'state': widget.stateName,
                                         'country': widget.countryName,
-                                        'latitude':
-                                            double.parse(city.latitude!),
-                                        'longitude':
-                                            double.parse(city.longitude!)
+                                        'latitude': double.parse(city.latitude!),
+                                        'longitude': double.parse(city.longitude!)
                                       };
 
                                       Navigator.pop(context);
@@ -523,9 +458,7 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
                                   /*widget.addModel(widget.model[index]);
                                 Navigator.pop(context);*/
 
-                                  context
-                                      .read<FetchAreasCubit>()
-                                      .fetchAreas(cityId: city.id!);
+                                  context.read<FetchAreasCubit>().fetchAreas(cityId: city.id!);
                                 },
                                 title: CustomText(
                                   city.name!,
@@ -538,10 +471,8 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
                                 trailing: Container(
                                     width: 32,
                                     height: 32,
-                                    decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(8),
-                                        color: context.color.borderColor
-                                            .darken(10)),
+                                    decoration:
+                                        BoxDecoration(borderRadius: BorderRadius.circular(8), color: context.color.borderColor.darken(10)),
                                     child: Icon(
                                       Icons.chevron_right_outlined,
                                       color: context.color.textDefaultColor,
@@ -556,7 +487,7 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
                   if (state.isLoadingMore)
                     Center(
                       child: UiUtils.progress(
-                        normalProgressColor: context.color.territoryColor,
+                        color: context.color.territoryColor,
                       ),
                     )
                 ],
@@ -570,10 +501,7 @@ class CitiesScreenState extends CloudState<CitiesScreen> {
   }
 
   Widget setSearchIcon() {
-    return Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: UiUtils.getSvg(AppIcons.search,
-            color: context.color.territoryColor));
+    return Padding(padding: const EdgeInsets.all(8.0), child: UiUtils.getSvg(AppIcons.search, color: context.color.territoryColor));
   }
 
   Widget setSuffixIcon() {

@@ -1,13 +1,15 @@
+import 'package:flutter/material.dart';
 import 'package:tlobni/ui/theme/theme.dart';
-import 'package:tlobni/utils/custom_text.dart';
+import 'package:tlobni/ui/widgets/buttons/unelevated_regular_button.dart';
+import 'package:tlobni/ui/widgets/text/description_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
 
 class CategoryHomeCard extends StatelessWidget {
   final String title;
   final String url;
   final VoidCallback onTap;
+
   const CategoryHomeCard({
     super.key,
     required this.title,
@@ -26,46 +28,37 @@ class CategoryHomeCard extends StatelessWidget {
       isFullImage = true;
     }
     return Container(
-      width: 70,
-      child: GestureDetector(
-        onTap: onTap,
+      width: 100,
+      child: UnelevatedRegularButton(
+        onPressed: onTap,
+        color: Colors.transparent,
+        padding: EdgeInsets.all(5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (isFullImage) ...[
-              Container(
-                height: 70,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  color: const Color(0xFFE6CBA8),
-                  border: Border.all(
-                      color: context.color.borderColor.darken(60), width: 1),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: UiUtils.imageType(url, fit: BoxFit.cover),
+            Container(
+              height: 90,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: context.color.borderColor.darken(60), width: 1),
+                color: const Color(0xFFE6CBA8),
               ),
-            ] else ...[
-              Container(
-                height: 70,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                      color: context.color.borderColor.darken(60), width: 1),
-                  color: const Color(0xFFE6CBA8),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: UiUtils.imageType(url, fit: BoxFit.contain),
-              ),
-            ],
+              padding: EdgeInsets.all(10),
+              clipBehavior: Clip.antiAlias,
+              child: UiUtils.imageType(url, fit: isFullImage ? BoxFit.cover : BoxFit.contain),
+            ),
+            SizedBox(height: 15),
             Expanded(
-                child: CustomText(
-              title,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              fontSize: context.font.smaller,
-              color: context.color.textDefaultColor,
-            ))
+              child: DescriptionText(
+                title,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                fontSize: 14,
+                weight: FontWeight.w500,
+                height: 1.5,
+              ),
+            )
           ],
         ),
       ),

@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/delete_advertisment_cubit.dart';
 import 'package:tlobni/data/cubits/item/fetch_my_promoted_items_cubit.dart';
@@ -15,8 +17,6 @@ import 'package:tlobni/ui/theme/theme.dart';
 import 'package:tlobni/utils/api.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class MyAdvertisementScreen extends StatefulWidget {
   const MyAdvertisementScreen({super.key});
@@ -38,23 +38,18 @@ class MyAdvertisementScreen extends StatefulWidget {
 
 class _MyAdvertisementScreenState extends State<MyAdvertisementScreen> {
   final ScrollController _pageScrollController = ScrollController();
-  Map<int, String>? statusMap;
+
+  String? status(int status) => switch (status) {
+        0 => "approved".translate(context),
+        1 => "pending".translate(context),
+        2 => "rejected".translate(context),
+        _ => null,
+      };
 
   @override
   void initState() {
     AdHelper.loadInterstitialAd();
     context.read<FetchMyPromotedItemsCubit>().fetchMyPromotedItems();
-
-    Future.delayed(
-      Duration.zero,
-      () {
-        statusMap = {
-          0: "approved".translate(context),
-          1: "pending".translate(context),
-          2: "rejected".translate(context)
-        };
-      },
-    );
 
     _pageScrollController.addListener(_pageScroll);
     super.initState();
@@ -68,34 +63,19 @@ class _MyAdvertisementScreenState extends State<MyAdvertisementScreen> {
     }
   }
 
-  @override
-  void didChangeDependencies() {
-    statusMap = {
-      0: "approved".translate(context),
-      1: "pending".translate(context),
-      2: "rejected".translate(context)
-    };
-    super.didChangeDependencies();
-  }
-
-  Color? statusColor(status) {
-    if (status == 0) {
-      return Colors.green;
-    } else if (status == 1) {
-      return Colors.purple;
-    } else if (status == 2) {
-      return Colors.red;
-    }
-    return null;
-  }
+  Color? statusColor(status) => switch (status) {
+        0 => Colors.green,
+        1 => Colors.purple,
+        2 => Colors.red,
+        _ => null,
+      };
 
   @override
   Widget build(BuildContext context) {
     AdHelper.showInterstitialAd();
     return Scaffold(
       backgroundColor: context.color.backgroundColor,
-      appBar: UiUtils.buildAppBar(context,
-          showBackButton: true, title: "myFeaturedAds".translate(context)),
+      appBar: UiUtils.buildAppBar(context, showBackButton: true, title: "myFeaturedAds".translate(context)),
       body: RefreshIndicator(
         onRefresh: () async {
           context.read<FetchMyPromotedItemsCubit>().fetchMyPromotedItems();
@@ -103,17 +83,12 @@ class _MyAdvertisementScreenState extends State<MyAdvertisementScreen> {
           Future.delayed(
             Duration.zero,
             () {
-              statusMap = {
-                0: "approved".translate(context),
-                1: "pending".translate(context),
-                2: "rejected".translate(context)
-              };
+              ;
             },
           );
         },
         color: context.color.territoryColor,
-        child:
-            BlocBuilder<FetchMyPromotedItemsCubit, FetchMyPromotedItemsState>(
+        child: BlocBuilder<FetchMyPromotedItemsCubit, FetchMyPromotedItemsState>(
           builder: (context, state) {
             if (state is FetchMyPromotedItemsInProgress) {
               return shimmerEffect();
@@ -123,9 +98,7 @@ class _MyAdvertisementScreenState extends State<MyAdvertisementScreen> {
                 if (state.errorMessage.errorMessage == "no-internet") {
                   return NoInternet(
                     onRetry: () {
-                      context
-                          .read<FetchMyPromotedItemsCubit>()
-                          .fetchMyPromotedItems();
+                      context.read<FetchMyPromotedItemsCubit>().fetchMyPromotedItems();
                     },
                   );
                 }
@@ -137,9 +110,7 @@ class _MyAdvertisementScreenState extends State<MyAdvertisementScreen> {
               if (state.itemModel.isEmpty) {
                 return NoDataFound(
                   onTap: () {
-                    context
-                        .read<FetchMyPromotedItemsCubit>()
-                        .fetchMyPromotedItems();
+                    context.read<FetchMyPromotedItemsCubit>().fetchMyPromotedItems();
                     setState(() {});
                   },
                 );
@@ -241,8 +212,7 @@ class _MyAdvertisementScreenState extends State<MyAdvertisementScreen> {
 
               item = context.watch<ItemEditCubit>().get(item);
               return BlocProvider(
-                create: (context) =>
-                    DeleteAdvertisementCubit(AdvertisementRepository()),
+                create: (context) => DeleteAdvertisementCubit(AdvertisementRepository()),
                 child: InkWell(
                   onTap: () {
                     Navigator.pushNamed(
